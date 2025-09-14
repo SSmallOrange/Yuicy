@@ -12,6 +12,9 @@
     <ClCompile Include="src\Yuicy\Application.cpp">
       <Filter>src\Yuicy</Filter>
     </ClCompile>
+    <ClCompile Include="src\Yuicy\Log.cpp">
+      <Filter>src\Yuicy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Yuicy\Application.h">
@@ -25,6 +28,12 @@
     </ClInclude>
     <ClInclude Include="src\Yuicy.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Yuicy\Base.h">
+      <Filter>src\Yuicy</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Yuicy\Log.h">
+      <Filter>src\Yuicy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

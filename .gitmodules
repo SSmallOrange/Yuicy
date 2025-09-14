@@ -1,0 +1,6 @@
+[submodule "Yuicy/thirdparty/spdlog"]
+	path = Yuicy/thirdparty/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "Yuicy/thirdparty/tinyrefl"]
+	path = Yuicy/thirdparty/tinyrefl
+	url = https://github.com/SSmallOrange/TinyReflection.git
