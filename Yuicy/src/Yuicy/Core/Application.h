@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core.h"
+#include "Yuicy/Core/Core.h"
 
 namespace Yuicy {
 	class YUICY_API Application

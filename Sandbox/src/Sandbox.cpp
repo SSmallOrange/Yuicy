@@ -8,8 +8,8 @@ public:
 
 Yuicy::Application* Yuicy::CreateApplication() {
 
-	HZ_CORE_INFO(u8"Hello World!!{}", 2);
-	HZ_CORE_ERROR(u8"Bad !!{}", u8"World");
+	YUICY_CORE_INFO("Hello World!!{}", 2);
+	YUICY_CORE_ERROR("Bad !!{}", "World");
 
 	return new Sandbox();
 }

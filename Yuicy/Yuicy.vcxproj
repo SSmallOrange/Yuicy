@@ -11,16 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Yuicy\Application.cpp" />
-    <ClCompile Include="src\Yuicy\Log.cpp" />
+    <ClInclude Include="src\Yuicy.h" />
+    <ClInclude Include="src\Yuicy\Core\Application.h" />
+    <ClInclude Include="src\Yuicy\Core\Base.h" />
+    <ClInclude Include="src\Yuicy\Core\Core.h" />
+    <ClInclude Include="src\Yuicy\Core\EntryPoint.h" />
+    <ClInclude Include="src\Yuicy\Core\KeyCodes.h" />
+    <ClInclude Include="src\Yuicy\Core\Log.h" />
+    <ClInclude Include="src\Yuicy\Core\MouseCodes.h" />
+    <ClInclude Include="src\Yuicy\Events\ApplicationEvent.h" />
+    <ClInclude Include="src\Yuicy\Events\Event.h" />
+    <ClInclude Include="src\Yuicy\Events\KeyEvent.h" />
+    <ClInclude Include="src\Yuicy\Events\MouseEvent.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Yuicy.h" />
-    <ClInclude Include="src\Yuicy\Application.h" />
-    <ClInclude Include="src\Yuicy\Base.h" />
-    <ClInclude Include="src\Yuicy\Core.h" />
-    <ClInclude Include="src\Yuicy\EntryPoint.h" />
-    <ClInclude Include="src\Yuicy\Log.h" />
+    <ClCompile Include="src\Yuicy\Core\Application.cpp" />
+    <ClCompile Include="src\Yuicy\Core\Log.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -67,7 +73,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>/utf8;PLATFORM_WINDOWS;YUICY_EXPORT_DLL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PLATFORM_WINDOWS;YUICY_EXPORT_DLL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\spdlog\include;$(ProjectDir)thirdparty\tinyrefl</AdditionalIncludeDirectories>
@@ -84,7 +90,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>/utf8;PLATFORM_WINDOWS;YUICY_EXPORT_DLL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PLATFORM_WINDOWS;YUICY_EXPORT_DLL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\spdlog\include;$(ProjectDir)thirdparty\tinyrefl</AdditionalIncludeDirectories>

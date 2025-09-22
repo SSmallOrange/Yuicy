@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Core.h"
+#include "Yuicy/Core/Core.h"
 
 #ifdef REFLECTION_STRUCT
 	#include "tinyrefl/reflection_to_json.hpp"
 	#include "tinyrefl/reflection_from_json.hpp"
 #endif
 
-#include "Yuicy/Base.h"
-
+#include "Yuicy/Core/Base.h"
+#include <ostream>
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
@@ -45,16 +45,17 @@ namespace Yuicy {
 // }
 
 // Core log macros
-#define HZ_CORE_TRACE(...)    ::Yuicy::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define HZ_CORE_INFO(...)     ::Yuicy::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define HZ_CORE_WARN(...)     ::Yuicy::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define HZ_CORE_ERROR(...)    ::Yuicy::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define HZ_CORE_CRITICAL(...) ::Yuicy::Log::GetCoreLogger()->critical(__VA_ARGS__)
+#define YUICY_CORE_TRACE(...)    ::Yuicy::Log::GetCoreLogger()->trace(__VA_ARGS__)
+#define YUICY_CORE_INFO(...)     ::Yuicy::Log::GetCoreLogger()->info(__VA_ARGS__)
+#define YUICY_CORE_WARN(...)     ::Yuicy::Log::GetCoreLogger()->warn(__VA_ARGS__)
+#define YUICY_CORE_ERROR(...)    ::Yuicy::Log::GetCoreLogger()->error(__VA_ARGS__)
+#define YUICY_CORE_CRITICAL(...) ::Yuicy::Log::GetCoreLogger()->critical(__VA_ARGS__)
 
 // Client log macros
-#define HZ_TRACE(...)         ::Yuicy::Log::GetClientLogger()->trace(__VA_ARGS__)
-#define HZ_INFO(...)          ::Yuicy::Log::GetClientLogger()->info(__VA_ARGS__)
-#define HZ_WARN(...)          ::Yuicy::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define HZ_ERROR(...)         ::Yuicy::Log::GetClientLogger()->error(__VA_ARGS__)
-#define HZ_CRITICAL(...)      ::Yuicy::Log::GetClientLogger()->critical(__VA_ARGS__)
+#define YUICY_TRACE(...)         ::Yuicy::Log::GetClientLogger()->trace(__VA_ARGS__)
+#define YUICY_INFO(...)          ::Yuicy::Log::GetClientLogger()->info(__VA_ARGS__)
+#define YUICY_WARN(...)          ::Yuicy::Log::GetClientLogger()->warn(__VA_ARGS__)
+#define YUICY_ERROR(...)         ::Yuicy::Log::GetClientLogger()->error(__VA_ARGS__)
+#define YUICY_CRITICAL(...)      ::Yuicy::Log::GetClientLogger()->critical(__VA_ARGS__)
+
 
