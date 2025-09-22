@@ -2,10 +2,6 @@
 
 #include "Yuicy/Core/Base.h"
 
-#include <string>
-#include <sstream>
-#include <functional>
-
 namespace Yuicy {
 	enum class EventType {
 		None = 0,

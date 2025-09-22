@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\Yuicy.h" />
     <ClInclude Include="src\Yuicy\Core\Application.h" />
     <ClInclude Include="src\Yuicy\Core\Base.h" />
@@ -25,6 +26,10 @@
     <ClInclude Include="src\Yuicy\Events\MouseEvent.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\Yuicy\Core\Application.cpp" />
     <ClCompile Include="src\Yuicy\Core\Log.cpp" />
   </ItemGroup>
@@ -78,6 +83,8 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\spdlog\include;$(ProjectDir)thirdparty\tinyrefl</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -95,6 +102,8 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\spdlog\include;$(ProjectDir)thirdparty\tinyrefl</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

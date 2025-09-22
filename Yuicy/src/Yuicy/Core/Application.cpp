@@ -1,11 +1,11 @@
+#include "pch.h"
 #include "Yuicy/Core/Application.h"
 
 #include "Yuicy/Events/ApplicationEvent.h"
-#include "Yuicy/Core/Log.h"
 
 namespace Yuicy {
-	Application::Application() {
-
+	Application::Application() { 
+		 
 	}
 
 	Application::~Application() {

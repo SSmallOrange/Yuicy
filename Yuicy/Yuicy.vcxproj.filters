@@ -51,6 +51,9 @@
     <ClInclude Include="src\Yuicy\Core\MouseCodes.h">
       <Filter>src\Yuicy\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\pch.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Yuicy\Core\Application.cpp">
@@ -58,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="src\Yuicy\Core\Log.cpp">
       <Filter>src\Yuicy\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pch.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
