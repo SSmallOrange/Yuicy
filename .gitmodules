@@ -4,6 +4,6 @@
 [submodule "Yuicy/thirdparty/tinyrefl"]
 	path = Yuicy/thirdparty/tinyrefl
 	url = https://github.com/SSmallOrange/TinyReflection.git
-[submodule "Yuicyy/thirdparty/GLFW"]
-	path = Yuicyy/thirdparty/GLFW
+[submodule "Yuicy/thirdparty/GLFW"]
+	path = Yuicy/thirdparty/GLFW
 	url = https://github.com/TheCherno/glfw
