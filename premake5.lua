@@ -21,10 +21,12 @@ project "Yuicy"
     pchheader "pch.h"
     pchsource "Yuicy/src/pch.cpp"
     files { "Yuicy/src/**.h", "Yuicy/src/**.hpp", "Yuicy/src/**.cpp" }
-    includedirs { "Yuicy/src", "Yuicy/thirdparty/spdlog/include", "Yuicy/thirdparty/GLFW/include" }
+    includedirs { "Yuicy/src", "Yuicy/thirdparty/spdlog/include", "Yuicy/thirdparty/GLFW/include" , "Yuicy/thirdparty/tinyrefl"}
     defines { "PLATFORM_WINDOWS", "YUICY_EXPORT_DLL" }
+	links { "GLFW" }
     filter "system:windows"
         systemversion "latest"
+		links { "opengl32", "user32", "gdi32", "shell32" }
         buildoptions { "/utf-8" }
     filter "configurations:Debug"
         runtime "Debug"
@@ -43,21 +45,20 @@ project "Sandbox"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
     files { "Sandbox/src/**.h", "Sandbox/src/**.hpp", "Sandbox/src/**.cpp" }
-    includedirs { "Yuicy/src", "Yuicy/thirdparty/spdlog/include", "Yuicy/thirdparty/GLFW/include" }
-    links { "Yuicy", "GLFW" }
+    includedirs { "Yuicy/src", "Yuicy/thirdparty/spdlog/include", "Yuicy/thirdparty/GLFW/include" , "Yuicy/thirdparty/tinyrefl"}
+    links { "Yuicy" }
     defines { "PLATFORM_WINDOWS" }
     filter "system:windows"
         systemversion "latest"
         buildoptions { "/utf-8" }
-        links { "opengl32", "user32", "gdi32", "shell32" }
         postbuildcommands {
 			'cmd /c if not exist "%{cfg.targetdir}" mkdir "%{cfg.targetdir}"',
 			-- library
 			'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" "%{cfg.targetdir}"',
-			'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" "%{cfg.targetdir}"',
+			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" "%{cfg.targetdir}"',
 			-- pdb
 			'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" "%{cfg.targetdir}"',
-			'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" "%{cfg.targetdir}"'
+			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" "%{cfg.targetdir}"'
 
         }
     filter "configurations:Debug"
