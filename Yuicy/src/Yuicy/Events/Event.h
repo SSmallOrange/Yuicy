@@ -70,7 +70,7 @@ namespace Yuicy {
 	}
 }
 
-#include <spdlog/fmt/ostr.h>   // ÄãÒÑ¾­ÔÚ Log.h ÀïÒıÁË£¬ÕâÀïÔÙÒıÒ»´ÎÒ²Ã»ÎÊÌâ
+#include <spdlog/fmt/ostr.h>   // ä½ å·²ç»åœ¨ Log.h é‡Œå¼•äº†ï¼Œè¿™é‡Œå†å¼•ä¸€æ¬¡ä¹Ÿæ²¡é—®é¢˜
 
 template <>
 struct fmt::formatter<Yuicy::Event> : fmt::ostream_formatter {};
