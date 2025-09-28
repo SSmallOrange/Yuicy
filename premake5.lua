@@ -22,7 +22,7 @@ project "Yuicy"
     pchsource "Yuicy/src/pch.cpp"
     files { "Yuicy/src/**.h", "Yuicy/src/**.hpp", "Yuicy/src/**.cpp" }
     includedirs { "Yuicy/src", "Yuicy/thirdparty/spdlog/include", "Yuicy/thirdparty/GLFW/include" , "Yuicy/thirdparty/tinyrefl"}
-    defines { "PLATFORM_WINDOWS", "YUICY_EXPORT_DLL" }
+    defines { "PLATFORM_WINDOWS", "YUICY_EXPORT_DLL", "YUICY_ENABLE_ASSERTS" }
 	links { "GLFW" }
     filter "system:windows"
         systemversion "latest"

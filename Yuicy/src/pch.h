@@ -18,5 +18,5 @@
 #include <unordered_set>
 
 #include "Yuicy/Core/Base.h"
-
 #include "Yuicy/Core/Log.h"
+#include "Yuicy/Core/Assert.h"

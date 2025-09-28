@@ -4,6 +4,9 @@
 
 #define BIT(x) (1 << x)
 
+#define YUICY_EXPAND_MACRO(x) x
+#define YUICY_STRINGIFY_MACRO(x) #x
+
 namespace Yuicy {
 	template<typename T>
 	using Scope = std::unique_ptr<T>;

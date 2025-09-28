@@ -2,6 +2,8 @@
 
 #include "Yuicy/Core/Base.h"
 
+#include <string>
+
 namespace Yuicy {
 	enum class EventType {
 		None = 0,
@@ -69,9 +71,4 @@ namespace Yuicy {
 		return os << e.ToString();
 	}
 }
-
-#include <spdlog/fmt/ostr.h>   // 你已经在 Log.h 里引了，这里再引一次也没问题
-
-template <>
-struct fmt::formatter<Yuicy::Event> : fmt::ostream_formatter {};
 
