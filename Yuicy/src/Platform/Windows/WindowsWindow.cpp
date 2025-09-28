@@ -14,11 +14,6 @@ namespace Yuicy {
 		YUICY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
 	}
 
-	Scope<Window> Window::Create(const WindowProps& props /* = WindowProps() */)
-	{
-		return CreateScope<WindowsWindow>(props);
-	}
-
 	WindowsWindow::WindowsWindow(const WindowProps& props)
 	{
 		// YUICY_PROFILE_FUNCTION();
@@ -66,7 +61,7 @@ namespace Yuicy {
 
 		// _Context = GraphicsContext::Create(_Window);
 		// _Context->Init();
-		glfwMakeContextCurrent(_Window);
+		glfwMakeContextCurrent(_Window);  // 主动设置当前上下文
 		glfwSetWindowUserPointer(_Window, &_Data);
 		SetVSync(true);
 

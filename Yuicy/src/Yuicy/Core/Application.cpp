@@ -15,7 +15,6 @@ namespace Yuicy {
 	void Application::Run() {
 
 		WindowResizeEvent e(1280, 720);
-		YUICY_TRACE("{}", e.ToString());
 
 		while (_running) {
 			_window->OnUpdate();
