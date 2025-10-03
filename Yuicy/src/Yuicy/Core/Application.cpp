@@ -1,15 +1,37 @@
 #include "pch.h"
-#include "Yuicy/Core/Application.h"
 
+#include "Yuicy/Core/Application.h"
 #include "Yuicy/Events/ApplicationEvent.h"
+
+#include <glad/glad.h>
 
 namespace Yuicy {
 	Application::Application() { 
 		_window = Window::Create(WindowProps());
+		_window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 	}
 
 	Application::~Application() {
 
+	}
+
+	void Application::OnEvent(Event& e) {
+		// HZ_PROFILE_FUNCTION();
+
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
+
+		for (auto it = _layerStack.rbegin(); it != _layerStack.rend(); ++it) {  // 事件反向冒泡
+			if (e.Handled)
+				break;
+			(*it)->OnEvent(e);
+		}
+
+		YUICY_CORE_INFO("EventInfo:{}", e.ToString());
+	}
+
+	bool Application::OnWindowClose(Event& e) {
+		return true;
 	}
 
 	void Application::Run() {
@@ -17,7 +39,22 @@ namespace Yuicy {
 		WindowResizeEvent e(1280, 720);
 
 		while (_running) {
+
+			for (Layer* layer : _layerStack) {
+				// layer->OnUpdate();
+			}
+
 			_window->OnUpdate();
 		}
+	}
+
+	void Application::PushLayer(Layer* layer) {
+		_layerStack.PushLayer(layer);
+		layer->OnAttach();
+	}
+
+	void Application::PushOverlay(Layer* layer) {
+		_layerStack.PushOverlay(layer);
+		layer->OnAttach();
 	}
 }

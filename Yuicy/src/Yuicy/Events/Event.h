@@ -45,7 +45,7 @@ namespace Yuicy {
 	};
 	
 	template <typename F>
-	concept EventCallback = std::invocable<F, const Event&>&& std::same_as<std::invoke_result_t<F, const Event&>, bool>;
+	concept EventCallback = std::invocable<F, Event&>&& std::same_as<std::invoke_result_t<F, Event&>, bool>;
 
 	class EventDispatcher {
 	public:

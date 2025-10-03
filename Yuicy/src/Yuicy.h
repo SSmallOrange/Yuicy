@@ -6,3 +6,6 @@
 
 // Entry Point
 #include "Yuicy/Core/EntryPoint.h"
+
+// Layer
+#include "Yuicy/Core/Layer.h"
