@@ -5,6 +5,9 @@
 #include "Yuicy/Events/MouseEvent.h"
 #include "Yuicy/Events/KeyEvent.h"
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 namespace Yuicy {
 	
 	static uint8_t s_GLFWWindowCount = 0;
@@ -35,9 +38,9 @@ namespace Yuicy {
 		_Data.Title = props.Title;
 		_Data.Width = props.Width;
 		_Data.Height = props.Height;
-		_Data.EventCallback = [](Event& e) {
-			YUICY_CORE_INFO("EventInfo:{}", e.ToString());
-		};
+// 		_Data.EventCallback = [](Event& e) {
+// 			YUICY_CORE_INFO("EventInfo:{}", e.ToString());
+// 		};
 
 		YUICY_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
@@ -55,13 +58,18 @@ namespace Yuicy {
 			if (Renderer::GetAPI() == RendererAPI::API::OpenGL)
 				glfwWindowHint(GLFW_OPENGL_DEBUG// _Context, GLFW_TRUE);
 		#endif
+			// 创建窗口(提供渲染目标)，创建一个OpenGL上下文
 			_Window = glfwCreateWindow((int)props.Width, (int)props.Height, _Data.Title.c_str(), nullptr, nullptr);
 			++s_GLFWWindowCount;
 		}
 
 		// _Context = GraphicsContext::Create(_Window);
 		// _Context->Init();
-		glfwMakeContextCurrent(_Window);  // �������õ�ǰ������
+		glfwMakeContextCurrent(_Window);  // 主动设置当前上下文
+
+		int status = gladLoadGLLoader(GLADloadproc(glfwGetProcAddress));  // 窗口创建之后调用
+		YUICY_ASSERT(status, "Failed to initialize Glad!");
+
 		glfwSetWindowUserPointer(_Window, &_Data);
 		SetVSync(true);
 
