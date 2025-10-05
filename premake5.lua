@@ -9,6 +9,7 @@ rundir    = "%{wks.location}bin\\" .. outputdir .. "\\Sandbox"
 group "Dependencies"
     include "Yuicy/thirdparty/GLFW"
     include "Yuicy/thirdparty/GLAD"
+    include "Yuicy/thirdparty/imgui"
 
 group ""
 project "Yuicy"
@@ -27,7 +28,8 @@ project "Yuicy"
         "Yuicy/thirdparty/spdlog/include", 
         "Yuicy/thirdparty/GLFW/include" , 
         "Yuicy/thirdparty/tinyrefl", 
-        "Yuicy/thirdparty/GLAD/include"
+        "Yuicy/thirdparty/GLAD/include",
+        "Yuicy/thirdparty/imgui"
     }
     defines { 
         "PLATFORM_WINDOWS",
@@ -35,7 +37,11 @@ project "Yuicy"
         "YUICY_ENABLE_ASSERTS",
         "GLFW_INCLUDE_NONE"         -- GLFW不包含OpenGL头文件
     }
-	links { "GLFW", "Glad" }
+	links { 
+        "GLFW", 
+        "Glad",
+        "imgui"
+    }
     filter "system:windows"
         systemversion "latest"
 		links { "opengl32", "user32", "gdi32", "shell32" }
