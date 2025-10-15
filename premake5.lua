@@ -85,6 +85,7 @@ project "Sandbox"
 			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" "%{cfg.targetdir}"'
         }
     filter "configurations:Debug"
+        debugdir "%{cfg.targetdir}"
         runtime "Debug"
         symbols "On"
     filter "configurations:Release"

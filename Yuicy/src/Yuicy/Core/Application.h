@@ -13,16 +13,22 @@ namespace Yuicy {
 
 		void Run();
 		void OnEvent(Event& e);
+		bool OnWindowClose(Event& e);
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 
-		bool OnWindowClose(Event& e);
+		Window& GetWindow() { return *_window; }
+
+		static Application& Get() { return *_instance; }
 
 	private:
 		std::unique_ptr<Window> _window;
 		bool					_running = true;
 		LayerStack				_layerStack;
+
+	private:
+		static Application* _instance;
 	};
 
 	Application* CreateApplication();

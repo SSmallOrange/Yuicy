@@ -5,7 +5,7 @@ public:
 	ExampleLayer() : Yuicy::Layer("Example") {}
 	
 	void OnUpdate() override {
-		YUICY_INFO("ExampleLayer::OnUpdate");
+		// YUICY_INFO("ExampleLayer::OnUpdate");
 	}
 
 	void OnEvent(Yuicy::Event& event) override {
@@ -17,6 +17,7 @@ class Sandbox : public Yuicy::Application {
 public:
 	Sandbox() {
 		PushLayer(new ExampleLayer);
+		PushOverlay(new Yuicy::ImGuiLayer);
 	}
 	~Sandbox() = default;
 };

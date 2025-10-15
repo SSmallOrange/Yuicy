@@ -182,6 +182,7 @@ namespace Yuicy {
 		// YUICY_PROFILE_FUNCTION();
 
 		glfwPollEvents();
+		glfwSwapBuffers(_Window);
 		// _Context->SwapBuffers();
 	}
 

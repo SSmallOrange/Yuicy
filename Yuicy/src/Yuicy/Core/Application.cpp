@@ -6,7 +6,13 @@
 #include <glad/glad.h>
 
 namespace Yuicy {
+	Application* Application::_instance = nullptr;
+
 	Application::Application() { 
+
+		YUICY_ASSERT(!_instance, "Application already exists!");
+		_instance = this;
+
 		_window = Window::Create(WindowProps());
 		_window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 	}
@@ -31,6 +37,7 @@ namespace Yuicy {
 	}
 
 	bool Application::OnWindowClose(Event& e) {
+		_running = false;
 		return true;
 	}
 
@@ -39,10 +46,12 @@ namespace Yuicy {
 		WindowResizeEvent e(1280, 720);
 
 		while (_running) {
+			
+			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			for (Layer* layer : _layerStack) {
-				// layer->OnUpdate();
-			}
+			for (Layer* layer : _layerStack)
+				layer->OnUpdate();
 
 			_window->OnUpdate();
 		}

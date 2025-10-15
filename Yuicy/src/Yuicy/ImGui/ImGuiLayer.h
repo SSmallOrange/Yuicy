@@ -8,7 +8,7 @@
 
 namespace Yuicy {
 
-	class ImGuiLayer : public Layer
+	class YUICY_API ImGuiLayer : public Layer
 	{
 	public:
 		ImGuiLayer();
@@ -17,17 +17,19 @@ namespace Yuicy {
 		virtual void OnAttach() override;
 		virtual void OnDetach() override;
 		virtual void OnEvent(Event& e) override;
+		virtual void OnUpdate() override;
 
-		void Begin();
-		void End();
+// 		void Begin();
+// 		void End();
 
-		void BlockEvents(bool block) { m_BlockEvents = block; }
+		void BlockEvents(bool block) { _blockEvents = block; }
 		
-		void SetDarkThemeColors();
-
-		uint32_t GetActiveWidgetID() const;
+ 		void SetDarkThemeColors();
+// 
+// 		uint32_t GetActiveWidgetID() const;
 	private:
-		bool m_BlockEvents = true;
+		bool _blockEvents = true;
+		float _time = 0.0f;
 	};
 
 }

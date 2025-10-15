@@ -12,9 +12,9 @@ namespace Yuicy {
 		Layer(const std::string& name = "Layer");
 		virtual ~Layer() = default;
 
-		virtual void OnAttach() {}
-		virtual void OnDetach() {}
-		virtual void OnUpdate() {}
+		virtual void OnAttach() {}  // 添加层回调
+		virtual void OnDetach() {}  // 移除层回调
+		virtual void OnUpdate() {}  // 更新层回调
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}
 
