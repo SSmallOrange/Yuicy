@@ -33,7 +33,7 @@ namespace Yuicy {
 			(*it)->OnEvent(e);
 		}
 
-		YUICY_CORE_INFO("EventInfo:{}", e.ToString());
+		// YUICY_CORE_INFO("EventInfo:{}", e.ToString());
 	}
 
 	bool Application::OnWindowClose(Event& e) {
@@ -52,6 +52,9 @@ namespace Yuicy {
 
 			for (Layer* layer : _layerStack)
 				layer->OnUpdate();
+
+// 			auto [xPos, yPos] = Input::GetMousePosition();
+// 			YUICY_CORE_INFO("xPos: {}, yPos: {}", xPos, yPos);
 
 			_window->OnUpdate();
 		}

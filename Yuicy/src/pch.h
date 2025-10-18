@@ -20,3 +20,4 @@
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/Assert.h"
+#include "Yuicy/Core/Input.h"

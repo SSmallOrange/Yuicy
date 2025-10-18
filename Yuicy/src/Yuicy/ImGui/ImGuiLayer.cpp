@@ -28,12 +28,12 @@ namespace Yuicy {
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
-		// io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		// io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
-		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
-		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
-		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
+		 io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
+/*		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls*/
+		 io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
+		 io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
+// 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
+// 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
 		float fontSize = 18.0f;// *2.0f;
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
@@ -78,72 +78,41 @@ namespace Yuicy {
 		}
 	}
 	
-// 	void ImGuiLayer::Begin()
-// 	{
-// 		ImGui_ImplOpenGL3_NewFrame();
-// 		ImGui_ImplGlfw_NewFrame();
-// 		ImGui::NewFrame();
-// 		// ImGuizmo::BeginFrame();
-// 	}
-// 
-// 	void ImGuiLayer::End()
-// 	{
-// 		ImGuiIO& io = ImGui::GetIO();
-// 		Application& app = Application::Get();
-// 		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
-// 
-// 		// Rendering
-// 		ImGui::Render();
-// 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-// 
-// 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)  // 单独渲染脱离窗口
-// 		{
-// 			GLFWwindow* backup_current_context = glfwGetCurrentContext();
-// 			ImGui::UpdatePlatformWindows();
-// 			ImGui::RenderPlatformWindowsDefault();
-// 			glfwMakeContextCurrent(backup_current_context);
-// 		}
-// 	}
-
-	//void ImGuiLayer::OnUpdate()
-	//{
-	//	// 两个后端的 NewFrame 缺一不可
-	//	ImGui_ImplOpenGL3_NewFrame();
-	//	ImGui_ImplGlfw_NewFrame();
-	//	ImGui::NewFrame();
-
-	//	static bool show = true;
-	//	ImGui::ShowDemoWindow(&show);
-	//	// 也建议加个最小窗口，确认真的有东西：
-	//	ImGui::Begin("Test"); ImGui::Text("Hello, ImGui"); ImGui::End();
-
-	//	ImGui::Render();
-
-	//	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	//}
-
-
- 	void ImGuiLayer::OnUpdate()
+ 	void ImGuiLayer::Begin()
  	{
- 		// Begin();
- 
- 		ImGuiIO& io = ImGui::GetIO(); 
- 		Application& app = Application::Get(); 
- 		io.DisplaySize = ImVec2(app.GetWindow().GetWidth(), app.GetWindow().GetHeight()); 
- 
- 		float time = (float)glfwGetTime(); 
- 		io.DeltaTime = time > 0.0 ? (time - _time) : (1.0f / 60.0f); _time = time;
- 
  		ImGui_ImplOpenGL3_NewFrame();
+ 		ImGui_ImplGlfw_NewFrame();
  		ImGui::NewFrame();
+ 		// ImGuizmo::BeginFrame();
+ 	}
  
- 		static bool show = true; 
- 		ImGui::ShowDemoWindow(&show);
+ 	void ImGuiLayer::End()
+ 	{
+ 		ImGuiIO& io = ImGui::GetIO();
+ 		Application& app = Application::Get();
+ 		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
  
+ 		// Rendering
  		ImGui::Render();
  		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
  
- 		// End();
+ 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)  // 单独渲染脱离窗口
+ 		{
+ 			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+ 			ImGui::UpdatePlatformWindows();
+ 			ImGui::RenderPlatformWindowsDefault();
+ 			glfwMakeContextCurrent(backup_current_context);
+ 		}
+ 	}
+
+ 	void ImGuiLayer::OnUpdate()
+ 	{
+		Begin();
+
+		static bool show = true;
+		ImGui::ShowDemoWindow(&show);
+
+		End();
  	}
 // 
  	void ImGuiLayer::SetDarkThemeColors()

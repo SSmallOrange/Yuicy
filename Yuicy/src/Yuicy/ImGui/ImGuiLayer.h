@@ -19,8 +19,8 @@ namespace Yuicy {
 		virtual void OnEvent(Event& e) override;
 		virtual void OnUpdate() override;
 
-// 		void Begin();
-// 		void End();
+		void Begin();
+		void End();
 
 		void BlockEvents(bool block) { _blockEvents = block; }
 		
