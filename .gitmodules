@@ -7,3 +7,6 @@
 [submodule "Yuicy/thirdparty/GLFW"]
 	path = Yuicy/thirdparty/GLFW
 	url = https://github.com/TheCherno/glfw
+[submodule "Yuicy/thirdparty/glm"]
+	path = Yuicy/thirdparty/glm
+	url = https://github.com/g-truc/glm

@@ -22,14 +22,21 @@ project "Yuicy"
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
     pchheader "pch.h"
     pchsource "Yuicy/src/pch.cpp"
-    files { "Yuicy/src/**.h", "Yuicy/src/**.hpp", "Yuicy/src/**.cpp" }
+    files {
+        "Yuicy/src/**.h",
+        "Yuicy/src/**.hpp",
+        "Yuicy/src/**.cpp", 
+        "Yuicy/thirdparty/glm/glm/**.hpp",
+        "Yuicy/thirdparty/glm/glm/**.inl"
+    }
     includedirs { 
         "Yuicy/src", 
         "Yuicy/thirdparty/spdlog/include", 
         "Yuicy/thirdparty/GLFW/include" , 
         "Yuicy/thirdparty/tinyrefl", 
         "Yuicy/thirdparty/GLAD/include",
-        "Yuicy/thirdparty/imgui"
+        "Yuicy/thirdparty/imgui",
+        "Yuicy/thirdparty/glm"
     }
     defines { 
         "PLATFORM_WINDOWS",
@@ -68,7 +75,8 @@ project "Sandbox"
         "Yuicy/thirdparty/spdlog/include", 
         "Yuicy/thirdparty/GLFW/include" , 
         "Yuicy/thirdparty/tinyrefl", 
-        "Yuicy/thirdparty/GLAD/include"
+        "Yuicy/thirdparty/GLAD/include",
+        "Yuicy/thirdparty/glm"
     }
     links { "Yuicy" }
     defines { "PLATFORM_WINDOWS" }
