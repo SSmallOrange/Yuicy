@@ -15,6 +15,9 @@ namespace Yuicy {
 
 		_window = Window::Create(WindowProps());
 		_window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+
+		_imGuiLayer = new ImGuiLayer();
+		PushOverlay(_imGuiLayer);
 	}
 
 	Application::~Application() {
@@ -50,11 +53,15 @@ namespace Yuicy {
 			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			// Normal Layer
 			for (Layer* layer : _layerStack)
 				layer->OnUpdate();
 
-// 			auto [xPos, yPos] = Input::GetMousePosition();
-// 			YUICY_CORE_INFO("xPos: {}, yPos: {}", xPos, yPos);
+			// ImGui Layer
+			_imGuiLayer->Begin();
+			for (Layer* layer : _layerStack)
+				layer->OnImGuiRender();
+			_imGuiLayer->End();
 
 			_window->OnUpdate();
 		}

@@ -28,10 +28,9 @@ namespace Yuicy {
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
-		 io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
-/*		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls*/
-		 io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
-		 io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
+//		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
 // 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 // 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
@@ -105,16 +104,12 @@ namespace Yuicy {
  		}
  	}
 
- 	void ImGuiLayer::OnUpdate()
- 	{
-		Begin();
-
+	void ImGuiLayer::OnImGuiRender()
+	{
 		static bool show = true;
 		ImGui::ShowDemoWindow(&show);
+	}
 
-		End();
- 	}
-// 
  	void ImGuiLayer::SetDarkThemeColors()
  	{
  		auto& colors = ImGui::GetStyle().Colors;

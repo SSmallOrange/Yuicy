@@ -28,6 +28,8 @@ namespace Yuicy {
 
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
+#define EVENT_TO_STR(e) (e.ToString())
+
 	class Event {
 	public:
 		virtual ~Event() = default;
