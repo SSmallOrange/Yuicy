@@ -14,10 +14,10 @@ group "Dependencies"
 group ""
 project "Yuicy"
     location "Yuicy"
-    kind "SharedLib"
+    kind "StaticLib"
     language "C++"
     cppdialect "C++20"
-    staticruntime "Off"
+    staticruntime "On"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
     pchheader "pch.h"
@@ -42,7 +42,8 @@ project "Yuicy"
         "PLATFORM_WINDOWS",
         "YUICY_EXPORT_DLL", 
         "YUICY_ENABLE_ASSERTS",
-        "GLFW_INCLUDE_NONE"         -- GLFW不包含OpenGL头文件
+        "GLFW_INCLUDE_NONE",         -- GLFW不包含OpenGL头文件
+        "_CRT_SECURE_NO_WARNINGS"
     }
 	links { 
         "GLFW", 
@@ -66,7 +67,7 @@ project "Sandbox"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "Off"
+    staticruntime "On"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
     files { "Sandbox/src/**.h", "Sandbox/src/**.hpp", "Sandbox/src/**.cpp" }

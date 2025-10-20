@@ -27,10 +27,10 @@ namespace Yuicy {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // ¼üÅÌIO
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // é”®ç›˜IO
 //		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // ÍÏ¶¯´°¿Ú
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // ¶à´°¿Ú
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // æ‹–åŠ¨çª—å£
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // å¤šçª—å£
 // 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 // 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
@@ -46,8 +46,8 @@ namespace Yuicy {
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			style.WindowRounding = 0.0f;			   // ×Ó´°¿ÚÔ²½Ç
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;  // ×Ó´°¿ÚÒõÓ°Ò»ÖÂ
+			style.WindowRounding = 0.0f;			   // å­çª—å£åœ†è§’
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;  // å­çª—å£é˜´å½±ä¸€è‡´
 		}
 
 		SetDarkThemeColors();
@@ -56,8 +56,8 @@ namespace Yuicy {
 		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
 
 		//// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(window, true);  // Æ½Ì¨ºó¶Ë
-		ImGui_ImplOpenGL3_Init("#version 410");		 // äÖÈ¾ºó¶Ë
+		ImGui_ImplGlfw_InitForOpenGL(window, true);  // å¹³å°åç«¯
+		ImGui_ImplOpenGL3_Init("#version 410");		 // æ¸²æŸ“åç«¯
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -95,7 +95,7 @@ namespace Yuicy {
  		ImGui::Render();
  		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
  
- 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)  // µ¥¶ÀäÖÈ¾ÍÑÀë´°¿Ú
+ 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)  // å•ç‹¬æ¸²æŸ“è„±ç¦»çª—å£
  		{
  			GLFWwindow* backup_current_context = glfwGetCurrentContext();
  			ImGui::UpdatePlatformWindows();

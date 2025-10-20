@@ -9,7 +9,13 @@ public:
 	}
 
 	void OnEvent(Yuicy::Event& event) override {
-		YUICY_TRACE("ExampleLayer::OnEvent Info: {}", event.ToString());
+		// YUICY_TRACE("ExampleLayer::OnEvent Info: {}", event.ToString());
+		if (event.GetEventType() == Yuicy::EventType::KeyPressed)
+		{
+			Yuicy::KeyPressedEvent& keyPressEvent = static_cast<Yuicy::KeyPressedEvent&>(event);
+			YUICY_TRACE("Key {} Pressed!", (char)keyPressEvent.GetKeyCode());
+		}
+
 	}
 };
 
@@ -17,7 +23,6 @@ class Sandbox : public Yuicy::Application {
 public:
 	Sandbox() {
 		PushLayer(new ExampleLayer);
-		PushOverlay(new Yuicy::ImGuiLayer);
 	}
 	~Sandbox() = default;
 };
