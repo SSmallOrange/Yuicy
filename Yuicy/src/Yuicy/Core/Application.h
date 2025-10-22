@@ -4,6 +4,7 @@
 #include "Yuicy/Core/Window.h"
 #include "Yuicy/Core/LayerStack.h"
 #include "Yuicy/ImGui/ImGuiLayer.h"
+#include "Yuicy/Renderer/Shader.h"
 
 namespace Yuicy {
 	class YUICY_API Application
@@ -28,6 +29,8 @@ namespace Yuicy {
 		ImGuiLayer*					_imGuiLayer;
 		bool						_running = true;
 		LayerStack					_layerStack;
+		unsigned int vertexArray, vertexBuffer, indexBuffer;
+		std::unique_ptr<Shader> _shader;
 
 	private:
 		static Application* _instance;

@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Platform/Windows/WindowsWindow.h"
+#include "Platform/OpenGL/OpenGLContext.h"
 
 #include "Yuicy/Events/ApplicationEvent.h"
 #include "Yuicy/Events/MouseEvent.h"
 #include "Yuicy/Events/KeyEvent.h"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 namespace Yuicy {
@@ -54,21 +54,13 @@ namespace Yuicy {
 
 		{
 			// YUICY_PROFILE_SCOPE("glfwCreateWindow");
-		#if defined(YUICY_DEBUG)
-			if (Renderer::GetAPI() == RendererAPI::API::OpenGL)
-				glfwWindowHint(GLFW_OPENGL_DEBUG// _Context, GLFW_TRUE);
-		#endif
 			// 创建窗口(提供渲染目标)，创建一个OpenGL上下文
 			_Window = glfwCreateWindow((int)props.Width, (int)props.Height, _Data.Title.c_str(), nullptr, nullptr);
 			++s_GLFWWindowCount;
 		}
 
-		// _Context = GraphicsContext::Create(_Window);
-		// _Context->Init();
-		glfwMakeContextCurrent(_Window);  // 主动设置当前上下文
-
-		int status = gladLoadGLLoader(GLADloadproc(glfwGetProcAddress));  // 窗口创建之后调用
-		YUICY_ASSERT(status, "Failed to initialize Glad!");
+		 _Context = GraphicsContext::Create(_Window);
+		 _Context->Init();
 
 		glfwSetWindowUserPointer(_Window, &_Data);
 		SetVSync(true);
@@ -182,8 +174,7 @@ namespace Yuicy {
 		// YUICY_PROFILE_FUNCTION();
 
 		glfwPollEvents();
-		glfwSwapBuffers(_Window);
-		// _Context->SwapBuffers();
+		_Context->SwapBuffers();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)

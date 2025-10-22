@@ -6,6 +6,8 @@ struct GLFWwindow;
 
 namespace Yuicy {
 
+	class GraphicsContext;
+
 	class WindowsWindow : public Window
 	{
 	public:
@@ -28,7 +30,7 @@ namespace Yuicy {
 		virtual void Shutdown();
 	private:
 		GLFWwindow* _Window;
-		// Scope<GraphicsContext> _Context;
+		Scope<GraphicsContext> _Context;
 
 		struct WindowData
 		{
