@@ -57,6 +57,7 @@ project "Yuicy"
     filter "configurations:Debug"
         runtime "Debug"
         symbols "On"
+        defines { "YUICY_PROFILE_DEBUG" }
     filter "configurations:Release"
         runtime "Release"
         optimize "On"
