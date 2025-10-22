@@ -21,3 +21,4 @@
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/Assert.h"
 #include "Yuicy/Core/Input.h"
+#include "Yuicy/Debug/Instrumentor.h"

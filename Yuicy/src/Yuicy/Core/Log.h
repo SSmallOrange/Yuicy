@@ -10,6 +10,13 @@
 #include "Yuicy/Core/Base.h"
 #include <ostream>
 #pragma warning(push, 0)
+
+#ifndef NDEBUG
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#else
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#endif
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 #pragma warning(pop)
@@ -44,18 +51,17 @@ namespace Yuicy {
 // 	return os << glm::to_string(quaternion);
 // }
 
-// Core log macros
-#define YUICY_CORE_TRACE(...)    ::Yuicy::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define YUICY_CORE_INFO(...)     ::Yuicy::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define YUICY_CORE_WARN(...)     ::Yuicy::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define YUICY_CORE_ERROR(...)    ::Yuicy::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define YUICY_CORE_CRITICAL(...) ::Yuicy::Log::GetCoreLogger()->critical(__VA_ARGS__)
+#define YUICY_CORE_TRACE(...)    SPDLOG_LOGGER_CALL(::Yuicy::Log::GetCoreLogger(), spdlog::level::trace, __VA_ARGS__)
+#define YUICY_CORE_INFO(...)     SPDLOG_LOGGER_CALL(::Yuicy::Log::GetCoreLogger(), spdlog::level::info,  __VA_ARGS__)
+#define YUICY_CORE_WARN(...)     SPDLOG_LOGGER_CALL(::Yuicy::Log::GetCoreLogger(), spdlog::level::warn,  __VA_ARGS__)
+#define YUICY_CORE_ERROR(...)    SPDLOG_LOGGER_CALL(::Yuicy::Log::GetCoreLogger(), spdlog::level::err,   __VA_ARGS__)
+#define YUICY_CORE_CRITICAL(...) SPDLOG_LOGGER_CALL(::Yuicy::Log::GetCoreLogger(), spdlog::level::critical, __VA_ARGS__)
 
 // Client log macros
-#define YUICY_TRACE(...)         ::Yuicy::Log::GetClientLogger()->trace(__VA_ARGS__)
-#define YUICY_INFO(...)          ::Yuicy::Log::GetClientLogger()->info(__VA_ARGS__)
-#define YUICY_WARN(...)          ::Yuicy::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define YUICY_ERROR(...)         ::Yuicy::Log::GetClientLogger()->error(__VA_ARGS__)
-#define YUICY_CRITICAL(...)      ::Yuicy::Log::GetClientLogger()->critical(__VA_ARGS__)
+#define YUICY_TRACE(...)         SPDLOG_LOGGER_CALL(::Yuicy::Log::GetClientLogger(), spdlog::level::trace, __VA_ARGS__)
+#define YUICY_INFO(...)          SPDLOG_LOGGER_CALL(::Yuicy::Log::GetClientLogger(), spdlog::level::info,  __VA_ARGS__)
+#define YUICY_WARN(...)          SPDLOG_LOGGER_CALL(::Yuicy::Log::GetClientLogger(), spdlog::level::warn,  __VA_ARGS__)
+#define YUICY_ERROR(...)         SPDLOG_LOGGER_CALL(::Yuicy::Log::GetClientLogger(), spdlog::level::err,   __VA_ARGS__)
+#define YUICY_CRITICAL(...)      SPDLOG_LOGGER_CALL(::Yuicy::Log::GetClientLogger(), spdlog::level::critical, __VA_ARGS__)
 
 
