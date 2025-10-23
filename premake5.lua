@@ -87,12 +87,12 @@ project "Sandbox"
         systemversion "latest"
         buildoptions { "/utf-8" }
         postbuildcommands {
-			'cmd /c if not exist "%{cfg.targetdir}" mkdir "%{cfg.targetdir}"',
+			-- 'cmd /c if not exist "%{cfg.targetdir}" mkdir "%{cfg.targetdir}"',
 			-- library
-			'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" "%{cfg.targetdir}"',
+			-- 'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" "%{cfg.targetdir}"',
 			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" "%{cfg.targetdir}"',
 			-- pdb
-			'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" "%{cfg.targetdir}"',
+			-- 'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" "%{cfg.targetdir}"',
 			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" "%{cfg.targetdir}"'
         }
     filter "configurations:Debug"

@@ -9,7 +9,7 @@ namespace Yuicy {
 	Application* Application::_instance = nullptr;
 
 	Application::Application() { 
-
+		YUICY_PROFILE_FUNCTION();
 		YUICY_ASSERT(!_instance, "Application already exists!");
 		_instance = this;
 
@@ -22,25 +22,20 @@ namespace Yuicy {
 		glGenVertexArrays(1, &vertexArray);
 		glBindVertexArray(vertexArray);
 
-		glGenBuffers(1, &vertexBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-
 		float vertics[3 * 3] = {  // 坐标
 			-0.5f, -0.5f, 0.0f,
 			0.5f, -0.5f, 0.0f,
 			0.0f, 0.5f, 0.0f,
 		};
 
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertics), vertics, GL_STATIC_DRAW);  // 静态绘制，表明不会一直修改数据
+		_vertexBuffer.reset(VertexBuffer::Create(vertics, sizeof(vertics)));
 
 		glEnableVertexAttribArray(0);  // 启用着色器  0索引
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
-		glGenBuffers(1, &indexBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+		uint32_t indices[3] = { 0, 1, 2 };
 
-		unsigned int indices[3] = { 0, 1, 2 };
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		_indexBuffer.reset(IndexBuffer::Create(indices, sizeof(indices)));
 
 		std::string vertexSrc = R"(
 			#version 330 core
@@ -104,7 +99,7 @@ namespace Yuicy {
 
 			_shader->Bind();
 			glBindVertexArray(vertexArray);
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+			glDrawElements(GL_TRIANGLES, _indexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr);
 
 			// Normal Layer
 			for (Layer* layer : _layerStack)

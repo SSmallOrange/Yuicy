@@ -5,6 +5,7 @@
 #include "Yuicy/Core/LayerStack.h"
 #include "Yuicy/ImGui/ImGuiLayer.h"
 #include "Yuicy/Renderer/Shader.h"
+#include "Yuicy/Renderer/Buffer.h"
 
 namespace Yuicy {
 	class YUICY_API Application
@@ -31,6 +32,8 @@ namespace Yuicy {
 		LayerStack					_layerStack;
 		unsigned int vertexArray, vertexBuffer, indexBuffer;
 		std::unique_ptr<Shader> _shader;
+		std::unique_ptr<VertexBuffer> _vertexBuffer;
+		std::unique_ptr<IndexBuffer> _indexBuffer;
 
 	private:
 		static Application* _instance;
