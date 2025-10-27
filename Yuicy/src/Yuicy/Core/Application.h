@@ -6,6 +6,7 @@
 #include "Yuicy/ImGui/ImGuiLayer.h"
 #include "Yuicy/Renderer/Shader.h"
 #include "Yuicy/Renderer/Buffer.h"
+#include "Yuicy/Renderer/VertexArray.h"
 
 namespace Yuicy {
 	class YUICY_API Application
@@ -30,10 +31,12 @@ namespace Yuicy {
 		ImGuiLayer*					_imGuiLayer;
 		bool						_running = true;
 		LayerStack					_layerStack;
-		unsigned int vertexArray, vertexBuffer, indexBuffer;
-		std::unique_ptr<Shader> _shader;
-		std::unique_ptr<VertexBuffer> _vertexBuffer;
-		std::unique_ptr<IndexBuffer> _indexBuffer;
+
+		std::shared_ptr<Shader> _shader;
+		std::shared_ptr<VertexArray> _vertexArray;
+
+		std::shared_ptr<Shader> _blueShader;
+		std::shared_ptr<VertexArray> _squareVA;
 
 	private:
 		static Application* _instance;
