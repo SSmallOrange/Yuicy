@@ -3,6 +3,8 @@
 #include "Yuicy/Core/Application.h"
 #include "Yuicy/Events/ApplicationEvent.h"
 
+#include "Yuicy/Renderer/Renderer.h"
+
 #include <glad/glad.h>
 
 namespace Yuicy {
@@ -153,16 +155,18 @@ namespace Yuicy {
 
 		while (_running) {
 			
-			glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+			RenderCommand::Clear();
 
-// 			_blueShader->Bind();
-// 			_squareVA->Bind();
-// 			glDrawElements(GL_TRIANGLES, _squareVA->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+			Renderer::BeginScene();
+
+ 			_blueShader->Bind();
+			Renderer::Submit(_squareVA);
 
 			_shader->Bind();
-			_vertexArray->Bind();
-			glDrawElements(GL_TRIANGLES, _vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+			Renderer::Submit(_vertexArray);
+
+			Renderer::EndScene();
 
 			// Normal Layer
 			for (Layer* layer : _layerStack)
