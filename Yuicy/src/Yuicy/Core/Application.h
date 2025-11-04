@@ -4,12 +4,9 @@
 #include "Yuicy/Core/Window.h"
 #include "Yuicy/Core/LayerStack.h"
 #include "Yuicy/ImGui/ImGuiLayer.h"
-#include "Yuicy/Renderer/Shader.h"
-#include "Yuicy/Renderer/Buffer.h"
-#include "Yuicy/Renderer/VertexArray.h"
 
 namespace Yuicy {
-	class YUICY_API Application
+	class Application
 	{
 	public:
 		Application();
@@ -31,12 +28,7 @@ namespace Yuicy {
 		ImGuiLayer*					_imGuiLayer;
 		bool						_running = true;
 		LayerStack					_layerStack;
-
-		std::shared_ptr<Shader> _shader;
-		std::shared_ptr<VertexArray> _vertexArray;
-
-		std::shared_ptr<Shader> _blueShader;
-		std::shared_ptr<VertexArray> _squareVA;
+		float						_lastFrameTime = 0.0f;
 
 	private:
 		static Application* _instance;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <glm/glm.hpp>
 
 namespace Yuicy {
 
@@ -12,6 +13,8 @@ namespace Yuicy {
 
 		void Bind() const;
 		void Unbind() const;
+
+		void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
 	private:
 		uint32_t _rendererID = -1;
 	};

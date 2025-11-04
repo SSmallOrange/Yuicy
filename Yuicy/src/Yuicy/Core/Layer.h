@@ -1,7 +1,7 @@
 #pragma once
 #include "Yuicy/Core/Core.h"
 #include "Yuicy/Core/Base.h"
-// #include "Yuicy/Core/Timestep.h"
+#include "Yuicy/Core/Timestep.h"
 #include "Yuicy/Events/Event.h"
 
 namespace Yuicy {
@@ -11,9 +11,9 @@ namespace Yuicy {
 		Layer(const std::string& name = "Layer");
 		virtual ~Layer() = default;
 
-		virtual void OnAttach() {}  // 添加层回调
-		virtual void OnDetach() {}  // 移除层回调
-		virtual void OnUpdate() {}  // 更新层回调
+		virtual void OnAttach() {}				// 添加层回调
+		virtual void OnDetach() {}				// 移除层回调
+		virtual void OnUpdate(Timestep ts) {}   // 更新层回调
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}
 

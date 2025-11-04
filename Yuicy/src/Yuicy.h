@@ -12,3 +12,13 @@
 
 // Input
 #include "Yuicy/Core/input.h"
+
+// Renderer
+#include "Yuicy/Renderer/Renderer.h"
+#include "Yuicy/Renderer/RenderCommand.h"
+
+#include "Yuicy/Renderer/Buffer.h"
+#include "Yuicy/Renderer/Shader.h"
+#include "Yuicy/Renderer/VertexArray.h"
+
+#include "Yuicy/Renderer/OrthographicCamera.h"
