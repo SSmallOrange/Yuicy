@@ -77,7 +77,8 @@ project "Sandbox"
         "Yuicy/src", 
         "Yuicy/thirdparty/spdlog/include", 
         "Yuicy/thirdparty/GLFW/include" , 
-        "Yuicy/thirdparty/tinyrefl", 
+        "Yuicy/thirdparty/tinyrefl",
+        "Yuicy/thirdparty",
         "Yuicy/thirdparty/GLAD/include",
         "Yuicy/thirdparty/glm"
     }
