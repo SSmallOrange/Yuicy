@@ -92,7 +92,7 @@ public:
 			}
 		)";
 
-		m_Shader.reset(Yuicy::Shader::Create(vertexSrc, fragmentSrc));
+		m_Shader = Yuicy::Shader::Create("VertexPosColor", vertexSrc, fragmentSrc);
 
 		std::string flatColorShaderVertexSrc = R"(
 			#version 330 core
@@ -126,15 +126,15 @@ public:
 			}
 		)";
 
-		m_FlatColorShader.reset(Yuicy::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
+		m_FlatColorShader = Yuicy::Shader::Create("FlatColor", flatColorShaderVertexSrc, flatColorShaderFragmentSrc);
 
-		m_TextureShader.reset(Yuicy::Shader::Create("assets/shaders/Texture.glsl"));
+		auto textureShader = m_ShaderLibrary.Load("assets/shaders/Texture.glsl");
 
 		m_texture = Yuicy::Texture2D::Create("assets/textures/Checkerboard.png");
 		m_chernoLogoTexture = Yuicy::Texture2D::Create("assets/textures/ChernoLogo.png");
 
-		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->Bind();
-		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->Bind();
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->UploadUniformInt("u_Texture", 0);
 	}
 
 	void OnUpdate(Yuicy::Timestep ts) override
@@ -178,14 +178,16 @@ public:
 			}
 		}
 
+		auto textureShader = m_ShaderLibrary.Get("Texture");
+
 		m_texture->Bind(0);
-		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->Bind();
-		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
-		Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->Bind();
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->UploadUniformInt("u_Texture", 0);
+		Yuicy::Renderer::Submit(textureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		m_chernoLogoTexture->Bind(1);
-		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 1);
-		Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->UploadUniformInt("u_Texture", 1);
+		Yuicy::Renderer::Submit(textureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 		// Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::translate(glm::mat4(1.0f), glm::vec3(0.25f, 0.25f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 		// Yuicy::Renderer::Submit(m_Shader, m_VertexArray);
 
@@ -203,10 +205,11 @@ public:
 	{
 	}
 private:
+	Yuicy::ShaderLibrary m_ShaderLibrary;
 	std::shared_ptr<Yuicy::Shader> m_Shader;
 	std::shared_ptr<Yuicy::VertexArray> m_VertexArray;
 
-	std::shared_ptr<Yuicy::Shader> m_FlatColorShader, m_TextureShader;
+	std::shared_ptr<Yuicy::Shader> m_FlatColorShader;
 	std::shared_ptr<Yuicy::VertexArray> m_SquareVA;
 
 	Yuicy::Ref<Yuicy::Texture2D> m_texture;
