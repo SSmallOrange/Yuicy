@@ -74,7 +74,12 @@ project "Sandbox"
     staticruntime "On"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
-    files { "Sandbox/src/**.h", "Sandbox/src/**.hpp", "Sandbox/src/**.cpp" }
+    files { 
+        "Sandbox/src/**.h", 
+        "Sandbox/src/**.hpp", 
+        "Sandbox/src/**.cpp",
+        "Sandbox/assets/**.*"
+    }
     includedirs { 
         "Yuicy/src", 
         "Yuicy/thirdparty/spdlog/include", 
