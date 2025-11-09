@@ -19,6 +19,8 @@ namespace Yuicy {
 		_window = Window::Create(WindowProps());
 		_window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
+		Renderer::Init();
+
 		_imGuiLayer = new ImGuiLayer();
 		PushOverlay(_imGuiLayer);
 	}

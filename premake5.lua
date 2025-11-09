@@ -27,7 +27,8 @@ project "Yuicy"
         "Yuicy/src/**.hpp",
         "Yuicy/src/**.cpp", 
         "Yuicy/thirdparty/glm/glm/**.hpp",
-        "Yuicy/thirdparty/glm/glm/**.inl"
+        "Yuicy/thirdparty/glm/glm/**.inl",
+        "Yuicy/thirdparty/stb_image/*.*"
     }
     includedirs { 
         "Yuicy/src", 
@@ -36,7 +37,8 @@ project "Yuicy"
         "Yuicy/thirdparty/tinyrefl", 
         "Yuicy/thirdparty/GLAD/include",
         "Yuicy/thirdparty/imgui",
-        "Yuicy/thirdparty/glm"
+        "Yuicy/thirdparty/glm",
+        "Yuicy/thirdparty/stb_image",
     }
     defines { 
         "PLATFORM_WINDOWS",

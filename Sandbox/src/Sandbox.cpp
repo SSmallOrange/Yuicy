@@ -37,18 +37,19 @@ public:
 
 		m_SquareVA.reset(Yuicy::VertexArray::Create());
 
-		float squareVertices[3 * 4] = {
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.5f,  0.5f, 0.0f,
-			-0.5f,  0.5f, 0.0f
+		float squareVertices[5 * 4] = {
+			-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+			 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+			 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+			-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
 		};
 
 		std::shared_ptr<Yuicy::VertexBuffer> squareVB;
 		squareVB.reset(Yuicy::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
 		squareVB->SetLayout({
-			{ Yuicy::ShaderDataType::Float3, "a_Position" }
-			});
+			{ Yuicy::ShaderDataType::Float3, "a_Position" },  // 位置
+			{ Yuicy::ShaderDataType::Float2, "a_TexCoord" }   // 纹理坐标
+		});
 		m_SquareVA->AddVertexBuffer(squareVB);
 
 		uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
@@ -126,6 +127,49 @@ public:
 		)";
 
 		m_FlatColorShader.reset(Yuicy::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
+
+		std::string textureShaderVertexSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) in vec3 a_Position;
+			layout(location = 1) in vec2 a_TexCoord;
+
+			uniform mat4 u_ViewProjection;
+			uniform mat4 u_Transform;
+
+			out vec2 v_TexCoord;
+
+			void main()
+			{
+				v_TexCoord = a_TexCoord;
+				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);	
+			}
+		)";
+
+		std::string textureShaderFragmentSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) out vec4 color;
+
+			in vec2 v_TexCoord;
+
+			uniform sampler2D u_Texture;
+
+			uniform vec3 u_Color;
+
+			void main()
+			{
+				color = texture(u_Texture, v_TexCoord);
+			}
+		)";
+
+		m_TextureShader.reset(Yuicy::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc));
+
+		m_texture = Yuicy::Texture2D::Create("assets/textures/Checkerboard.png");
+		m_chernoLogoTexture = Yuicy::Texture2D::Create("assets/textures/ChernoLogo.png");
+
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->Bind();
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
 	}
 
 	void OnUpdate(Yuicy::Timestep ts) override
@@ -169,7 +213,16 @@ public:
 			}
 		}
 
-		Yuicy::Renderer::Submit(m_Shader, m_VertexArray);
+		m_texture->Bind(0);
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->Bind();
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
+		Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+
+		m_chernoLogoTexture->Bind(1);
+		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 1);
+		Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		// Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::translate(glm::mat4(1.0f), glm::vec3(0.25f, 0.25f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		// Yuicy::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Yuicy::Renderer::EndScene();
 	}
@@ -188,8 +241,11 @@ private:
 	std::shared_ptr<Yuicy::Shader> m_Shader;
 	std::shared_ptr<Yuicy::VertexArray> m_VertexArray;
 
-	std::shared_ptr<Yuicy::Shader> m_FlatColorShader;
+	std::shared_ptr<Yuicy::Shader> m_FlatColorShader, m_TextureShader;
 	std::shared_ptr<Yuicy::VertexArray> m_SquareVA;
+
+	Yuicy::Ref<Yuicy::Texture2D> m_texture;
+	Yuicy::Ref<Yuicy::Texture2D> m_chernoLogoTexture;
 
 	Yuicy::OrthographicCamera m_Camera;
 	glm::vec3 m_CameraPosition;

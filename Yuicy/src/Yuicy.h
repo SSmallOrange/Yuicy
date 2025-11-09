@@ -19,6 +19,7 @@
 
 #include "Yuicy/Renderer/Buffer.h"
 #include "Yuicy/Renderer/Shader.h"
+#include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/VertexArray.h"
 
 #include "Yuicy/Renderer/OrthographicCamera.h"
