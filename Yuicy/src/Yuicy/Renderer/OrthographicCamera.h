@@ -11,6 +11,7 @@ namespace Yuicy {
 
 		const glm::vec3& GetPosition() const { return m_Position; }
 		void SetPosition(const glm::vec3& position) { m_Position = position; RecalculateViewMatrix(); }
+		void SetProjection(float left, float right, float bottom, float top);
 
 		// 角度
 		float GetRotation() const { return m_Rotation; }

@@ -46,8 +46,8 @@ namespace Yuicy {
 		}
 	};
 	
-	template <typename F>
-	concept EventCallback = std::invocable<F, Event&>&& std::same_as<std::invoke_result_t<F, Event&>, bool>;
+// 	template <typename F>
+// 	concept EventCallback = std::invocable<F, Event&> && std::same_as<std::invoke_result_t<F, Event&>, bool>;
 
 	class EventDispatcher {
 	public:
@@ -57,7 +57,7 @@ namespace Yuicy {
 		}
 		
 		template<typename T, typename F>
-			requires EventCallback<std::remove_cvref_t<F>>
+//			requires EventCallback<std::remove_cvref_t<F>>
 		bool Dispatch(const F& func) {
 			if (_event.GetEventType() == T::GetStaticType()) {
 				_event.Handled |= func(static_cast<T&>(_event));

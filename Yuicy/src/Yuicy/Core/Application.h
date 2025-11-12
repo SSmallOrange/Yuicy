@@ -14,7 +14,6 @@ namespace Yuicy {
 
 		void Run();
 		void OnEvent(Event& e);
-		bool OnWindowClose(Event& e);
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
@@ -24,8 +23,13 @@ namespace Yuicy {
 		static Application& Get() { return *_instance; }
 
 	private:
+		bool OnWindowClose(Event& e);
+		bool OnWindowResize(WindowResizeEvent& e);
+
+	private:
 		std::unique_ptr<Window>		_window;
 		ImGuiLayer*					_imGuiLayer;
+		bool						_minimized = false;
 		bool						_running = true;
 		LayerStack					_layerStack;
 		float						_lastFrameTime = 0.0f;

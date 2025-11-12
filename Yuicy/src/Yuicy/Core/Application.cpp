@@ -34,6 +34,7 @@ namespace Yuicy {
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Application::OnWindowResize, this, std::placeholders::_1));
 
 		for (auto it = _layerStack.rbegin(); it != _layerStack.rend(); ++it) {  // 事件反向冒泡
 			if (e.Handled)
@@ -65,8 +66,11 @@ namespace Yuicy {
 			RenderCommand::Clear();
 
 			// Normal Layer
-			for (Layer* layer : _layerStack)
-				layer->OnUpdate(timestep);
+			if (!_minimized)
+			{
+				for (Layer* layer : _layerStack)
+					layer->OnUpdate(timestep);
+			}
 
 			// ImGui Layer
 			_imGuiLayer->Begin();
@@ -87,4 +91,19 @@ namespace Yuicy {
 		_layerStack.PushOverlay(layer);
 		layer->OnAttach();
 	}
+
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			_minimized = true;
+			return false;
+		}
+
+		_minimized = false;
+		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+
+		return false;
+	}
+
 }

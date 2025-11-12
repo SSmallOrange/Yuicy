@@ -1,8 +1,10 @@
 #include <Yuicy.h>
 
-#include "Platform/OpenGL/OpenGLShader.h"
-
 #include "imgui/imgui.h"
+#include "Sandbox2D.h"
+
+#include <Yuicy/Core/EntryPoint.h>
+#include "Platform/OpenGL/OpenGLShader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -11,9 +13,9 @@ class ExampleLayer : public Yuicy::Layer
 {
 public:
 	ExampleLayer()
-		: Layer("Example"), m_Camera(-1.6f, 1.6f, -0.9f, 0.9f), m_CameraPosition(0.0f)  // 16：9
+		: Layer("Example"), m_CameraController(1280.0f / 720.0f)
 	{
-		m_VertexArray.reset(Yuicy::VertexArray::Create());
+		m_VertexArray = Yuicy::VertexArray::Create();
 
 		float vertices[3 * 7] = {
 			-0.5f, -0.5f, 0.0f, 0.8f, 0.2f, 0.8f, 1.0f,
@@ -35,7 +37,7 @@ public:
 		indexBuffer.reset(Yuicy::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
-		m_SquareVA.reset(Yuicy::VertexArray::Create());
+		m_SquareVA = Yuicy::VertexArray::Create();
 
 		float squareVertices[5 * 4] = {
 			-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
@@ -139,28 +141,14 @@ public:
 
 	void OnUpdate(Yuicy::Timestep ts) override
 	{
-		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::Left))
-			m_CameraPosition.x -= m_CameraMoveSpeed * ts;
-		else if (Yuicy::Input::IsKeyPressed(Yuicy::Key::Right))
-			m_CameraPosition.x += m_CameraMoveSpeed * ts;
+		// Update Camera
+		m_CameraController.OnUpdate(ts);
 
-		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::Up))
-			m_CameraPosition.y += m_CameraMoveSpeed * ts;
-		else if (Yuicy::Input::IsKeyPressed(Yuicy::Key::Down))
-			m_CameraPosition.y -= m_CameraMoveSpeed * ts;
-
-		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::A))
-			m_CameraRotation += m_CameraRotationSpeed * ts;
-		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::D))
-			m_CameraRotation -= m_CameraRotationSpeed * ts;
-
+		// Render
 		Yuicy::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		Yuicy::RenderCommand::Clear();
 
-		m_Camera.SetPosition(m_CameraPosition);
-		m_Camera.SetRotation(m_CameraRotation);
-
-		Yuicy::Renderer::BeginScene(m_Camera);
+		Yuicy::Renderer::BeginScene(m_CameraController.GetCamera());
 
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 
@@ -201,8 +189,9 @@ public:
 		ImGui::End();
 	}
 
-	void OnEvent(Yuicy::Event& event) override
+	void OnEvent(Yuicy::Event& e) override
 	{
+		m_CameraController.OnEvent(e);
 	}
 private:
 	Yuicy::ShaderLibrary m_ShaderLibrary;
@@ -215,12 +204,7 @@ private:
 	Yuicy::Ref<Yuicy::Texture2D> m_texture;
 	Yuicy::Ref<Yuicy::Texture2D> m_chernoLogoTexture;
 
-	Yuicy::OrthographicCamera m_Camera;
-	glm::vec3 m_CameraPosition;
-	float m_CameraMoveSpeed = 5.0f;
-
-	float m_CameraRotation = 0.0f;
-	float m_CameraRotationSpeed = 180.0f;
+	Yuicy::OrthographicCameraController m_CameraController;
 
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
@@ -229,7 +213,8 @@ private:
 class Sandbox : public Yuicy::Application {
 public:
 	Sandbox() {
-		PushLayer(new ExampleLayer);
+		// PushLayer(new ExampleLayer());
+		PushLayer(new Sandbox2D());
 	}
 	~Sandbox() = default;
 };
