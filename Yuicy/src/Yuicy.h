@@ -4,9 +4,6 @@
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/Application.h"
 
-// Entry Point
-#include "Yuicy/Core/EntryPoint.h"
-
 // Layer
 #include "Yuicy/ImGui/ImGuiLayer.h"
 
