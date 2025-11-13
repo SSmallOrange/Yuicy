@@ -12,6 +12,7 @@
 
 // Renderer
 #include "Yuicy/Renderer/Renderer.h"
+#include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Renderer/RenderCommand.h"
 
 #include "Yuicy/Renderer/Buffer.h"
