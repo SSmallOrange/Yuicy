@@ -14,7 +14,7 @@ namespace Yuicy {
 
 	void OpenGLContext::Init()
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		glfwMakeContextCurrent(_windowHandle);
 		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -30,7 +30,7 @@ namespace Yuicy {
 
 	void OpenGLContext::SwapBuffers()
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		glfwSwapBuffers(_windowHandle);
 	}

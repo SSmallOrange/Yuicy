@@ -22,17 +22,15 @@ namespace Yuicy {
 
 	void ImGuiLayer::OnAttach()
 	{
-		// 24.49
+		YUICY_PROFILE_FUNCTION();
+
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
-//		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
-// 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
-// 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
 		float fontSize = 18.0f;// *2.0f;
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
@@ -62,6 +60,8 @@ namespace Yuicy {
 
 	void ImGuiLayer::OnDetach()
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -78,7 +78,9 @@ namespace Yuicy {
 	}
 	
  	void ImGuiLayer::Begin()
- 	{
+	{
+		YUICY_PROFILE_FUNCTION();
+
  		ImGui_ImplOpenGL3_NewFrame();
  		ImGui_ImplGlfw_NewFrame();
  		ImGui::NewFrame();
@@ -86,7 +88,9 @@ namespace Yuicy {
  	}
  
  	void ImGuiLayer::End()
- 	{
+	{
+		YUICY_PROFILE_FUNCTION();
+
  		ImGuiIO& io = ImGui::GetIO();
  		Application& app = Application::Get();
  		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());

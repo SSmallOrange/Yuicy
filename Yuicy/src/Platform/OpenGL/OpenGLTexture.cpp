@@ -10,6 +10,8 @@ namespace Yuicy {
 	OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)
 		: m_Width(width), m_Height(height)
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		m_InternalFormat = GL_RGBA8;
 		m_DataFormat = GL_RGBA;
 
@@ -26,10 +28,17 @@ namespace Yuicy {
 	OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
 		: m_Path(path)
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(1);  // 垂直翻转图片，对其原点
-		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+		stbi_uc* data = nullptr;
+		{
+			YUICY_PROFILE_SCOPE("stbi_load - OpenGLTexture2D::OpenGLTexture2D(const std::string&)");
+			data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+		}
 		YUICY_ASSERT(data, "Failed to load image!");
+
 		m_Width = width;
 		m_Height = height;
 
@@ -69,11 +78,15 @@ namespace Yuicy {
 
 	OpenGLTexture2D::~OpenGLTexture2D()
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		glDeleteTextures(1, &m_RendererID);
 	}
 
 	void OpenGLTexture2D::SetData(void* data, uint32_t size)
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		// bytes per pixel
 		uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
 		YUICY_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
@@ -82,6 +95,8 @@ namespace Yuicy {
 
 	void OpenGLTexture2D::Bind(uint32_t slot) const
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		glBindTextureUnit(slot, m_RendererID);
 	}
 }

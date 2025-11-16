@@ -11,7 +11,8 @@
 namespace Yuicy {
 	Application* Application::_instance = nullptr;
 
-	Application::Application() { 
+	Application::Application() 
+	{ 
 		YUICY_PROFILE_FUNCTION();
 		YUICY_ASSERT(!_instance, "Application already exists!");
 		_instance = this;
@@ -25,12 +26,14 @@ namespace Yuicy {
 		PushOverlay(_imGuiLayer);
 	}
 
-	Application::~Application() {
+	Application::~Application() 
+	{
+		YUICY_PROFILE_FUNCTION();
 
 	}
 
 	void Application::OnEvent(Event& e) {
-		// HZ_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
@@ -53,10 +56,10 @@ namespace Yuicy {
 	void Application::Run() {
 
 		WindowResizeEvent e(1280, 720);
-
+		YUICY_PROFILE_FUNCTION();
 		while (_running) {
 			
-			YUICY_PROFILE_FUNCTION();
+			YUICY_PROFILE_SCOPE("RunLoop");
 
 			float time = (float)glfwGetTime();
 			Timestep timestep = time - _lastFrameTime;
@@ -68,34 +71,46 @@ namespace Yuicy {
 			RenderCommand::Clear();
 
 			// Normal Layer
-			if (!_minimized)
+			if (!_minimized)  // 窗口最小化时停止更新
 			{
-				for (Layer* layer : _layerStack)
-					layer->OnUpdate(timestep);
-			}
+				{
+					YUICY_PROFILE_SCOPE("LayerStack OnUpdate");
+					for (Layer* layer : _layerStack)
+						layer->OnUpdate(timestep);
+				}
 
-			// ImGui Layer
-			_imGuiLayer->Begin();
-			for (Layer* layer : _layerStack)
-				layer->OnImGuiRender();
-			_imGuiLayer->End();
+				_imGuiLayer->Begin();
+				{
+					YUICY_PROFILE_SCOPE("LayerStack OnImGuiRender");
+					// ImGui Layer
+					for (Layer* layer : _layerStack)
+						layer->OnImGuiRender();
+				}
+				_imGuiLayer->End();
+			}
 
 			_window->OnUpdate();
 		}
 	}
 
 	void Application::PushLayer(Layer* layer) {
+		YUICY_PROFILE_FUNCTION();
+
 		_layerStack.PushLayer(layer);
 		layer->OnAttach();
 	}
 
 	void Application::PushOverlay(Layer* layer) {
+		YUICY_PROFILE_FUNCTION();
+
 		_layerStack.PushOverlay(layer);
 		layer->OnAttach();
 	}
 
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		if (e.GetWidth() == 0 || e.GetHeight() == 0)
 		{
 			_minimized = true;

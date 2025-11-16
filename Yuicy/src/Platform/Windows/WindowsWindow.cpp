@@ -19,41 +19,38 @@ namespace Yuicy {
 
 	WindowsWindow::WindowsWindow(const WindowProps& props)
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		Init(props);
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		Shutdown();
 	}
 
 	void WindowsWindow::Init(const WindowProps& props)
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		_Data.Title = props.Title;
 		_Data.Width = props.Width;
 		_Data.Height = props.Height;
-// 		_Data.EventCallback = [](Event& e) {
-// 			YUICY_CORE_INFO("EventInfo:{}", e.ToString());
-// 		};
 
 		YUICY_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
 		if (s_GLFWWindowCount == 0)
 		{
-			// YUICY_PROFILE_SCOPE("glfwInit");
+			YUICY_PROFILE_SCOPE("glfwInit");
 			int success = glfwInit();
 			YUICY_CORE_ASSERT(success, "Could not initialize GLFW!");
 			glfwSetErrorCallback(GLFWErrorCallback);
 		}
 
 		{
-			// YUICY_PROFILE_SCOPE("glfwCreateWindow");
+			YUICY_PROFILE_SCOPE("glfwCreateWindow");
 			// 创建窗口(提供渲染目标)，创建一个OpenGL上下文
 			_Window = glfwCreateWindow((int)props.Width, (int)props.Height, _Data.Title.c_str(), nullptr, nullptr);
 			++s_GLFWWindowCount;
@@ -158,7 +155,7 @@ namespace Yuicy {
 
 	void WindowsWindow::Shutdown()
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		glfwDestroyWindow(_Window);
 		--s_GLFWWindowCount;
@@ -171,7 +168,7 @@ namespace Yuicy {
 
 	void WindowsWindow::OnUpdate()
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		glfwPollEvents();
 		_Context->SwapBuffers();
@@ -179,7 +176,7 @@ namespace Yuicy {
 
 	void WindowsWindow::SetVSync(bool enabled)
 	{
-		// YUICY_PROFILE_FUNCTION();
+		YUICY_PROFILE_FUNCTION();
 
 		if (enabled)
 			glfwSwapInterval(1);
