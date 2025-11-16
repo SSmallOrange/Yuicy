@@ -195,42 +195,77 @@ namespace Yuicy {
 	void OpenGLShader::UploadUniformInt(const std::string& name, int value)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniform1i(location, value);
 	}
 
 	void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniform1f(location, value);
 	}
 
 	void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& value)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniform2f(location, value.x, value.y);
 	}
 
 	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& value)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniform3f(location, value.x, value.y, value.z);
 	}
 
 	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& value)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniform4f(location, value.x, value.y, value.z, value.w);
 	}
 
 	void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
 
 	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
 	{
 		GLint location = glGetUniformLocation(_rendererID, name.c_str());
+		if (location == -1)
+		{
+			YUICY_CORE_WARN("Uniform '{0}' not found or optimized out in shader {1}", name, _rendererID);
+			return;
+		}
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
 

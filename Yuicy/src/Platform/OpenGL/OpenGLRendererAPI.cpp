@@ -31,7 +31,7 @@ namespace Yuicy {
 	{
 		// 目前只draw 三角形图元
 		glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);  // 解绑当前使用的2D纹理（即绑定到默认的纹理slot）
 	}
 
 }
