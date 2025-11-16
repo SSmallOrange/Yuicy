@@ -107,6 +107,7 @@ project "Sandbox"
         debugdir "%{cfg.targetdir}"
         runtime "Debug"
         symbols "On"
+        defines { "YUICY_PROFILE_DEBUG" }
     filter "configurations:Release"
         runtime "Release"
         optimize "On"

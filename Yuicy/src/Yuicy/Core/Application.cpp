@@ -56,6 +56,8 @@ namespace Yuicy {
 
 		while (_running) {
 			
+			YUICY_PROFILE_FUNCTION();
+
 			float time = (float)glfwGetTime();
 			Timestep timestep = time - _lastFrameTime;
 			_lastFrameTime = time;

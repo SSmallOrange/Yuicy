@@ -12,6 +12,8 @@ namespace Yuicy {
 
 	void OrthographicCameraController::OnUpdate(Timestep ts)
 	{
+		YUICY_PROFILE_FUNCTION();
+
 		if (Input::IsKeyPressed(Key::A))
 			m_CameraPosition.x -= m_CameraTranslationSpeed * ts;
 		else if (Input::IsKeyPressed(Key::D))

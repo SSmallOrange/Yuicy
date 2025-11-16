@@ -221,8 +221,8 @@ public:
 
 Yuicy::Application* Yuicy::CreateApplication() {
 
-	YUICY_CORE_INFO("Hello World!!{}", 2);
-	YUICY_CORE_ERROR("Bad !!{}", "World");
+// 	YUICY_CORE_INFO("Hello World!!{}", 2);
+// 	YUICY_CORE_ERROR("Bad !!{}", "World");
 
 	return new Sandbox();
 }

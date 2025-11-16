@@ -54,6 +54,7 @@ namespace Yuicy {
 
 			if (m_OutputStream.is_open())
 			{
+				YUICY_CORE_INFO("m_OutputStream is Open");
 				m_CurrentSession = new InstrumentationSession({name});
 				WriteHeader();
 			}
@@ -63,6 +64,7 @@ namespace Yuicy {
 				{
 					YUICY_CORE_ERROR("Instrumentor could not open results file '{0}'.", filepath);
 				}
+				YUICY_CORE_INFO("m_OutputStream is NotOpen");
 			}
 		}
 
