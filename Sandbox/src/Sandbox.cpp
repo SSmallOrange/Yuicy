@@ -24,7 +24,7 @@ public:
 		};
 
 		std::shared_ptr<Yuicy::VertexBuffer> vertexBuffer;
-		vertexBuffer.reset(Yuicy::VertexBuffer::Create(vertices, sizeof(vertices)));
+		vertexBuffer = (Yuicy::VertexBuffer::Create(vertices, sizeof(vertices)));
 		Yuicy::BufferLayout layout = {
 			{ Yuicy::ShaderDataType::Float3, "a_Position" },
 			{ Yuicy::ShaderDataType::Float4, "a_Color" }
@@ -34,7 +34,7 @@ public:
 
 		uint32_t indices[3] = { 0, 1, 2 };
 		std::shared_ptr<Yuicy::IndexBuffer> indexBuffer;
-		indexBuffer.reset(Yuicy::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
+		indexBuffer = (Yuicy::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 		m_SquareVA = Yuicy::VertexArray::Create();
@@ -47,7 +47,7 @@ public:
 		};
 
 		std::shared_ptr<Yuicy::VertexBuffer> squareVB;
-		squareVB.reset(Yuicy::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
+		squareVB = (Yuicy::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
 		squareVB->SetLayout({
 			{ Yuicy::ShaderDataType::Float3, "a_Position" },  // 位置
 			{ Yuicy::ShaderDataType::Float2, "a_TexCoord" }   // 纹理坐标
@@ -56,7 +56,7 @@ public:
 
 		uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
 		std::shared_ptr<Yuicy::IndexBuffer> squareIB;
-		squareIB.reset(Yuicy::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
+		squareIB = (Yuicy::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
 		m_SquareVA->SetIndexBuffer(squareIB);
 
 		std::string vertexSrc = R"(
