@@ -20,6 +20,7 @@
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/SubTexture.h"
 #include "Yuicy/Renderer/VertexArray.h"
+#include "Yuicy/Renderer/ParticleSystem.h"
 
 #include "Yuicy/Renderer/OrthographicCamera.h"
 #include "Yuicy/Renderer/OrthographicCameraController.h"

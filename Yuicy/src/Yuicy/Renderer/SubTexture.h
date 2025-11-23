@@ -10,16 +10,15 @@ namespace Yuicy {
 	class SubTexture2D
 	{
 	public:
-		// ÓÒÏÂ½Ç ×óÉÏ½Ç ÎÆÀí×ø±ê
+		// å³ä¸‹è§’ å·¦ä¸Šè§’ çº¹ç†åæ ‡
 		SubTexture2D(const Ref<Texture2D>& texture, const glm::vec2& min, const glm::vec2& max);
 
 		const Ref<Texture2D>& GetTexture() const { return _Texture; }
 		const glm::vec2* GetTexCoords() const { return _TexCoords.data(); }
 
-		// cellSize: Ã¿¸ö¸ñ×ÓµÄÏñËØ´óĞ¡ spriteSize: ¾«ÁéÕ¼ÓÃµÄ¸ñ×ÓÊıÁ¿
-		// eg: CreateFromCoords(texture, {1, 2}, {32, 32}, {2, 3}) ±íÊ¾´ÓÎÆÀíÖĞ»ñÈ¡´Ó(32,64)¿ªÊ¼£¬¿í64¸ß96µÄ×ÓÎÆÀí
+		// cellSize: æ¯ä¸ªæ ¼å­çš„åƒç´ å¤§å° spriteSize: ç²¾çµå ç”¨çš„æ ¼å­æ•°é‡
+		// eg: CreateFromCoords(texture, {1, 2}, {32, 32}, {2, 3}) è¡¨ç¤ºä»çº¹ç†ä¸­è·å–ä»(32,64)å¼€å§‹ï¼Œå®½64é«˜96çš„å­çº¹ç†
 		static Ref<SubTexture2D> CreateFromCoords(const Ref<Texture2D>& texture, const glm::vec2& coords, const glm::vec2& cellSize, const glm::vec2& spriteSize = { 1.0f, 1.0f });
-
 
 	private:
 		Ref<Texture2D> _Texture;

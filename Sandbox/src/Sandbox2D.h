@@ -23,4 +23,7 @@ private:
 	Yuicy::Ref<Yuicy::Texture2D> m_CheckerboardTexture;
 
 	glm::vec4 m_SquareColor = { 0.2f, 0.3f, 0.8f, 1.0f };
+
+	Yuicy::ParticleSystem m_ParticleSystem;
+	Yuicy::ParticleProps  m_ParticleProps;
 };

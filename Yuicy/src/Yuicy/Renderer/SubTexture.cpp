@@ -12,8 +12,8 @@ namespace Yuicy {
 		_TexCoords[3] = { min.x, max.y };
 	}
 
-	// ×ø±ê¡¢¸ñ×Ó´óĞ¡¡¢¾«Áé´óĞ¡
-	Ref<SubTexture2D> Yuicy::CreateFromCoords(const Ref<Texture2D>& texture, const glm::vec2& coords, const glm::vec2& cellSize, const glm::vec2& spriteSize)
+	// åæ ‡ã€æ ¼å­å¤§å°ã€ç²¾çµå¤§å°
+	Ref<SubTexture2D> Yuicy::SubTexture2D::CreateFromCoords(const Ref<Texture2D>& texture, const glm::vec2& coords, const glm::vec2& cellSize, const glm::vec2& spriteSize)
 	{
 		glm::vec2 min = { (coords.x * cellSize.x) / texture->GetWidth(), (coords.y * cellSize.y) / texture->GetHeight() };
 		glm::vec2 max = { ((coords.x + spriteSize.x) * cellSize.x) / texture->GetWidth(), ((coords.y + spriteSize.y) * cellSize.y) / texture->GetHeight() };

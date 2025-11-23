@@ -8,8 +8,19 @@
 #include "Yuicy/Debug/Instrumentor.h"
 
 Sandbox2D::Sandbox2D()
-	: Layer("Sandbox2D"), m_CameraController(1280.0f / 720.0f, true)
+	: Layer("Sandbox2D"), m_CameraController(1280.0f / 720.0f, true), m_ParticleSystem(2000)
 {
+	m_ParticleProps.ColorBegin = { 1.0f, 0.5f, 0.2f, 1.0f };
+	m_ParticleProps.ColorEnd = { 0.2f, 0.2f, 0.2f, 0.0f };
+
+	m_ParticleProps.SizeBegin = 0.2f;
+	m_ParticleProps.SizeEnd = 0.0f;
+	m_ParticleProps.SizeVariation = 0.1f;
+
+	m_ParticleProps.LifeTime = 1.0f;
+
+	m_ParticleProps.Velocity = { 0.0f, 1.0f };
+	m_ParticleProps.VelocityVariation = { 1.0f, 1.0f };
 }
 
 void Sandbox2D::OnAttach()
@@ -27,6 +38,10 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 
 	// Update
 	m_CameraController.OnUpdate(ts);
+
+	// 粒子更新
+	m_ParticleSystem.OnUpdate(ts);
+
 	Yuicy::Renderer2D::ResetStats();
 	{
 		YUICY_PROFILE_SCOPE("Renderer Prep");
@@ -40,13 +55,14 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 		rotation += ts * 50.0f;
 
 		YUICY_PROFILE_SCOPE("Renderer Draw");
+
 		// Draw
 		Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
 		// Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1280.0f / 720.0f, 1280.0f / 720.0f }, { 0.8f, 0.2f, 0.3f, 1.0f });
 		Yuicy::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
 		Yuicy::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
 		Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f, -0.1f }, { 20.0f, 20.0f }, m_CheckerboardTexture, 10.0f);
-		Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 1.0f, 1.0f }, rotation, m_CheckerboardTexture, 20.0f);
+		Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 0.5f, 0.5f }, glm::radians(rotation), m_CheckerboardTexture, 1.0f);
 		Yuicy::Renderer2D::EndScene();
 
 		Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
@@ -58,6 +74,10 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 				Yuicy::Renderer2D::DrawQuad({ x, y }, { 0.45f, 0.45f }, color);
 			}
 		}
+
+		// 粒子渲染
+		m_ParticleSystem.OnRender();
+
 		Yuicy::Renderer2D::EndScene();
 	}
 }
@@ -81,4 +101,28 @@ void Sandbox2D::OnImGuiRender()
 void Sandbox2D::OnEvent(Yuicy::Event& e)
 {
 	m_CameraController.OnEvent(e);
+
+	Yuicy::EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<Yuicy::MouseButtonPressedEvent>([this](Yuicy::MouseButtonPressedEvent& e)
+		{
+			if (e.GetMouseButton() == Yuicy::Mouse::ButtonLeft)
+			{
+				auto [x, y] = Yuicy::Input::GetMousePosition();
+				auto width = Yuicy::Application::Get().GetWindow().GetWidth();
+				auto height = Yuicy::Application::Get().GetWindow().GetHeight();
+
+				auto bounds = m_CameraController.GetBounds();
+
+				auto pos = m_CameraController.GetCamera().GetPosition();
+
+				x = (x / width) * bounds.GetWidth() - bounds.GetWidth() * 0.5f;		// 屏幕原点与NOC原点位置不同
+				y = bounds.GetHeight() * 0.5f - (y / height) * bounds.GetHeight();	// Y轴方向也不同
+				m_ParticleProps.Position = { x + pos.x, y + pos.y };
+
+				// 每次点击发射 10 个粒子
+				for (int i = 0; i < 10; ++i)
+					m_ParticleSystem.Emit(m_ParticleProps);
+			}
+			return false;
+		});
 }
