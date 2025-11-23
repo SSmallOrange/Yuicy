@@ -6,6 +6,15 @@
 
 namespace Yuicy {
 
+	struct OrthographicCameraBounds
+	{
+		float Left, Right;
+		float Bottom, Top;
+
+		float GetWidth() { return Right - Left; }
+		float GetHeight() { return Top - Bottom; }
+	};
+
 	class OrthographicCameraController
 	{
 	public:
@@ -20,6 +29,8 @@ namespace Yuicy {
 		float GetZoomLevel() const { return m_ZoomLevel; }
 		void SetZoomLevel(float level) { m_ZoomLevel = level;  CalculateView(); }
 
+		const OrthographicCameraBounds& GetBounds() const { return m_Bounds; }
+
 	private:
 		void CalculateView();
 
@@ -30,6 +41,8 @@ namespace Yuicy {
 	private:
 		float m_AspectRatio;
 		float m_ZoomLevel = 1.0f;
+
+		OrthographicCameraBounds m_Bounds;		// Ïà»ú±ß½ç
 		OrthographicCamera m_Camera;
 
 		bool m_Rotation;
