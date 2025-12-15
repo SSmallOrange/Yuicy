@@ -39,6 +39,7 @@ project "Yuicy"
         "Yuicy/thirdparty/imgui",
         "Yuicy/thirdparty/glm",
         "Yuicy/thirdparty/stb_image",
+        "Yuicy/thirdparty/entt/include",
     }
     defines { 
         "PLATFORM_WINDOWS",
@@ -87,7 +88,8 @@ project "Sandbox"
         "Yuicy/thirdparty/tinyrefl",
         "Yuicy/thirdparty",
         "Yuicy/thirdparty/GLAD/include",
-        "Yuicy/thirdparty/glm"
+        "Yuicy/thirdparty/glm",
+        "Yuicy/thirdparty/entt/include",
     }
     links { "Yuicy" }
     defines { "PLATFORM_WINDOWS" }

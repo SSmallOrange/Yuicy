@@ -84,7 +84,7 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		if (e.GetHeight() == 0.0f)  // ´°¿Ú×îĞ¡»¯Ê±»á´¥·¢¸ß¶ÈÎª0µÄÊÂ¼ş
+		if (e.GetHeight() == 0.0f)  // çª—å£æœ€å°åŒ–æ—¶ä¼šè§¦å‘é«˜åº¦ä¸º0çš„äº‹ä»¶
 			return false;
 
 		m_AspectRatio = e.GetWidth() / e.GetHeight();

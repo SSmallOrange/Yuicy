@@ -24,3 +24,6 @@
 
 #include "Yuicy/Renderer/OrthographicCamera.h"
 #include "Yuicy/Renderer/OrthographicCameraController.h"
+
+#include "Yuicy/Scene/Scene.h"
+#include "Yuicy/Scene/Components.h"

@@ -26,6 +26,14 @@ Sandbox2D::Sandbox2D()
 void Sandbox2D::OnAttach()
 {
 	m_CheckerboardTexture = Yuicy::Texture2D::Create("assets/textures/Checkerboard.png");
+
+	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
+
+	auto square = m_ActiveScene->CreateEntity();
+	m_ActiveScene->Reg().emplace<Yuicy::TransformComponent>(square);
+	m_ActiveScene->Reg().emplace<Yuicy::SpriteRendererComponent>(square, glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
+
+	m_SquareEntity = square;
 }
 
 void Sandbox2D::OnDetach()
@@ -39,47 +47,47 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 	// Update
 	m_CameraController.OnUpdate(ts);
 
-	// ¡£◊”∏¸–¬
+	// Á≤íÂ≠êÊõ¥Êñ∞
 	m_ParticleSystem.OnUpdate(ts);
 
 	Yuicy::Renderer2D::ResetStats();
-	{
-		YUICY_PROFILE_SCOPE("Renderer Prep");
-		// Render
-		Yuicy::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
-		Yuicy::RenderCommand::Clear();
-	}
 
-	{
-		static float rotation = 0.0f;
-		rotation += ts * 50.0f;
+	// Render
+	Yuicy::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+	Yuicy::RenderCommand::Clear();
+	static float rotation = 0.0f;
+	rotation += ts * 50.0f;
 
-		YUICY_PROFILE_SCOPE("Renderer Draw");
+	YUICY_PROFILE_SCOPE("Renderer Draw");
+	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
 
-		// Draw
-		Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
-		// Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1280.0f / 720.0f, 1280.0f / 720.0f }, { 0.8f, 0.2f, 0.3f, 1.0f });
-		Yuicy::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
-		Yuicy::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
-		Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f, -0.1f }, { 20.0f, 20.0f }, m_CheckerboardTexture, 10.0f);
-		Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 0.5f, 0.5f }, glm::radians(rotation), m_CheckerboardTexture, 1.0f);
-		Yuicy::Renderer2D::EndScene();
+	// Update scene
+	m_ActiveScene->OnUpdate(ts);
+	Yuicy::Renderer2D::EndScene();
 
-		Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
-		for (float y = -5.0f; y < 5.0f; y += 0.5f)
-		{
-			for (float x = -5.0f; x < 5.0f; x += 0.5f)
-			{
-				glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
-				Yuicy::Renderer2D::DrawQuad({ x, y }, { 0.45f, 0.45f }, color);
-			}
-		}
+// 	// Draw
+// 	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
+// 	// Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1280.0f / 720.0f, 1280.0f / 720.0f }, { 0.8f, 0.2f, 0.3f, 1.0f });
+// 	Yuicy::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
+// 	Yuicy::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
+// 	Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f, -0.1f }, { 20.0f, 20.0f }, m_CheckerboardTexture, 10.0f);
+// 	Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 0.5f, 0.5f }, glm::radians(rotation), m_CheckerboardTexture, 1.0f);
+// 	Yuicy::Renderer2D::EndScene();
+// 
+// 	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
+// 	for (float y = -5.0f; y < 5.0f; y += 0.5f)
+// 	{
+// 		for (float x = -5.0f; x < 5.0f; x += 0.5f)
+// 		{
+// 			glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
+// 			Yuicy::Renderer2D::DrawQuad({ x, y }, { 0.45f, 0.45f }, color);
+// 		}
+// 	}
+// 
+// 	// Á≤íÂ≠êÊ∏≤Êüì
+// 	m_ParticleSystem.OnRender();
 
-		// ¡£◊”‰÷»æ
-		m_ParticleSystem.OnRender();
-
-		Yuicy::Renderer2D::EndScene();
-	}
+//	Yuicy::Renderer2D::EndScene();
 }
 
 void Sandbox2D::OnImGuiRender()
@@ -95,6 +103,10 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 
 	ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
+
+	auto& squareColor = m_ActiveScene->Reg().get<Yuicy::SpriteRendererComponent>(m_SquareEntity).Color;
+	ImGui::ColorEdit4("SpriteRendererComponent Color", glm::value_ptr(squareColor));
+
 	ImGui::End();
 }
 
@@ -103,26 +115,25 @@ void Sandbox2D::OnEvent(Yuicy::Event& e)
 	m_CameraController.OnEvent(e);
 
 	Yuicy::EventDispatcher dispatcher(e);
-	dispatcher.Dispatch<Yuicy::MouseButtonPressedEvent>([this](Yuicy::MouseButtonPressedEvent& e)
+	dispatcher.Dispatch<Yuicy::MouseButtonPressedEvent>([this](Yuicy::MouseButtonPressedEvent& e) {
+		if (e.GetMouseButton() == Yuicy::Mouse::ButtonLeft)
 		{
-			if (e.GetMouseButton() == Yuicy::Mouse::ButtonLeft)
-			{
-				auto [x, y] = Yuicy::Input::GetMousePosition();
-				auto width = Yuicy::Application::Get().GetWindow().GetWidth();
-				auto height = Yuicy::Application::Get().GetWindow().GetHeight();
+			auto [x, y] = Yuicy::Input::GetMousePosition();
+			auto width = Yuicy::Application::Get().GetWindow().GetWidth();
+			auto height = Yuicy::Application::Get().GetWindow().GetHeight();
 
-				auto bounds = m_CameraController.GetBounds();
+			auto bounds = m_CameraController.GetBounds();
 
-				auto pos = m_CameraController.GetCamera().GetPosition();
+			auto pos = m_CameraController.GetCamera().GetPosition();
 
-				x = (x / width) * bounds.GetWidth() - bounds.GetWidth() * 0.5f;		// ∆¡ƒª‘≠µ„”ÎNOC‘≠µ„Œª÷√≤ªÕ¨
-				y = bounds.GetHeight() * 0.5f - (y / height) * bounds.GetHeight();	// Y÷·∑ΩœÚ“≤≤ªÕ¨
-				m_ParticleProps.Position = { x + pos.x, y + pos.y };
+			x = (x / width) * bounds.GetWidth() - bounds.GetWidth() * 0.5f;		// Â±èÂπïÂéüÁÇπ‰∏éNOCÂéüÁÇπ‰ΩçÁΩÆ‰∏çÂêå
+			y = bounds.GetHeight() * 0.5f - (y / height) * bounds.GetHeight();	// YËΩ¥ÊñπÂêë‰πü‰∏çÂêå
+			m_ParticleProps.Position = { x + pos.x, y + pos.y };
 
-				// √ø¥Œµ„ª˜∑¢…‰ 10 ∏ˆ¡£◊”
-				for (int i = 0; i < 10; ++i)
-					m_ParticleSystem.Emit(m_ParticleProps);
-			}
-			return false;
-		});
+			// ÊØèÊ¨°ÁÇπÂáªÂèëÂ∞Ñ 10 ‰∏™Á≤íÂ≠ê
+			for (int i = 0; i < 10; ++i)
+				m_ParticleSystem.Emit(m_ParticleProps);
+		}
+		return false;
+	});
 }

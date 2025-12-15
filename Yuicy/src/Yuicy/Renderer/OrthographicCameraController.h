@@ -42,7 +42,7 @@ namespace Yuicy {
 		float m_AspectRatio;
 		float m_ZoomLevel = 1.0f;
 
-		OrthographicCameraBounds m_Bounds;		// Ïà»ú±ß½ç
+		OrthographicCameraBounds m_Bounds;		// ÐŸÐ°Â»ÑŠÂ±Ð¯Ð…Ð·
 		OrthographicCamera m_Camera;
 
 		bool m_Rotation;
