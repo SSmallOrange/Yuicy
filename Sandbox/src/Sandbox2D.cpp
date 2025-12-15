@@ -29,9 +29,13 @@ void Sandbox2D::OnAttach()
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
 
-	auto square = m_ActiveScene->CreateEntity();
-	m_ActiveScene->Reg().emplace<Yuicy::TransformComponent>(square);
-	m_ActiveScene->Reg().emplace<Yuicy::SpriteRendererComponent>(square, glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
+	glm::mat4 transformMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f))
+		* glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f))
+		* glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 1.0f));
+
+	auto square = m_ActiveScene->CreateEntity("Green Square");
+	square.GetComponent<Yuicy::TransformComponent>().Transform = transformMatrix;
+	square.AddComponent<Yuicy::SpriteRendererComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
 
 	m_SquareEntity = square;
 }
@@ -102,10 +106,16 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 	ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 
-	ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
-
-	auto& squareColor = m_ActiveScene->Reg().get<Yuicy::SpriteRendererComponent>(m_SquareEntity).Color;
-	ImGui::ColorEdit4("SpriteRendererComponent Color", glm::value_ptr(squareColor));
+	if (m_SquareEntity)
+	{
+		ImGui::Separator();
+		auto& tag = m_SquareEntity.GetComponent<Yuicy::TagComponent>().Tag;
+		ImGui::Text("%s", tag.c_str());
+		ImGui::Separator();
+		auto& squareColor = m_SquareEntity.GetComponent<Yuicy::SpriteRendererComponent>().Color;
+		ImGui::ColorEdit4("Square Color", glm::value_ptr(squareColor));
+		ImGui::Separator();
+	}
 
 	ImGui::End();
 }

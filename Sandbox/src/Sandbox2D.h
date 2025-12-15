@@ -28,5 +28,5 @@ private:
 	Yuicy::ParticleProps  m_ParticleProps;
 
 	Yuicy::Ref<Yuicy::Scene> m_ActiveScene;
-	entt::entity m_SquareEntity;
+	Yuicy::Entity m_SquareEntity;
 };
