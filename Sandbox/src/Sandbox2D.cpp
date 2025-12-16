@@ -21,6 +21,9 @@ Sandbox2D::Sandbox2D()
 
 	m_ParticleProps.Velocity = { 0.0f, 1.0f };
 	m_ParticleProps.VelocityVariation = { 1.0f, 1.0f };
+
+	m_ViewportSize = { Yuicy::Application::Get().GetWindow().GetWidth(),
+				   Yuicy::Application::Get().GetWindow().GetHeight() };
 }
 
 void Sandbox2D::OnAttach()
@@ -38,6 +41,19 @@ void Sandbox2D::OnAttach()
 	square.AddComponent<Yuicy::SpriteRendererComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
 
 	m_SquareEntity = square;
+
+	m_CameraEntity = m_ActiveScene->CreateEntity("Camera Entity");
+	m_CameraEntity.AddComponent<Yuicy::CameraComponent>();
+
+	m_SecondCamera = m_ActiveScene->CreateEntity("Clip-Space Entity");
+	auto& cc = m_SecondCamera.AddComponent<Yuicy::CameraComponent>();
+	cc.Primary = false;
+
+	// 初始化时设置视口大小
+	m_ViewportSize = { Yuicy::Application::Get().GetWindow().GetWidth(),
+					   Yuicy::Application::Get().GetWindow().GetHeight() };
+	m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+
 }
 
 void Sandbox2D::OnDetach()
@@ -49,7 +65,7 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 	YUICY_PROFILE_FUNCTION();
 
 	// Update
-	m_CameraController.OnUpdate(ts);
+	// m_CameraController.OnUpdate(ts);
 
 	// 粒子更新
 	m_ParticleSystem.OnUpdate(ts);
@@ -63,35 +79,32 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 	rotation += ts * 50.0f;
 
 	YUICY_PROFILE_SCOPE("Renderer Draw");
-	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
-
 	// Update scene
 	m_ActiveScene->OnUpdate(ts);
-	Yuicy::Renderer2D::EndScene();
 
-// 	// Draw
-// 	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
-// 	// Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1280.0f / 720.0f, 1280.0f / 720.0f }, { 0.8f, 0.2f, 0.3f, 1.0f });
-// 	Yuicy::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
-// 	Yuicy::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
-// 	Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f, -0.1f }, { 20.0f, 20.0f }, m_CheckerboardTexture, 10.0f);
-// 	Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 0.5f, 0.5f }, glm::radians(rotation), m_CheckerboardTexture, 1.0f);
-// 	Yuicy::Renderer2D::EndScene();
-// 
-// 	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
-// 	for (float y = -5.0f; y < 5.0f; y += 0.5f)
-// 	{
-// 		for (float x = -5.0f; x < 5.0f; x += 0.5f)
-// 		{
-// 			glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
-// 			Yuicy::Renderer2D::DrawQuad({ x, y }, { 0.45f, 0.45f }, color);
-// 		}
-// 	}
-// 
-// 	// 粒子渲染
-// 	m_ParticleSystem.OnRender();
+ 	// Draw
+ //	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
+ //	// Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1280.0f / 720.0f, 1280.0f / 720.0f }, { 0.8f, 0.2f, 0.3f, 1.0f });
+ //	Yuicy::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
+ //	Yuicy::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
+ //	Yuicy::Renderer2D::DrawQuad({ 0.0f, 0.0f, -0.1f }, { 20.0f, 20.0f }, m_CheckerboardTexture, 10.0f);
+ //	Yuicy::Renderer2D::DrawRotatedQuad({ -2.0f, 0.0f, 0.0f }, { 0.5f, 0.5f }, glm::radians(rotation), m_CheckerboardTexture, 1.0f);
+ //	Yuicy::Renderer2D::EndScene();
+ //
+ //	Yuicy::Renderer2D::BeginScene(m_CameraController.GetCamera());
+ //	for (float y = -5.0f; y < 5.0f; y += 0.5f)
+ //	{
+ //		for (float x = -5.0f; x < 5.0f; x += 0.5f)
+ //		{
+ //			glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
+ //			Yuicy::Renderer2D::DrawQuad({ x, y }, { 0.45f, 0.45f }, color);
+ //		}
+ //	}
+ //
+ //	// 粒子渲染
+ //	m_ParticleSystem.OnRender();
 
-//	Yuicy::Renderer2D::EndScene();
+	//Yuicy::Renderer2D::EndScene();
 }
 
 void Sandbox2D::OnImGuiRender()
@@ -122,9 +135,19 @@ void Sandbox2D::OnImGuiRender()
 
 void Sandbox2D::OnEvent(Yuicy::Event& e)
 {
-	m_CameraController.OnEvent(e);
+	// m_CameraController.OnEvent(e);
 
 	Yuicy::EventDispatcher dispatcher(e);
+
+// 	dispatcher.Dispatch<Yuicy::WindowResizeEvent>([this](Yuicy::WindowResizeEvent& e) {
+// 		if (e.GetHeight() == 0.0f)  // 窗口最小化时会触发高度为0的事件
+// 			return false;
+// 
+// 		m_ViewportSize = { (float)e.GetWidth(), (float)e.GetHeight() };
+// 		m_ActiveScene->OnViewportResize(e.GetWidth(), e.GetHeight());
+// 		return false;  // 返回 false 允许事件继续传播
+// 	});
+
 	dispatcher.Dispatch<Yuicy::MouseButtonPressedEvent>([this](Yuicy::MouseButtonPressedEvent& e) {
 		if (e.GetMouseButton() == Yuicy::Mouse::ButtonLeft)
 		{

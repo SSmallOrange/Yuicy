@@ -28,5 +28,11 @@ private:
 	Yuicy::ParticleProps  m_ParticleProps;
 
 	Yuicy::Ref<Yuicy::Scene> m_ActiveScene;
+
 	Yuicy::Entity m_SquareEntity;
+	Yuicy::Entity m_CameraEntity;
+	Yuicy::Entity m_SecondCamera;
+
+	bool m_PrimaryCamera = true;
+	glm::vec2 m_ViewportSize = { 1280.0f, 720.0f };
 };

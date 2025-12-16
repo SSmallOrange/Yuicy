@@ -1,6 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 
+#include "Yuicy/Scene/SceneCamera.h"
+
 namespace Yuicy {
 	struct TagComponent
 	{
@@ -38,4 +40,16 @@ namespace Yuicy {
 		}
 	};
 
+	struct CameraComponent
+	{
+		Yuicy::SceneCamera Camera;
+		bool Primary = true;
+		bool FixedAspectRatio = false;
+
+		CameraComponent() = default;
+		CameraComponent(const CameraComponent&) = default;
+// 		CameraComponent(const glm::mat4& projection)
+// 			: Camera(projection) {
+// 		}
+	};
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Yuicy/Renderer/OrthographicCamera.h"
-
+#include "Yuicy/Renderer/Camera.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/SubTexture.h"
+#include "Yuicy/Renderer/OrthographicCamera.h"
 
 namespace Yuicy {
 
@@ -14,6 +14,7 @@ namespace Yuicy {
 		static void Shutdown();
 
 		static void BeginScene(const OrthographicCamera& camera);
+		static void BeginScene(const Camera& camera, const glm::mat4& transform);
 		static void EndScene();
 		static void Flush();	// 批处理flush
 
