@@ -33,6 +33,11 @@ private:
 	Yuicy::Entity m_CameraEntity;
 	Yuicy::Entity m_SecondCamera;
 
+	// 物理测试实体
+	Yuicy::Entity m_GroundEntity;
+	Yuicy::Entity m_DynamicBox;
+	Yuicy::Entity m_DynamicCircle;
+
 	bool m_PrimaryCamera = true;
 	glm::vec2 m_ViewportSize = { 1280.0f, 720.0f };
 };

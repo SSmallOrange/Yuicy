@@ -41,6 +41,7 @@ project "Yuicy"
         "Yuicy/thirdparty/glm",
         "Yuicy/thirdparty/stb_image",
         "Yuicy/thirdparty/entt/include",
+        "Yuicy/thirdparty/Box2D/box2d/include"
     }
     defines { 
         "PLATFORM_WINDOWS",
@@ -92,6 +93,7 @@ project "Sandbox"
         "Yuicy/thirdparty/GLAD/include",
         "Yuicy/thirdparty/glm",
         "Yuicy/thirdparty/entt/include",
+        "Yuicy/thirdparty/Box2D/box2d/include"
     }
     links { "Yuicy" }
     defines { "PLATFORM_WINDOWS" }

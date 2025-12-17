@@ -1,5 +1,9 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 
 #include "Yuicy/Scene/SceneCamera.h"
 
@@ -17,16 +21,22 @@ namespace Yuicy {
 
 	struct TransformComponent
 	{
-		glm::mat4 Transform{ 1.0f };
+		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };    // 弧度制
+		glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
 		TransformComponent(const TransformComponent&) = default;
-		TransformComponent(const glm::mat4& transform)
-			: Transform(transform) {
+		TransformComponent(const glm::vec3& translation)
+			: Translation(translation) {
 		}
 
-		operator glm::mat4& () { return Transform; }
-		operator const glm::mat4& () const { return Transform; }
+		glm::mat4 GetTransform() const
+		{
+			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
+
+			return glm::translate(glm::mat4(1.0f), Translation) * rotation * glm::scale(glm::mat4(1.0f), Scale);
+		}
 	};
 
 	struct SpriteRendererComponent
@@ -48,8 +58,62 @@ namespace Yuicy {
 
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
-// 		CameraComponent(const glm::mat4& projection)
-// 			: Camera(projection) {
-// 		}
+	};
+
+	// ==================== 物理组件 ====================
+
+	// 刚体组件 - 定义物理实体的类型和属性
+	struct Rigidbody2DComponent
+	{
+		// 刚体类型 静态/动态/运动学
+		enum class BodyType { Static = 0, Dynamic, Kinematic };
+		BodyType Type = BodyType::Static;
+
+		// 物理属性
+		bool FixedRotation = false;  // 是否锁定旋转
+
+		// Box2D 运行时刚体指针（不序列化）
+		void* RuntimeBody = nullptr;
+
+		Rigidbody2DComponent() = default;
+		Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
+	};
+
+	// 矩形碰撞体组件
+	struct BoxCollider2DComponent
+	{
+		glm::vec2 Offset = { 0.0f, 0.0f };  // 相对于实体中心的偏移
+		glm::vec2 Size = { 0.5f, 0.5f };    // 半尺寸（宽高的一半）
+
+		// 物理材质属性
+		float Density = 1.0f;       // 密度，影响质量
+		float Friction = 0.5f;      // 摩擦系数
+		float Restitution = 0.0f;   // 弹性系数（0=不弹，1=完全弹性）
+		float RestitutionThreshold = 0.5f;  // 弹性速度阈值
+
+		// Box2D 运行时夹具指针（不序列化）
+		void* RuntimeFixture = nullptr;
+
+		BoxCollider2DComponent() = default;
+		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
+	};
+
+	// 圆形碰撞体组件
+	struct CircleCollider2DComponent
+	{
+		glm::vec2 Offset = { 0.0f, 0.0f };  // 相对于实体中心的偏移
+		float Radius = 0.5f;                 // 半径
+
+		// 物理材质属性
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		float RestitutionThreshold = 0.5f;
+
+		// Box2D 运行时夹具指针
+		void* RuntimeFixture = nullptr;
+
+		CircleCollider2DComponent() = default;
+		CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
 	};
 }
