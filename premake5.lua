@@ -10,6 +10,7 @@ group "Dependencies"
     include "Yuicy/thirdparty/GLFW"
     include "Yuicy/thirdparty/GLAD"
     include "Yuicy/thirdparty/imgui"
+    include "Yuicy/thirdparty/Box2D/box2d"
 
 group ""
 project "Yuicy"
@@ -51,7 +52,8 @@ project "Yuicy"
 	links { 
         "GLFW", 
         "Glad",
-        "imgui"
+        "imgui",
+        "Box2D"
     }
     filter "system:windows"
         systemversion "latest"

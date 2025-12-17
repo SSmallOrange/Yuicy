@@ -10,3 +10,6 @@
 [submodule "Yuicy/thirdparty/glm"]
 	path = Yuicy/thirdparty/glm
 	url = https://github.com/g-truc/glm
+[submodule "Yuicy/thirdparty/Box2D/box2d"]
+	path = Yuicy/thirdparty/Box2D/box2d
+	url = https://github.com/thecherno/box2d
