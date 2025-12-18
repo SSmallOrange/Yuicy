@@ -9,6 +9,7 @@ class b2World;
 namespace Yuicy {
 
 	class Entity;
+	class ContactListener;  // 前向声明
 
 	class Scene
 	{
@@ -19,20 +20,31 @@ namespace Yuicy {
 		Entity CreateEntity(const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
-		void OnRuntimeStart();  // 运行时开始（初始化物理世界）
-		void OnRuntimeStop();   // 运行时停止（销毁物理世界）
+		void OnRuntimeStart();
+		void OnRuntimeStop();
 
-		void OnUpdateRuntime(Timestep ts);  // 运行时更新（包含物理模拟）
-		void OnUpdateEditor(Timestep ts);   // 编辑器更新（不包含物理）
+		void OnUpdateRuntime(Timestep ts);
+		void OnUpdateEditor(Timestep ts);
 
-		void OnUpdate(Timestep ts);  // 保留原有接口
+		void OnUpdate(Timestep ts);
 		void OnViewportResize(uint32_t width, uint32_t height);
+
+		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
+
+	private:
+		void RenderScene();
 
 	private:
 		entt::registry m_Registry;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
-		b2World* m_PhysicsWorld = nullptr;  // Box2D 物理世界
+		// 物理系统
+		b2World* m_PhysicsWorld = nullptr;
+		ContactListener* m_ContactListener = nullptr;
+
+		// 固定物理时间步长
+		float m_PhysicsTimeStep = 1.0f / 60.0f;  // 60Hz
+		float m_PhysicsAccumulator = 0.0f;
 
 		friend class Entity;
 	};

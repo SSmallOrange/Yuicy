@@ -35,7 +35,7 @@ void Sandbox2D::OnAttach()
 	// ==================== 创建相机 ====================
 	m_CameraEntity = m_ActiveScene->CreateEntity("Camera");
 	m_CameraEntity.AddComponent<Yuicy::CameraComponent>();
-	// 将相机向后移动一点以便看到场景
+	// 将相机向上移动一点以便看到场景
 	auto& cameraTransform = m_CameraEntity.GetComponent<Yuicy::TransformComponent>();
 	cameraTransform.Translation = { 0.0f, 2.0f, 0.0f };
 
@@ -52,7 +52,7 @@ void Sandbox2D::OnAttach()
 	groundRb.Type = Yuicy::Rigidbody2DComponent::BodyType::Static;
 
 	auto& groundCollider = m_GroundEntity.AddComponent<Yuicy::BoxCollider2DComponent>();
-	groundCollider.Size = { 0.5f, 0.5f };  // 半尺寸，实际尺寸会乘以 Scale
+	groundCollider.Size = { 0.5f, 0.5f };  // 半尺寸（会被Transform一起缩放，贴合实体）
 
 	// ==================== 创建动态方块 ====================
 	m_DynamicBox = m_ActiveScene->CreateEntity("Dynamic Box");
@@ -193,7 +193,7 @@ void Sandbox2D::OnEvent(Yuicy::Event& e)
 		m_ViewportSize = { (float)e.GetWidth(), (float)e.GetHeight() };
 		m_ActiveScene->OnViewportResize(e.GetWidth(), e.GetHeight());
 		return false;
-		});
+	});
 
 	// 按 R 键重启物理模拟
 	dispatcher.Dispatch<Yuicy::KeyPressedEvent>([this](Yuicy::KeyPressedEvent& e) {
@@ -213,5 +213,5 @@ void Sandbox2D::OnEvent(Yuicy::Event& e)
 			m_ActiveScene->OnRuntimeStart();
 		}
 		return false;
-		});
+	});
 }

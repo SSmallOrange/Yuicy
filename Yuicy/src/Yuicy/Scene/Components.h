@@ -8,6 +8,7 @@
 #include "Yuicy/Scene/SceneCamera.h"
 
 namespace Yuicy {
+
 	struct TagComponent
 	{
 		std::string Tag;
@@ -60,6 +61,21 @@ namespace Yuicy {
 		CameraComponent(const CameraComponent&) = default;
 	};
 
+	// ==================== 碰撞过滤层定义 ====================
+	namespace CollisionLayer
+	{
+		enum : uint16_t
+		{
+			None = 0,
+			Default = 1 << 0,   // 0x0001
+			Player  = 1 << 1,   // 0x0002
+			Enemy   = 1 << 2,   // 0x0004
+			Ground  = 1 << 3,   // 0x0008
+			Trigger = 1 << 4,   // 0x0010
+			Bullet  = 1 << 5,   // 0x0020
+			All     = 0xFFFF
+		};
+	}
 	// ==================== 物理组件 ====================
 
 	// 刚体组件 - 定义物理实体的类型和属性
@@ -72,7 +88,7 @@ namespace Yuicy {
 		// 物理属性
 		bool FixedRotation = false;  // 是否锁定旋转
 
-		// Box2D 运行时刚体指针（不序列化）
+		// Box2D 运行时刚体指针
 		void* RuntimeBody = nullptr;
 
 		Rigidbody2DComponent() = default;
@@ -91,7 +107,14 @@ namespace Yuicy {
 		float Restitution = 0.0f;   // 弹性系数（0=不弹，1=完全弹性）
 		float RestitutionThreshold = 0.5f;  // 弹性速度阈值
 
-		// Box2D 运行时夹具指针（不序列化）
+		// 碰撞过滤
+		uint16_t CategoryBits = CollisionLayer::Default;  // 自身所属层
+		uint16_t MaskBits = CollisionLayer::All;          // 可碰撞的层
+
+		// 触发器（不产生物理响应，只检测碰撞）
+		bool IsTrigger = false;
+
+		// Box2D 运行时夹具指针
 		void* RuntimeFixture = nullptr;
 
 		BoxCollider2DComponent() = default;
@@ -101,7 +124,7 @@ namespace Yuicy {
 	// 圆形碰撞体组件
 	struct CircleCollider2DComponent
 	{
-		glm::vec2 Offset = { 0.0f, 0.0f };  // 相对于实体中心的偏移
+		glm::vec2 Offset = { 0.0f, 0.0f };   // 相对于实体中心的偏移
 		float Radius = 0.5f;                 // 半径
 
 		// 物理材质属性
@@ -109,6 +132,13 @@ namespace Yuicy {
 		float Friction = 0.5f;
 		float Restitution = 0.0f;
 		float RestitutionThreshold = 0.5f;
+
+		// 碰撞过滤
+		uint16_t CategoryBits = CollisionLayer::Default;
+		uint16_t MaskBits = CollisionLayer::All;
+
+		// 触发器
+		bool IsTrigger = false;
 
 		// Box2D 运行时夹具指针
 		void* RuntimeFixture = nullptr;
