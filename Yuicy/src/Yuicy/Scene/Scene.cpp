@@ -262,12 +262,28 @@ namespace Yuicy {
 		{
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
 
+			// TODO: 按 SortingOrder 排序
+			
+			// 获取所有需要渲染的精灵
 			auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color);
+				if (sprite.SubTexture)
+				{
+					Renderer2D::DrawSprite(transform.GetTransform(), 
+						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+				}
+				else if (sprite.Texture)
+				{
+					Renderer2D::DrawSprite(transform.GetTransform(),
+						sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+				}
+				else
+				{
+					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color);
+				}
 			}
 
 			Renderer2D::EndScene();

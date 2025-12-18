@@ -5,6 +5,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "Yuicy/Renderer/Texture.h"
+#include "Yuicy/Renderer/SubTexture.h"
 #include "Yuicy/Scene/SceneCamera.h"
 
 namespace Yuicy {
@@ -42,12 +44,44 @@ namespace Yuicy {
 
 	struct SpriteRendererComponent
 	{
+		// 基础颜色/着色
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+		// 纹理
+		Ref<Texture2D> Texture = nullptr;
+		Ref<SubTexture2D> SubTexture = nullptr;
+
+		// 纹理属性
+		float TilingFactor = 1.0f;              // 纹理平铺系数
+
+		// 翻转
+		bool FlipX = false;
+		bool FlipY = false;
+
+		// 渲染排序
+		int SortingOrder = 0;
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
+
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {
+		}
+
+		SpriteRendererComponent(const Ref<Texture2D>& texture)
+			: Texture(texture) {
+		}
+
+		SpriteRendererComponent(const Ref<Texture2D>& texture, const glm::vec4& tint)
+			: Texture(texture), Color(tint) {
+		}
+
+		SpriteRendererComponent(const Ref<SubTexture2D>& subTexture)
+			: SubTexture(subTexture) {
+		}
+
+		SpriteRendererComponent(const Ref<SubTexture2D>& subTexture, const glm::vec4& tint)
+			: SubTexture(subTexture), Color(tint) {
 		}
 	};
 

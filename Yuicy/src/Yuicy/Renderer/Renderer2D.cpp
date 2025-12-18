@@ -170,6 +170,7 @@ namespace Yuicy {
 		s_Data.TextureSlotIndex = 1;
 	}
 
+	// ==================== 纯色 ====================
 	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color)
 	{
 		DrawQuad({ position.x, position.y, 0.0f }, size, color);
@@ -185,6 +186,7 @@ namespace Yuicy {
 		DrawQuad(transform, color);
 	}
 
+	// ==================== 纹理 ====================
 	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor)
 	{
 		DrawQuad({ position.x, position.y, 0.0f }, size, texture, tilingFactor, tintColor);
@@ -197,15 +199,32 @@ namespace Yuicy {
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
 			* glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
 
-		DrawQuad(transform, texture, tilingFactor);
+		DrawQuad(transform, texture, tilingFactor, tintColor);
 	}
 
+	// ==================== 子纹理 ====================
+	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor)
+	{
+		DrawQuad({ position.x, position.y, 0.0f }, size, subTexture, tilingFactor, tintColor);
+	}
+
+	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor)
+	{
+		YUICY_PROFILE_FUNCTION();
+
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
+			* glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
+
+		DrawQuad(transform, subTexture, tilingFactor, tintColor);
+	}
+
+	// ==================== 矩阵 ====================
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
 	{
 		YUICY_PROFILE_FUNCTION();
 
 		constexpr size_t quadVertexCount = 4;
-		const float textureIndex = 0.0f; // White Texture
+		const float textureIndex = 0.0f;
 		constexpr glm::vec2 textureCoords[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 		const float tilingFactor = 1.0f;
 
@@ -223,20 +242,31 @@ namespace Yuicy {
 		}
 
 		s_Data.QuadIndexCount += 6;
-
 		s_Data.Stats.QuadCount++;
 	}
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor)
 	{
+		DrawSprite(transform, texture, tilingFactor, tintColor, false, false);
+	}
+
+	void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor)
+	{
+		DrawSprite(transform, subTexture, tilingFactor, tintColor, false, false);
+	}
+
+	// ==================== 翻转纹理====================
+
+	void Renderer2D::DrawSprite(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, bool flipX, bool flipY)
+	{
 		YUICY_PROFILE_FUNCTION();
 
 		constexpr size_t quadVertexCount = 4;
-		constexpr glm::vec2 textureCoords[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 
 		if (s_Data.QuadIndexCount >= Renderer2DData::MaxIndices)
 			FlushAndReset();
 
+		// 查找或添加纹理
 		float textureIndex = 0.0f;
 		for (uint32_t i = 1; i < s_Data.TextureSlotIndex; i++)
 		{
@@ -247,7 +277,7 @@ namespace Yuicy {
 			}
 		}
 
-		if (textureIndex == 0.0f)  // 当前纹理未缓存
+		if (textureIndex == 0.0f)
 		{
 			if (s_Data.TextureSlotIndex >= Renderer2DData::MaxTextureSlots)
 				FlushAndReset();
@@ -256,6 +286,20 @@ namespace Yuicy {
 			s_Data.TextureSlots[s_Data.TextureSlotIndex] = texture;
 			s_Data.TextureSlotIndex++;
 		}
+
+		// 计算纹理坐标（支持翻转）
+		// 默认: 左下(0,0) 右下(1,0) 右上(1,1) 左上(0,1)
+		float u0 = flipX ? 1.0f : 0.0f;
+		float u1 = flipX ? 0.0f : 1.0f;
+		float v0 = flipY ? 1.0f : 0.0f;
+		float v1 = flipY ? 0.0f : 1.0f;
+
+		glm::vec2 textureCoords[4] = {
+			{ u0, v0 },  // 左下
+			{ u1, v0 },  // 右下
+			{ u1, v1 },  // 右上
+			{ u0, v1 }   // 左上
+		};
 
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{
@@ -268,26 +312,21 @@ namespace Yuicy {
 		}
 
 		s_Data.QuadIndexCount += 6;
-
 		s_Data.Stats.QuadCount++;
 	}
 
-	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor)
-	{
-		DrawQuad({ position.x, position.y, 0.0f }, size, subTexture, tilingFactor, tintColor);
-	}
-	
-	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor)
+	void Renderer2D::DrawSprite(const glm::mat4& transform, const Ref<SubTexture2D>& subTexture, float tilingFactor, const glm::vec4& tintColor, bool flipX, bool flipY)
 	{
 		YUICY_PROFILE_FUNCTION();
 
 		constexpr size_t quadVertexCount = 4;
-		const glm::vec2* textureCoords = subTexture->GetTexCoords();
 		const Ref<Texture2D> texture = subTexture->GetTexture();
+		const glm::vec2* originalTexCoords = subTexture->GetTexCoords();
 
 		if (s_Data.QuadIndexCount >= Renderer2DData::MaxIndices)
 			FlushAndReset();
 
+		// 查找或添加纹理
 		float textureIndex = 0.0f;
 		for (uint32_t i = 1; i < s_Data.TextureSlotIndex; i++)
 		{
@@ -298,7 +337,7 @@ namespace Yuicy {
 			}
 		}
 
-		if (textureIndex == 0.0f)  // 当前纹理未缓存
+		if (textureIndex == 0.0f)
 		{
 			if (s_Data.TextureSlotIndex >= Renderer2DData::MaxTextureSlots)
 				FlushAndReset();
@@ -308,8 +347,42 @@ namespace Yuicy {
 			s_Data.TextureSlotIndex++;
 		}
 
-		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
+		// 处理子纹理的翻转
+		// 原始纹理坐标: [0]=左下 [1]=右下 [2]=右上 [3]=左上
+		glm::vec2 textureCoords[4];
+
+		if (!flipX && !flipY)
+		{
+			// 不翻转
+			textureCoords[0] = originalTexCoords[0];
+			textureCoords[1] = originalTexCoords[1];
+			textureCoords[2] = originalTexCoords[2];
+			textureCoords[3] = originalTexCoords[3];
+		}
+		else if (flipX && !flipY)
+		{
+			// 水平翻转：左右交换
+			textureCoords[0] = originalTexCoords[1];
+			textureCoords[1] = originalTexCoords[0];
+			textureCoords[2] = originalTexCoords[3];
+			textureCoords[3] = originalTexCoords[2];
+		}
+		else if (!flipX && flipY)
+		{
+			// 垂直翻转：上下交换
+			textureCoords[0] = originalTexCoords[3];
+			textureCoords[1] = originalTexCoords[2];
+			textureCoords[2] = originalTexCoords[1];
+			textureCoords[3] = originalTexCoords[0];
+		}
+		else
+		{
+			// 水平+垂直翻转
+			textureCoords[0] = originalTexCoords[2];
+			textureCoords[1] = originalTexCoords[3];
+			textureCoords[2] = originalTexCoords[0];
+			textureCoords[3] = originalTexCoords[1];
+		}
 
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{
@@ -322,10 +395,10 @@ namespace Yuicy {
 		}
 
 		s_Data.QuadIndexCount += 6;
-
 		s_Data.Stats.QuadCount++;
 	}
 
+	// ==================== 旋转矩形 ====================
 	void Renderer2D::DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const glm::vec4& color)
 	{
 		DrawRotatedQuad({ position.x, position.y, 0.0f }, size, rotation, color);
@@ -336,7 +409,7 @@ namespace Yuicy {
 		YUICY_PROFILE_FUNCTION();
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), { 0.0f, 0.0f, 1.0f })
+			* glm::rotate(glm::mat4(1.0f), rotation, { 0.0f, 0.0f, 1.0f })
 			* glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
 
 		DrawQuad(transform, color);
@@ -352,7 +425,7 @@ namespace Yuicy {
 		YUICY_PROFILE_FUNCTION();
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), { 0.0f, 0.0f, 1.0f })
+			* glm::rotate(glm::mat4(1.0f), rotation, { 0.0f, 0.0f, 1.0f })
 			* glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
 
 		DrawQuad(transform, texture, tilingFactor, tintColor);
