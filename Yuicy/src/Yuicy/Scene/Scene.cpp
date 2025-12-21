@@ -5,6 +5,7 @@
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Scene/ContactListener.h"
+#include "Yuicy/Scene/ScriptableEntity.h"
 
 #include <glm/glm.hpp>
 
@@ -17,7 +18,6 @@
 
 namespace Yuicy {
 
-	// 将 Rigidbody2DComponent::BodyType 转换为 b2BodyType
 	static b2BodyType Rigidbody2DTypeToBox2DBody(Rigidbody2DComponent::BodyType bodyType)
 	{
 		switch (bodyType)
@@ -53,6 +53,133 @@ namespace Yuicy {
 	void Scene::DestroyEntity(Entity entity)
 	{
 		m_Registry.destroy(entity.m_EntityHandle);
+	}
+
+	void Scene::InitializeScripts()
+	{
+		// 遍历所有拥有 NativeScriptComponent 的实体
+		auto view = m_Registry.view<NativeScriptComponent>();
+		for (auto e : view)
+		{
+			auto& nsc = view.get<NativeScriptComponent>(e);
+
+			if (nsc.InstantiateScript && !nsc.Instance)
+			{
+				nsc.Instance = nsc.InstantiateScript();
+				// 设置脚本的实体引用
+				nsc.Instance->m_Entity = Entity{ e, this };
+				nsc.Instance->OnCreate();
+			}
+		}
+	}
+
+	void Scene::UpdateScripts(Timestep ts)
+	{
+		// 遍历所有脚本并调用 OnUpdate
+		auto view = m_Registry.view<NativeScriptComponent>();
+		for (auto e : view)
+		{
+			auto& nsc = view.get<NativeScriptComponent>(e);
+
+			if (nsc.Instance)
+			{
+				nsc.Instance->OnUpdate(ts);
+			}
+		}
+	}
+
+	void Scene::DestroyScripts()
+	{
+		// 遍历所有脚本并销毁
+		auto view = m_Registry.view<NativeScriptComponent>();
+		for (auto e : view)
+		{
+			auto& nsc = view.get<NativeScriptComponent>(e);
+
+			if (nsc.Instance)
+			{
+				// 调用 OnDestroy 生命周期方法
+				nsc.Instance->OnDestroy();
+
+				// 销毁实例
+				if (nsc.DestroyScript)
+					nsc.DestroyScript(&nsc);
+			}
+		}
+	}
+
+	void Scene::ProcessCollisionCallbacks()
+	{
+		if (!m_ContactListener)
+			return;
+
+		// 处理碰撞开始事件
+		for (const auto& contact : m_ContactListener->GetBeginContacts())
+		{
+			entt::entity entityA = static_cast<entt::entity>(reinterpret_cast<uintptr_t>(contact.EntityA));
+			entt::entity entityB = static_cast<entt::entity>(reinterpret_cast<uintptr_t>(contact.EntityB));
+
+			// 如果实体 A 有脚本，通知它
+			if (m_Registry.valid(entityA) && m_Registry.all_of<NativeScriptComponent>(entityA))
+			{
+				auto& nsc = m_Registry.get<NativeScriptComponent>(entityA);
+				if (nsc.Instance)
+				{
+					Entity otherEntity{ entityB, this };
+					if (contact.IsSensorA || contact.IsSensorB)
+						nsc.Instance->OnTriggerEnter(otherEntity);
+					else
+						nsc.Instance->OnCollisionEnter(otherEntity);
+				}
+			}
+
+			// 如果实体 B 有脚本，通知它
+			if (m_Registry.valid(entityB) && m_Registry.all_of<NativeScriptComponent>(entityB))
+			{
+				auto& nsc = m_Registry.get<NativeScriptComponent>(entityB);
+				if (nsc.Instance)
+				{
+					Entity otherEntity{ entityA, this };
+					if (contact.IsSensorA || contact.IsSensorB)
+						nsc.Instance->OnTriggerEnter(otherEntity);
+					else
+						nsc.Instance->OnCollisionEnter(otherEntity);
+				}
+			}
+		}
+
+		// 处理碰撞结束事件
+		for (const auto& contact : m_ContactListener->GetEndContacts())
+		{
+			entt::entity entityA = static_cast<entt::entity>(reinterpret_cast<uintptr_t>(contact.EntityA));
+			entt::entity entityB = static_cast<entt::entity>(reinterpret_cast<uintptr_t>(contact.EntityB));
+
+			if (m_Registry.valid(entityA) && m_Registry.all_of<NativeScriptComponent>(entityA))
+			{
+				auto& nsc = m_Registry.get<NativeScriptComponent>(entityA);
+				if (nsc.Instance)
+				{
+					Entity otherEntity{ entityB, this };
+					if (contact.IsSensorA || contact.IsSensorB)
+						nsc.Instance->OnTriggerExit(otherEntity);
+					else
+						nsc.Instance->OnCollisionExit(otherEntity);
+				}
+			}
+
+			if (m_Registry.valid(entityB) && m_Registry.all_of<NativeScriptComponent>(entityB))
+			{
+				auto& nsc = m_Registry.get<NativeScriptComponent>(entityB);
+				if (nsc.Instance)
+				{
+					Entity otherEntity{ entityA, this };
+					if (contact.IsSensorA || contact.IsSensorB)
+						nsc.Instance->OnTriggerExit(otherEntity);
+					else
+						nsc.Instance->OnCollisionExit(otherEntity);
+				}
+			}
+		}
 	}
 
 	void Scene::OnRuntimeStart()
@@ -148,10 +275,14 @@ namespace Yuicy {
 				cc2d.RuntimeFixture = body->CreateFixture(&fixtureDef);
 			}
 		}
+
+		InitializeScripts();
 	}
 
 	void Scene::OnRuntimeStop()
 	{
+		DestroyScripts();
+
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -182,7 +313,8 @@ namespace Yuicy {
 
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
-		// P0: 固定时间步长物理模拟（accumulator 模式）
+		UpdateScripts(ts);
+
 		if (m_PhysicsWorld)
 		{
 			// 清空本帧碰撞事件
@@ -220,8 +352,8 @@ namespace Yuicy {
 					transform.Rotation.z = body->GetAngle();
 				}
 			}
-
-			// TODO: 处理碰撞回调事件
+			// 碰撞回调
+			ProcessCollisionCallbacks();
 		}
 
 		// 渲染场景

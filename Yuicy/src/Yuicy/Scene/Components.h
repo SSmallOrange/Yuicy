@@ -11,6 +11,8 @@
 
 namespace Yuicy {
 
+	class ScriptableEntity;
+
 	struct TagComponent
 	{
 		std::string Tag;
@@ -95,6 +97,27 @@ namespace Yuicy {
 		CameraComponent(const CameraComponent&) = default;
 	};
 
+	struct NativeScriptComponent
+	{
+		ScriptableEntity* Instance = nullptr;
+
+		ScriptableEntity* (*InstantiateScript)() = nullptr;
+		void (*DestroyScript)(NativeScriptComponent*) = nullptr;
+
+		template<typename T>
+		void Bind()
+		{
+			InstantiateScript = [] {
+				return static_cast<ScriptableEntity*>(new T());
+			};
+
+			DestroyScript = [](NativeScriptComponent* nsc) {
+				delete nsc->Instance;
+				nsc->Instance = nullptr;
+			};
+		}
+	};
+
 	// ==================== 碰撞过滤层定义 ====================
 	namespace CollisionLayer
 	{
@@ -115,7 +138,7 @@ namespace Yuicy {
 	// 刚体组件 - 定义物理实体的类型和属性
 	struct Rigidbody2DComponent
 	{
-		// 刚体类型 静态/动态/运动学
+		// 刚体类型 静态（地面、墙壁）/动态（玩家、NPC）/运动学（电梯、传送带）
 		enum class BodyType { Static = 0, Dynamic, Kinematic };
 		BodyType Type = BodyType::Static;
 

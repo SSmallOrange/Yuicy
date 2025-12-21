@@ -9,7 +9,7 @@ class b2World;
 namespace Yuicy {
 
 	class Entity;
-	class ContactListener;  // 前向声明
+	class ContactListener;
 
 	class Scene
 	{
@@ -32,6 +32,13 @@ namespace Yuicy {
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
 
 	private:
+		// 脚本
+		void InitializeScripts();			
+		void UpdateScripts(Timestep ts);	
+		void DestroyScripts();				
+		// 碰撞回调
+		void ProcessCollisionCallbacks();
+
 		void RenderScene();
 
 	private:
@@ -48,5 +55,4 @@ namespace Yuicy {
 
 		friend class Entity;
 	};
-
 }
