@@ -17,33 +17,53 @@ Sandbox2D::Sandbox2D()
 	m_ViewportSize = { Yuicy::Application::Get().GetWindow().GetWidth(),
 				   Yuicy::Application::Get().GetWindow().GetHeight() };
 }
-
+// 23, 0 (16, 16)
 void Sandbox2D::OnAttach()
 {
 	m_CheckerboardTexture = Yuicy::Texture2D::Create("assets/textures/Checkerboard.png");
+	m_PlayerSheet = Yuicy::Texture2D::Create("assets/textures/tilemap_packed.png");
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
 
-	// ==================== 创建玩家 ====================
+	// ==================== 创建带动画的玩家 ====================
 	m_Player = m_ActiveScene->CreateEntity("Player");
 	auto& playerTransform = m_Player.GetComponent<Yuicy::TransformComponent>();
 	playerTransform.Translation = { 0.0f, 2.0f, 0.0f };
-	playerTransform.Scale = { 0.8f, 0.8f, 1.0f };
+	playerTransform.Scale = { 1.0f, 1.0f, 1.0f };
 
-	// 玩家精灵
-	auto& playerSprite = m_Player.AddComponent<Yuicy::SpriteRendererComponent>();
-	playerSprite.Color = { 0.2f, 0.8f, 0.3f, 1.0f };
+	// 添加精灵渲染组件（动画会自动更新 SubTexture）
+	m_Player.AddComponent<Yuicy::SpriteRendererComponent>();
 
-	// 玩家物理
+	// 添加动画组件
+	auto& anim = m_Player.AddComponent<Yuicy::AnimationComponent>();
+
+	// 创建待机动画 - 假设精灵图集第 0 行是待机动画
+	Yuicy::AnimationClip idleClip("Idle", 0.15f, true);
+	idleClip.AddFramesFromSheet(m_PlayerSheet, { 23, 0 }, 1, { 16, 16 }, { 1.0f, 1.0f }, true);
+	anim.AddClip(idleClip);
+
+	//// 创建行走动画 - 假设精灵图集第 1 行是行走动画
+	//Yuicy::AnimationClip walkClip("Walk", 0.1f, true);
+	//walkClip.AddFramesFromSheet(m_PlayerSheet, { 23, 1 }, 4, { 16, 16 }, { 1.0f, 1.0f }, true);
+	//anim.AddClip(walkClip);
+
+	// 创建跳跃动画 - 假设精灵图集第 2 行是跳跃动画
+	Yuicy::AnimationClip jumpClip("Jump", 0.1f, false);  // 不循环
+	jumpClip.AddFramesFromSheet(m_PlayerSheet, { 23, 2 }, 4, { 16, 16 }, { 1.0f, 1.0f }, true);
+	anim.AddClip(jumpClip);
+
+	// 默认播放待机动画
+	anim.Play("Idle");
+
+	// 添加物理组件
 	auto& playerRb = m_Player.AddComponent<Yuicy::Rigidbody2DComponent>();
 	playerRb.Type = Yuicy::Rigidbody2DComponent::BodyType::Dynamic;
-	playerRb.FixedRotation = false;
+	playerRb.FixedRotation = true;
 
 	auto& playerCollider = m_Player.AddComponent<Yuicy::BoxCollider2DComponent>();
-	playerCollider.Density = 1.0f;
-	playerCollider.Friction = 0.3f;
+	playerCollider.Size = { 0.4f, 0.5f };  // 碰撞体略小于精灵
 
-	// 绑定玩家控制器脚本
+	// 绑定脚本
 	m_Player.AddComponent<Yuicy::NativeScriptComponent>().Bind<PlayerController>();
 
 	// ==================== 创建相机 ====================

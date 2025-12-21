@@ -18,6 +18,7 @@ private:
 	Yuicy::OrthographicCameraController m_CameraController;
 
 	Yuicy::Ref<Yuicy::Texture2D> m_CheckerboardTexture;
+	Yuicy::Ref<Yuicy::Texture2D> m_PlayerSheet;
 
 	Yuicy::ParticleSystem m_ParticleSystem;
 	Yuicy::ParticleProps m_ParticleProps;

@@ -73,6 +73,29 @@ public:
 		// 应用速度
 		body->SetLinearVelocity(velocity);
 
+		// ==================== 动画切换 ====================
+		if (HasComponent<Yuicy::AnimationComponent>())
+		{
+			auto& anim = GetComponent<Yuicy::AnimationComponent>();
+
+			// 根据状态切换动画
+			if (!m_IsGrounded)
+			{
+				// 空中状态
+				anim.Play("Jump");
+			}
+			else if (moveInput != 0.0f)
+			{
+				// 地面移动
+				anim.Play("Walk");
+			}
+			else
+			{
+				// 地面静止
+				anim.Play("Idle");
+			}
+		}
+
 		// ==================== 精灵翻转 ====================
 		if (HasComponent<Yuicy::SpriteRendererComponent>() && moveInput != 0.0f)
 		{

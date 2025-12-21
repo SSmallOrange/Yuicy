@@ -118,6 +118,143 @@ namespace Yuicy {
 		}
 	};
 
+	// 动画片段
+	struct AnimationClip
+	{
+		std::string Name;                            // 动画名称
+		std::vector<Ref<SubTexture2D>> Frames;       // 动画帧序列
+		float FrameDuration = 0.1f;                  // 每帧持续时间（秒）
+		bool Loop = true;                            // 是否循环播放
+
+		AnimationClip() = default;
+		AnimationClip(const std::string& name, float frameDuration = 0.1f, bool loop = true)
+			: Name(name), FrameDuration(frameDuration), Loop(loop) {
+		}
+
+		void AddFramesFromSheet(const Ref<Texture2D>& sheet,
+			const glm::vec2& startCoord,
+			int frameCount,
+			const glm::vec2& cellSize,
+			const glm::vec2& spriteSize = {1.0f, 1.0f},
+			bool horizontal = true)
+		{
+			for (int i = 0; i < frameCount; i++)
+			{
+				glm::vec2 coord = startCoord;
+				if (horizontal)
+					coord.x += (float)i;
+				else
+					coord.y += (float)i;
+
+				Frames.push_back(SubTexture2D::CreateFromCoords(sheet, coord, cellSize, spriteSize));
+			}
+		}
+	};
+
+	// 动画状态
+	struct AnimationState
+	{
+		std::string CurrentClipName;    // 当前播放的动画名称
+		int CurrentFrame = 0;           // 当前帧索引
+		float Timer = 0.0f;             // 帧计时器
+		bool Playing = true;            // 是否正在播放
+		bool Finished = false;          // 非循环动画是否已播放完毕
+
+		void Reset()
+		{
+			CurrentFrame = 0;
+			Timer = 0.0f;
+			Playing = true;
+			Finished = false;
+		}
+	};
+
+	// 动画组件
+	struct AnimationComponent
+	{
+		std::unordered_map<std::string, AnimationClip> Clips;  // 动画片段
+		AnimationState State;                                  // 当前播放状态
+
+		AnimationComponent() = default;
+		AnimationComponent(const AnimationComponent&) = default;
+
+		// 添加动画剪辑
+		void AddClip(const AnimationClip& clip)
+		{
+			Clips[clip.Name] = clip;
+			// 如果是第一个剪辑，自动设为当前动画
+			if (State.CurrentClipName.empty())
+				State.CurrentClipName = clip.Name;
+		}
+
+		// 播放指定动画
+		void Play(const std::string& clipName, bool forceRestart = false)
+		{
+			// 已经在播放且不需要重启
+			if (State.CurrentClipName == clipName && !forceRestart && !State.Finished)
+				return;
+
+			if (Clips.find(clipName) == Clips.end())
+			{
+				YUICY_CORE_WARN("Animation clip '{}' not found!", clipName);
+				return;
+			}
+
+			State.CurrentClipName = clipName;
+			State.Reset();
+		}
+
+		// 停止播放
+		void Stop()
+		{
+			State.Playing = false;
+		}
+
+		// 暂停播放
+		void Pause()
+		{
+			State.Playing = false;
+		}
+
+		// 恢复播放
+		void Resume()
+		{
+			State.Playing = true;
+		}
+
+		// 获取当前动画剪辑
+		AnimationClip* GetCurrentClip()
+		{
+			if (Clips.find(State.CurrentClipName) != Clips.end())
+				return &Clips[State.CurrentClipName];
+			return nullptr;
+		}
+
+		// 获取当前帧的纹理
+		Ref<SubTexture2D> GetCurrentFrame() const
+		{
+			auto it = Clips.find(State.CurrentClipName);
+			if (it != Clips.end() && !it->second.Frames.empty())
+			{
+				int frameIndex = State.CurrentFrame % it->second.Frames.size();
+				return it->second.Frames[frameIndex];
+			}
+			return nullptr;
+		}
+
+		// 检查动画是否正在播放
+		bool IsPlaying() const { return State.Playing && !State.Finished; }
+
+		// 检查动画是否已完成
+		bool IsFinished() const { return State.Finished; }
+
+		// 检查当前是否在播放指定动画
+		bool IsPlaying(const std::string& clipName) const
+		{
+			return State.CurrentClipName == clipName && State.Playing && !State.Finished;
+		}
+	};
+
 	// ==================== 碰撞过滤层定义 ====================
 	namespace CollisionLayer
 	{

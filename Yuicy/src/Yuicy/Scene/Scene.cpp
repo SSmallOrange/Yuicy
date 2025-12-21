@@ -182,6 +182,56 @@ namespace Yuicy {
 		}
 	}
 
+	void Scene::UpdateAnimations(Timestep ts)
+	{
+		auto view = m_Registry.view<AnimationComponent, SpriteRendererComponent>();
+
+		for (auto entity : view)
+		{
+			auto& anim = view.get<AnimationComponent>(entity);
+			auto& sprite = view.get<SpriteRendererComponent>(entity);
+
+			// 跳过在播放或已经播放完成的片段
+			if (!anim.State.Playing || anim.State.Finished)
+				continue;
+
+			// 获取当前动画剪辑
+			AnimationClip* clip = anim.GetCurrentClip();
+			if (!clip || clip->Frames.empty())
+				continue;
+
+			// 累加时间
+			anim.State.Timer += ts;
+
+			// 检查是否需要切换到下一帧
+			while (anim.State.Timer >= clip->FrameDuration)
+			{
+				anim.State.Timer -= clip->FrameDuration;
+				anim.State.CurrentFrame++;
+
+				// 检查是否播放完成
+				if (anim.State.CurrentFrame >= static_cast<int>(clip->Frames.size()))
+				{
+					if (clip->Loop)  // 循环播放
+					{
+						anim.State.CurrentFrame = 0;
+					}
+					else
+					{
+						// 非循环：停在最后一帧
+						anim.State.CurrentFrame = static_cast<int>(clip->Frames.size()) - 1;
+						anim.State.Finished = true;
+						anim.State.Playing = false;
+						break;
+					}
+				}
+			}
+
+			// 更新精灵的 SubTexture 为当前动画帧
+			sprite.SubTexture = anim.GetCurrentFrame();
+		}
+	}
+
 	void Scene::OnRuntimeStart()
 	{
 		// 重置累加器
@@ -313,7 +363,9 @@ namespace Yuicy {
 
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
-		UpdateScripts(ts);
+		UpdateScripts(ts);		// 脚本更新
+
+		UpdateAnimations(ts);   // 动画更新
 
 		if (m_PhysicsWorld)
 		{

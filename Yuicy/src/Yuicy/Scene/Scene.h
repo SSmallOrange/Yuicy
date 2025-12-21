@@ -35,9 +35,11 @@ namespace Yuicy {
 		// 脚本
 		void InitializeScripts();			
 		void UpdateScripts(Timestep ts);	
-		void DestroyScripts();				
+		void DestroyScripts();
 		// 碰撞回调
 		void ProcessCollisionCallbacks();
+		// 动画
+		void UpdateAnimations(Timestep ts);
 
 		void RenderScene();
 
