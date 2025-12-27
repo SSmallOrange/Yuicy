@@ -13,8 +13,8 @@ namespace Yuicy {
 		b2Fixture* fixtureA = contact->GetFixtureA();
 		b2Fixture* fixtureB = contact->GetFixtureB();
 
-		// ´Ó fixture µÄ userData »ñÈ¡ÊµÌåÐÅÏ¢
-		// Box2D µÄ body µÄ userData ´æ´¢µÄÊÇ entt::entity
+		// ä»Ž fixture çš„ userData èŽ·å–å®žä½“ä¿¡æ¯
+		// Box2D çš„ body çš„ userData å­˜å‚¨çš„æ˜¯ entt::entity
 		info.EntityA = fixtureA->GetBody()->GetUserData().pointer ?
 			(void*)fixtureA->GetBody()->GetUserData().pointer : nullptr;
 		info.EntityB = fixtureB->GetBody()->GetUserData().pointer ?
