@@ -17,13 +17,14 @@ project "TinyDungeon"
     includedirs { 
         "%{wks.location}/Yuicy/src", 
         "%{wks.location}/Yuicy/thirdparty/spdlog/include", 
-        "%{wks.location}/Yuicy/thirdparty/GLFW/include", 
-        "%{wks.location}/Yuicy/thirdparty/tinyrefl",
+        "%{wks.location}/Yuicy/thirdparty/GLFW/include",
         "%{wks.location}/Yuicy/thirdparty",
+        "%{wks.location}/Yuicy/thirdparty/tinyrefl",
         "%{wks.location}/Yuicy/thirdparty/GLAD/include",
         "%{wks.location}/Yuicy/thirdparty/glm",
         "%{wks.location}/Yuicy/thirdparty/entt/include",
-        "%{wks.location}/Yuicy/thirdparty/Box2D/box2d/include"
+        "%{wks.location}/Yuicy/thirdparty/Box2D/box2d/include",
+        "%{prj.location}/thirdparty"
     }
     
     links { "Yuicy" }
