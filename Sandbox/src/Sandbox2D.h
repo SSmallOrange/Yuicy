@@ -31,4 +31,7 @@ private:
 	Yuicy::Entity m_GroundEntity;
 
 	glm::vec2 m_ViewportSize = { 1280.0f, 720.0f };
+
+	// 天气
+	Yuicy::WeatherSystem m_weatherSystem{ 3000 };
 };
