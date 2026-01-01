@@ -29,3 +29,5 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
+
+#include "Yuicy/TileMap/TileMapSystem.h"
