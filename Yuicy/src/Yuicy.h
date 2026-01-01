@@ -31,3 +31,7 @@
 #include "Yuicy/Scene/ScriptableEntity.h"
 
 #include "Yuicy/TileMap/TileMapSystem.h"
+
+// Effects
+#include "Yuicy/Effects/WeatherTypes.h"
+#include "Yuicy/Effects/WeatherSystem.h"

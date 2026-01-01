@@ -42,11 +42,6 @@ void Sandbox2D::OnAttach()
 	idleClip.AddFramesFromSheet(m_PlayerSheet, { 23, 0 }, 1, { 16, 16 }, { 1.0f, 1.0f }, true);
 	anim.AddClip(idleClip);
 
-	//// 创建行走动画 - 假设精灵图集第 1 行是行走动画
-	//Yuicy::AnimationClip walkClip("Walk", 0.1f, true);
-	//walkClip.AddFramesFromSheet(m_PlayerSheet, { 23, 1 }, 4, { 16, 16 }, { 1.0f, 1.0f }, true);
-	//anim.AddClip(walkClip);
-
 	// 创建跳跃动画 - 假设精灵图集第 2 行是跳跃动画
 	Yuicy::AnimationClip jumpClip("Jump", 0.1f, false);  // 不循环
 	jumpClip.AddFramesFromSheet(m_PlayerSheet, { 23, 2 }, 4, { 16, 16 }, { 1.0f, 1.0f }, true);
@@ -125,6 +120,9 @@ void Sandbox2D::OnAttach()
 	auto& coinCollider = coin.AddComponent<Yuicy::BoxCollider2DComponent>();
 	coinCollider.IsTrigger = true;  // 设置为触发器
 
+	// 天气
+	m_weatherSystem.setWeather(Yuicy::WeatherType::Snow, 1.0f);
+
 	// 初始化
 	m_ViewportSize = { Yuicy::Application::Get().GetWindow().GetWidth(),
 					   Yuicy::Application::Get().GetWindow().GetHeight() };
@@ -154,12 +152,32 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 {
 	YUICY_PROFILE_FUNCTION();
 
+	m_weatherSystem.onUpdate(ts);
+
 	Yuicy::Renderer2D::ResetStats();
 
 	Yuicy::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.2f, 1 });
 	Yuicy::RenderCommand::Clear();
 
 	m_ActiveScene->OnUpdateRuntime(ts);
+
+	if (m_CameraEntity && m_weatherSystem.isActive())
+	{
+		auto& cameraComp = m_CameraEntity.GetComponent<Yuicy::CameraComponent>();
+		auto& transform = m_CameraEntity.GetComponent<Yuicy::TransformComponent>();
+
+		// 计算视口尺寸（世界坐标）
+		float orthoSize = cameraComp.Camera.GetOrthographicSize();
+		float aspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+		glm::vec2 viewportWorldSize = { orthoSize * aspectRatio, orthoSize };
+
+		Yuicy::Renderer2D::BeginScene(cameraComp.Camera, transform.GetTransform());
+		m_weatherSystem.onRender(
+			{ transform.Translation.x, transform.Translation.y },
+			viewportWorldSize
+		);
+		Yuicy::Renderer2D::EndScene();
+	}
 }
 
 void Sandbox2D::OnImGuiRender()
@@ -171,6 +189,30 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::Text("Renderer2D Stats:");
 	ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 	ImGui::Text("Quads: %d", stats.QuadCount);
+
+	ImGui::Separator();
+	ImGui::Text("Weather System:");
+
+	static int weatherType = 0;
+	const char* weatherNames[] = { "None", "Rain", "Snow", "Storm" };
+	if (ImGui::Combo("Weather", &weatherType, weatherNames, 4))
+	{
+		m_weatherSystem.setWeather(static_cast<Yuicy::WeatherType>(weatherType));
+	}
+
+	static float intensity = 1.0f;
+	if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 2.0f))
+	{
+		auto config = m_weatherSystem.getPreset(m_weatherSystem.getCurrentWeather());
+		config.intensity = intensity;
+		m_weatherSystem.setWeather(config);
+	}
+
+	static float windStrength = 0.0f;
+	if (ImGui::SliderFloat("Wind", &windStrength, -1.0f, 1.0f))
+	{
+		m_weatherSystem.setWindStrength(windStrength);
+	}
 
 	ImGui::Separator();
 	ImGui::Text("Controls:");
