@@ -121,17 +121,27 @@ void Sandbox2D::OnAttach()
 	coinCollider.IsTrigger = true;  // 设置为触发器
 
 	// 天气
-	m_weatherSystem.setWeather(Yuicy::WeatherType::Snow, 1.0f);
+	m_weatherSystem.SetWeather(Yuicy::WeatherType::Snow, Yuicy::WeatherIntensity::Normal);
+
+	// 稀疏萤火虫配置
+	auto sparseFireflies = Yuicy::WeatherPresets::Fireflies();
+	sparseFireflies.name = "SparseFireflies";
+	sparseFireflies.particles.spawnRate = 1.5f;       // 每秒 1.5 个
+	sparseFireflies.particles.particleLifetime = 25.0f; // 活 25 秒
+	sparseFireflies.intensity = 1.0f;
+	Yuicy::WeatherPresets::RegisterPreset("SparseFireflies", sparseFireflies);
+
+	m_weatherSystem.TransitionTo("SparseFireflies");
 
 	// 初始化
 	m_ViewportSize = { Yuicy::Application::Get().GetWindow().GetWidth(),
 					   Yuicy::Application::Get().GetWindow().GetHeight() };
 	m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
-	// 启动场景（会初始化物理和脚本）
+	// 启动场景
 	m_ActiveScene->OnRuntimeStart();
 
-	// 设置相机跟随目标（在脚本初始化后）
+	// 设置相机跟随目标
 	if (m_CameraEntity.HasComponent<Yuicy::NativeScriptComponent>())
 	{
 		auto& nsc = m_CameraEntity.GetComponent<Yuicy::NativeScriptComponent>();
@@ -152,7 +162,7 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 {
 	YUICY_PROFILE_FUNCTION();
 
-	m_weatherSystem.onUpdate(ts);
+	m_weatherSystem.OnUpdate(ts);
 
 	Yuicy::Renderer2D::ResetStats();
 
@@ -161,7 +171,7 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 
 	m_ActiveScene->OnUpdateRuntime(ts);
 
-	if (m_CameraEntity && m_weatherSystem.isActive())
+	if (m_CameraEntity && m_weatherSystem.IsActive())
 	{
 		auto& cameraComp = m_CameraEntity.GetComponent<Yuicy::CameraComponent>();
 		auto& transform = m_CameraEntity.GetComponent<Yuicy::TransformComponent>();
@@ -172,7 +182,7 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 		glm::vec2 viewportWorldSize = { orthoSize * aspectRatio, orthoSize };
 
 		Yuicy::Renderer2D::BeginScene(cameraComp.Camera, transform.GetTransform());
-		m_weatherSystem.onRender(
+		m_weatherSystem.OnRender(
 			{ transform.Translation.x, transform.Translation.y },
 			viewportWorldSize
 		);
@@ -193,26 +203,62 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::Separator();
 	ImGui::Text("Weather System:");
 
-	static int weatherType = 0;
-	const char* weatherNames[] = { "None", "Rain", "Snow", "Storm" };
-	if (ImGui::Combo("Weather", &weatherType, weatherNames, 4))
+	// 预设选择下拉框
+	static int selectedPreset = 0;
+	std::vector<std::string> presetNames = Yuicy::WeatherPresets::GetAllPresetNames();
+	presetNames.insert(presetNames.begin(), "None");  // 添加无天气选项
+
+	if (ImGui::BeginCombo("Preset", presetNames[selectedPreset].c_str()))
 	{
-		m_weatherSystem.setWeather(static_cast<Yuicy::WeatherType>(weatherType));
+		for (int i = 0; i < presetNames.size(); i++)
+		{
+			bool isSelected = (selectedPreset == i);
+			if (ImGui::Selectable(presetNames[i].c_str(), isSelected))
+			{
+				selectedPreset = i;
+				if (i == 0)
+					m_weatherSystem.FadeOut(2.0f);
+				else
+					m_weatherSystem.TransitionTo(presetNames[i]);
+			}
+			if (isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
 	}
 
-	static float intensity = 1.0f;
-	if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 2.0f))
+	// 当前状态显示
+	ImGui::Text("Current: %s", m_weatherSystem.GetCurrentWeatherName().c_str());
+	if (m_weatherSystem.IsTransitioning())
 	{
-		auto config = m_weatherSystem.getPreset(m_weatherSystem.getCurrentWeather());
-		config.intensity = intensity;
-		m_weatherSystem.setWeather(config);
+		ImGui::Text("Transitioning: %.0f%%", m_weatherSystem.GetTransitionProgress() * 100.0f);
 	}
 
-	static float windStrength = 0.0f;
-	if (ImGui::SliderFloat("Wind", &windStrength, -1.0f, 1.0f))
+	// 实时调参
+	float intensity = m_weatherSystem.GetIntensity();
+	if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 3.0f))
 	{
-		m_weatherSystem.setWindStrength(windStrength);
+		m_weatherSystem.SetIntensity(intensity);
 	}
+
+	float wind = m_weatherSystem.GetWindStrength();
+	if (ImGui::SliderFloat("Wind", &wind, -1.0f, 1.0f))
+	{
+		m_weatherSystem.SetWindStrength(wind);
+	}
+
+	// 快速切换按钮
+	if (ImGui::Button("Rain")) m_weatherSystem.TransitionTo(Yuicy::WeatherType::Rain);
+	ImGui::SameLine();
+	if (ImGui::Button("Snow")) m_weatherSystem.TransitionTo(Yuicy::WeatherType::Snow);
+	ImGui::SameLine();
+	if (ImGui::Button("Storm")) m_weatherSystem.TransitionTo("Storm");
+
+	if (ImGui::Button("Leaves")) m_weatherSystem.TransitionTo("FallingLeaves");
+	ImGui::SameLine();
+	if (ImGui::Button("Fireflies")) m_weatherSystem.TransitionTo("Fireflies");
+	ImGui::SameLine();
+	if (ImGui::Button("Clear")) m_weatherSystem.FadeOut();
 
 	ImGui::Separator();
 	ImGui::Text("Controls:");

@@ -35,3 +35,4 @@
 // Effects
 #include "Yuicy/Effects/WeatherTypes.h"
 #include "Yuicy/Effects/WeatherSystem.h"
+#include "Yuicy/Effects/WeatherPresets.h"

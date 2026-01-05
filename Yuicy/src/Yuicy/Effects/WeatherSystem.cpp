@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "WeatherSystem.h"
+#include "WeatherPresets.h"
 #include "Yuicy/Renderer/Renderer2D.h"
 
 #include <cstdlib>
@@ -15,30 +16,82 @@ namespace Yuicy {
 		std::srand(static_cast<unsigned>(std::time(nullptr)));
 	}
 
-	void WeatherSystem::setWeather(WeatherType type, float intensity)
+	void WeatherSystem::SetWeather(WeatherType type, WeatherIntensity intensity)
 	{
-		m_config = getPreset(type);
-		m_config.intensity = intensity;
+		m_currentConfig = WeatherPresets::Get(type, intensity);
+		m_isTransitioning = false;
 	}
 
-	void WeatherSystem::setWeather(const WeatherConfig& config)
+	void WeatherSystem::SetWeather(const WeatherConfig& config)
 	{
-		m_config = config;
+		m_currentConfig = config;
+		m_isTransitioning = false;
 	}
 
-	void WeatherSystem::clear()
+	void WeatherSystem::TransitionTo(WeatherType type, WeatherIntensity intensity)
 	{
-		m_config.type = WeatherType::None;  // 粒子自然消亡
+		TransitionTo(WeatherPresets::Get(type, intensity));
 	}
 
-	void WeatherSystem::setWindStrength(float strength)
+	void WeatherSystem::TransitionTo(const WeatherConfig& config)
 	{
-		m_config.windStrength = glm::clamp(strength, -1.0f, 1.0f);
+		// 保存当前配置作为过渡起点
+		m_previousConfig = m_currentConfig;
+		m_targetConfig = config;
+
+		// 开始过渡
+		m_isTransitioning = true;
+		m_transitionProgress = 0.0f;
+		m_transitionDuration = config.transition.duration;
 	}
 
-	void WeatherSystem::onUpdate(Timestep ts)
+	void WeatherSystem::TransitionTo(const std::string& presetName)
+	{
+		if (WeatherPresets::HasPreset(presetName))
+		{
+			TransitionTo(WeatherPresets::GetByName(presetName));
+		}
+		else
+		{
+			YUICY_CORE_WARN("Weather preset '{}' not found!", presetName);
+		}
+	}
+
+	void WeatherSystem::Clear()
+	{
+		m_currentConfig.type = WeatherType::None;  // 
+		m_currentConfig.name = "None";
+		m_isTransitioning = false;
+	}
+
+	void WeatherSystem::SetWindStrength(float strength)
+	{
+		m_currentConfig.windStrength = glm::clamp(strength, -1.0f, 1.0f);
+	}
+
+	void WeatherSystem::SetIntensity(float intensity)
+	{
+		m_currentConfig.intensity = glm::max(0.0f, intensity);
+	}
+
+	void WeatherSystem::FadeOut(float duration)
+	{
+		WeatherConfig fadeConfig;
+		fadeConfig.type = WeatherType::None;
+		fadeConfig.name = "None";
+		fadeConfig.transition.duration = duration;
+		TransitionTo(fadeConfig);
+	}
+
+	void WeatherSystem::OnUpdate(Timestep ts)
 	{
 		float dt = static_cast<float>(ts);
+		m_globalTime += dt;
+
+		if (m_isTransitioning)
+		{
+			UpdateTransition(ts);
+		}
 
 		for (auto& particle : m_particlePool)
 		{
@@ -53,33 +106,144 @@ namespace Yuicy {
 			}
 
 			// 重力
-			particle.velocity += m_config.particles.gravity * dt;
+			particle.velocity += m_currentConfig.particles.gravity * dt;
 
 			// 风力影响：windStrength * 基础风速系数
-			float windEffect = m_config.windStrength * 2.0f;
+			float windEffect = m_currentConfig.windStrength * 2.0f;
 			particle.position.x += windEffect * dt;
+
+			ApplyParticleMotion(particle, dt);
 
 			// 位置
 			particle.position += particle.velocity * dt;
+			// 旋转
+			particle.rotation += m_currentConfig.particles.rotationSpeed * dt;
+		}
+	}
 
-			if (m_config.type == WeatherType::Snow)
+	void WeatherSystem::UpdateTransition(Timestep ts)
+	{
+		float dt = static_cast<float>(ts);
+		m_transitionProgress += dt / m_transitionDuration;
+
+		if (m_transitionProgress >= 1.0f)
+		{
+			// 过渡完成
+			m_transitionProgress = 1.0f;
+			m_currentConfig = m_targetConfig;
+			m_isTransitioning = false;
+		}
+		else
+		{
+			// 插值过渡中的参数
+			// 使用平滑的缓动函数
+			float t = m_transitionProgress;
+			float smoothT = t * t * (3.0f - 2.0f * t);  // smoothstep
+
+			// 插值强度
+			m_currentConfig.intensity = glm::mix(
+				m_previousConfig.intensity,
+				m_targetConfig.intensity,
+				smoothT
+			);
+
+			// 插值风力
+			m_currentConfig.windStrength = glm::mix(
+				m_previousConfig.windStrength,
+				m_targetConfig.windStrength,
+				smoothT
+			);
+
+			// 插值粒子生成率
+			m_currentConfig.particles.spawnRate = glm::mix(
+				m_previousConfig.particles.spawnRate,
+				m_targetConfig.particles.spawnRate,
+				smoothT
+			);
+
+			// 插值颜色
+			m_currentConfig.particles.colorStart = glm::mix(
+				m_previousConfig.particles.colorStart,
+				m_targetConfig.particles.colorStart,
+				smoothT
+			);
+			m_currentConfig.particles.colorEnd = glm::mix(
+				m_previousConfig.particles.colorEnd,
+				m_targetConfig.particles.colorEnd,
+				smoothT
+			);
+
+			// 在过渡中点切换类型
+			if (m_transitionProgress > 0.5f && m_currentConfig.type != m_targetConfig.type)
 			{
-				// 使用正弦函数产生飘动效果
-				float sway = std::sin(particle.life * 5.0f) * 0.3f * dt;
-				particle.position.x += sway;
-				particle.rotation += dt * 0.5f;
+				m_currentConfig.type = m_targetConfig.type;
+				m_currentConfig.name = m_targetConfig.name;
+				m_currentConfig.particles.motionType = m_targetConfig.particles.motionType;
 			}
 		}
 	}
 
-	void WeatherSystem::onRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize)
+	void WeatherSystem::ApplyParticleMotion(Particle& particle, float dt)
+	{
+		const auto& config = m_currentConfig.particles;
+		float time = m_globalTime + particle.phaseOffset;
+
+		switch (config.motionType)
+		{
+		case ParticleMotion::Swaying:
+			// 左右飘动（用于雪花、落叶）
+		{
+			float sway = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
+			particle.position.x += sway;
+		}
+		break;
+
+		case ParticleMotion::Spiral:
+			// 螺旋运动
+		{
+			float spiralX = std::cos(time * config.motionFrequency) * config.motionAmplitude * dt;
+			float spiralY = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt * 0.5f;
+			particle.position.x += spiralX;
+			particle.position.y += spiralY;
+		}
+		break;
+
+		case ParticleMotion::Random:
+			// 随机飘动（用于萤火虫、沙尘）
+		{
+			// 使用柏林噪声的简化版本
+			float noiseX = std::sin(time * config.motionFrequency + particle.phaseOffset * 10.0f);
+			float noiseY = std::cos(time * config.motionFrequency * 0.7f + particle.phaseOffset * 7.0f);
+			particle.position.x += noiseX * config.motionAmplitude * dt;
+			particle.position.y += noiseY * config.motionAmplitude * dt * 0.5f;
+		}
+		break;
+
+		case ParticleMotion::Rising:
+			// 向上飘动（用于火花、萤火虫）
+		{
+			float rise = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
+			particle.position.x += rise;
+			// 减弱下落速度
+			particle.velocity.y *= 0.995f;
+		}
+		break;
+
+		case ParticleMotion::Linear:
+		default:
+			// 直线运动，无额外处理
+			break;
+		}
+	}
+
+	void WeatherSystem::OnRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize)
 	{
 		m_lastCameraPos = cameraPos;
 		m_lastViewportSize = viewportSize;
 
-		if (m_config.type != WeatherType::None)
+		if (m_currentConfig.type != WeatherType::None)
 		{
-			emitParticles(1.0f / 60.0f, cameraPos, viewportSize);
+			EmitParticles(1.0f / 60.0f, cameraPos, viewportSize);
 		}
 
 		for (const auto& particle : m_particlePool)
@@ -91,18 +255,28 @@ namespace Yuicy {
 			float lifeProgress = particle.life / particle.maxLife;
 
 			// 颜色插值
-			glm::vec4 color = glm::mix(m_config.particles.colorEnd, m_config.particles.colorStart, lifeProgress);
+			glm::vec4 color = glm::mix(m_currentConfig.particles.colorEnd, m_currentConfig.particles.colorStart, lifeProgress);
 
 			// 透明度衰减
 			color.a *= lifeProgress;
 
-			if (m_config.particles.texture)
+			// 过渡期间额外的透明度调整
+			if (m_isTransitioning && m_currentConfig.transition.fadeOutOld)
+			{
+				// 在过渡前半段淡出旧粒子
+				if (m_transitionProgress < 0.5f)
+				{
+					color.a *= 1.0f - m_transitionProgress;
+				}
+			}
+
+			if (m_currentConfig.particles.texture)
 			{
 				Renderer2D::DrawRotatedQuad(
 					{ particle.position.x, particle.position.y, 0.9f },
 					{ particle.size, particle.size },
 					particle.rotation,
-					m_config.particles.texture,
+					m_currentConfig.particles.texture,
 					1.0f,
 					color
 				);
@@ -119,18 +293,26 @@ namespace Yuicy {
 		}
 	}
 
-	void WeatherSystem::emitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize)
+	void WeatherSystem::EmitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize)
 	{
 		// 计算本帧应该生成的粒子数量
 		// spawnRate * intensity = 实际生成速率
-		float spawnRate = m_config.particles.spawnRate * m_config.intensity;
+		float spawnRate = m_currentConfig.particles.spawnRate * m_currentConfig.intensity;
 		m_spawnAccumulator += spawnRate * deltaTime;
 
 		// 生成区域
-		float spawnWidth = viewportSize.x * m_config.particles.spawnWidthMultiplier;
-		float spawnY = cameraPos.y + viewportSize.y * m_config.particles.spawnHeightOffset;
+		float spawnWidth = viewportSize.x * m_currentConfig.particles.spawnWidthMultiplier;
+		float spawnY = cameraPos.y + viewportSize.y * m_currentConfig.particles.spawnHeightOffset;
 		float spawnXMin = cameraPos.x - spawnWidth * 0.5f;
 		float spawnXMax = cameraPos.x + spawnWidth * 0.5f;
+
+		float spawnYMin = spawnY;
+		float spawnYMax = spawnY;
+		if (m_currentConfig.type == WeatherType::Fireflies)
+		{
+			spawnYMin = cameraPos.y - viewportSize.y * 0.3f;
+			spawnYMax = cameraPos.y + viewportSize.y * 0.3f;
+		}
 
 		// 生成累积的粒子
 		while (m_spawnAccumulator >= 1.0f)
@@ -142,92 +324,39 @@ namespace Yuicy {
 			particle.active = true;
 
 			// 在顶部随机生成粒子
-			particle.position.x = randomRange(spawnXMin, spawnXMax);
-			particle.position.y = spawnY + randomRange(-0.5f, 0.5f);
+			particle.position.x = RandomRange(spawnXMin, spawnXMax);
+			particle.position.y = spawnY + RandomRange(-0.5f, 0.5f);
 
 			// 设置速度 = 基础速度 + 随机偏移
-			particle.velocity = m_config.particles.velocity;
-			particle.velocity.x += randomRange(
-				-m_config.particles.velocityVariation.x,
-				m_config.particles.velocityVariation.x
+			particle.velocity = m_currentConfig.particles.velocity;
+			particle.velocity.x += RandomRange(
+				-m_currentConfig.particles.velocityVariation.x,
+				m_currentConfig.particles.velocityVariation.x
 			);
-			particle.velocity.y += randomRange(
-				-m_config.particles.velocityVariation.y,
-				m_config.particles.velocityVariation.y
+			particle.velocity.y += RandomRange(
+				-m_currentConfig.particles.velocityVariation.y,
+				m_currentConfig.particles.velocityVariation.y
 			);
 
-			particle.size = randomRange(m_config.particles.sizeMin, m_config.particles.sizeMax);								// 随机大小
-			particle.rotation = randomRange(0.0f, 6.28318f);				// 随机初始旋转
-			particle.maxLife = m_config.particles.particleLifetime;			// 生命值
+			particle.size = RandomRange(m_currentConfig.particles.sizeMin, m_currentConfig.particles.sizeMax);								// 随机大小
+			particle.rotation = RandomRange(0.0f, 6.28318f);				// 随机初始旋转
+			particle.maxLife = m_currentConfig.particles.particleLifetime;			// 生命值
 			particle.life = particle.maxLife;
-			particle.color = m_config.particles.colorStart;					// 初始颜色
+			particle.color = m_currentConfig.particles.colorStart;					// 初始颜色
+			particle.phaseOffset = RandomRange(0.0f, 6.28318f);						// 随机偏移
 
 			m_poolIndex = (m_poolIndex + 1) % m_particlePool.size();
 		}
 	}
 
-	WeatherConfig WeatherSystem::getPreset(WeatherType type)
-	{
-		WeatherConfig config;
-		config.type = type;
-
-		switch (type)
-		{
-		case WeatherType::Rain:
-			config.intensity = 1.0f;
-			config.particles.spawnRate = 300.0f;
-			config.particles.particleLifetime = 2.0f;
-			config.particles.velocity = { 0.0f, -12.0f };
-			config.particles.velocityVariation = { 0.5f, 2.0f };
-			config.particles.sizeMin = 0.02f;
-			config.particles.sizeMax = 0.04f;
-			config.particles.colorStart = { 0.7f, 0.8f, 1.0f, 0.6f };
-			config.particles.colorEnd = { 0.7f, 0.8f, 1.0f, 0.0f };
-			config.particles.spawnWidthMultiplier = 1.5f;
-			config.particles.spawnHeightOffset = 0.6f;
-			break;
-
-		case WeatherType::Snow:
-			config.intensity = 1.0f;
-			config.particles.spawnRate = 80.0f;
-			config.particles.particleLifetime = 8.0f;
-			config.particles.velocity = { 0.0f, -1.5f };
-			config.particles.velocityVariation = { 0.8f, 0.3f };
-			config.particles.sizeMin = 0.04f;
-			config.particles.sizeMax = 0.1f;
-			config.particles.colorStart = { 1.0f, 1.0f, 1.0f, 0.9f };
-			config.particles.colorEnd = { 1.0f, 1.0f, 1.0f, 0.0f };
-			config.particles.spawnWidthMultiplier = 1.8f;
-			config.particles.spawnHeightOffset = 0.7f;
-			config.windStrength = 0.2f;
-			break;
-
-		case WeatherType::Storm:
-			config = getPreset(WeatherType::Rain);
-			config.type = WeatherType::Storm;
-			config.intensity = 2.0f;
-			config.windStrength = 0.5f;
-			config.particles.spawnRate = 500.0f;
-			config.particles.velocity = { 2.0f, -15.0f };
-			break;
-
-		case WeatherType::None:
-		default:
-			config.particles.spawnRate = 0.0f;
-			break;
-		}
-
-		return config;
-	}
-
-	float WeatherSystem::randomFloat()
+	float WeatherSystem::RandomFloat()
 	{
 		return static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
 	}
 
-	float WeatherSystem::randomRange(float min, float max)
+	float WeatherSystem::RandomRange(float min, float max)
 	{
-		return min + randomFloat() * (max - min);
+		return min + RandomFloat() * (max - min);
 	}
 
 }

@@ -16,28 +16,42 @@ namespace Yuicy {
 		WeatherSystem(uint32_t maxParticles = 5000);
 		~WeatherSystem() = default;
 
-		void setWeather(WeatherType type, float intensity = 1.0f);
-		void setWeather(const WeatherConfig& config);
+		void SetWeather(WeatherType type, WeatherIntensity intensity = WeatherIntensity::Normal);
+		void SetWeather(const WeatherConfig& config);
 
-		void clear();
-		void setWindStrength(float strength);
+		// 平滑过渡
+		void TransitionTo(WeatherType type, WeatherIntensity intensity = WeatherIntensity::Normal);
+		void TransitionTo(const WeatherConfig& config);
+		void TransitionTo(const std::string& presetName);
+
+		void Clear();
+		void FadeOut(float duration = 2.0f);  // 淡出
+
+		void SetWindStrength(float strength);
+		void SetIntensity(float intensity);
+
+		WeatherConfig& getConfig() { return m_currentConfig; }
 
 		// Update particle states
-		void onUpdate(Timestep ts);
+		void OnUpdate(Timestep ts);
 		// Render particles
-		void onRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize);
+		void OnRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize);
 
 	public:
-		WeatherType getCurrentWeather() const { return m_config.type; }
-		float getIntensity() const { return m_config.intensity; }
-		bool isActive() const { return m_config.type != WeatherType::None; }
-
-		static WeatherConfig getPreset(WeatherType type);
+		WeatherType GetCurrentWeather() const { return m_currentConfig.type; }
+		const std::string& GetCurrentWeatherName() const { return m_currentConfig.name; }
+		float GetIntensity() const { return m_currentConfig.intensity; }
+		float GetWindStrength() const { return m_currentConfig.windStrength; }
+		bool IsActive() const { return m_currentConfig.type != WeatherType::None; }
+		bool IsTransitioning() const { return m_isTransitioning; }
+		float GetTransitionProgress() const { return m_transitionProgress; }
 
 	private:
-		void emitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize);
-		float randomFloat();
-		float randomRange(float min, float max);
+		void EmitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize);
+		float RandomFloat();
+		float RandomRange(float min, float max);
+
+		void UpdateTransition(Timestep ts);
 
 	private:
 		struct Particle
@@ -50,9 +64,24 @@ namespace Yuicy {
 			float life = 0.0f;          // 剩余生命
 			float maxLife = 1.0f;       // 初始生命
 			bool active = false;
+
+			float phaseOffset = 0.0f;   // 用于运动相位偏移
 		};
 
-		WeatherConfig m_config;
+		void ApplyParticleMotion(Particle& particle, float dt);
+
+	private:
+
+		// 当前配置
+		WeatherConfig m_currentConfig;
+
+		// 过渡状态
+		bool m_isTransitioning = false;
+		float m_transitionProgress = 0.0f;		// 过渡进度
+		float m_transitionDuration = 2.0f;		// 过渡间隔
+		WeatherConfig m_targetConfig;			// 目标状态
+		WeatherConfig m_previousConfig;			// 先前状态
+
 		std::vector<Particle> m_particlePool;       // 粒子对象池
 		uint32_t m_poolIndex = 0;
 		float m_spawnAccumulator = 0.0f;            // 生成计时器累加器
@@ -60,6 +89,8 @@ namespace Yuicy {
 		// camera info for spawning
 		glm::vec2 m_lastCameraPos = { 0.0f, 0.0f };
 		glm::vec2 m_lastViewportSize = { 10.0f, 10.0f };
+
+		float m_globalTime = 0.0f;
 	};
 
 }
