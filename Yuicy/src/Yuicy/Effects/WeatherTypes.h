@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Renderer/Texture.h"
+#include "Yuicy/Effects/PostProcessTypes.h"
 
 namespace Yuicy {
 
@@ -77,6 +78,7 @@ namespace Yuicy {
 
 		WeatherParticleConfig particles;
 		WeatherTransitionConfig transition;
+		PostProcessConfig postProcess;
 
 		std::string name = "None";
 	};

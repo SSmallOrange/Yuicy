@@ -4,20 +4,20 @@
 #include <glm/glm.hpp>
 
 namespace Yuicy {
-	// Ö¡»º³å¸ñÊ½
+	// å¸§ç¼“å†²æ ¼å¼
 	enum class FramebufferTextureFormat
 	{
 		None = 0,
 
-		// ÑÕÉ«¸ñÊ½
-		RGBA8,              // ±ê×¼ 8 Î» RGBA
-		RGBA16F,            // HDRµÄRGBA
-		RED_INTEGER,        // ÕûÊı¸ñÊ½£¨¿ÉÒÔ´æ´¢ÊµÌåId£¬ÓÃÀ´ÊµÏÖµã»÷Ê°È¡£©
+		// é¢œè‰²æ ¼å¼
+		RGBA8,              // æ ‡å‡† 8 ä½ RGBA
+		RGBA16F,            // HDRçš„RGBA
+		RED_INTEGER,        // æ•´æ•°æ ¼å¼ï¼ˆå¯ä»¥å­˜å‚¨å®ä½“Idï¼Œç”¨æ¥å®ç°ç‚¹å‡»æ‹¾å–ï¼‰
 
-		// Éî¶È/Ä£°å¸ñÊ½
-		DEPTH24STENCIL8,    // 24 Î»Éî¶È + 8 Î»Ä£°å
+		// æ·±åº¦/æ¨¡æ¿æ ¼å¼
+		DEPTH24STENCIL8,    // 24 ä½æ·±åº¦ + 8 ä½æ¨¡æ¿
 
-		// Ä¬ÈÏÉî¶È¸ñÊ½
+		// é»˜è®¤æ·±åº¦æ ¼å¼
 		Depth = DEPTH24STENCIL8
 	};
 
@@ -31,7 +31,7 @@ namespace Yuicy {
 		}
 	};
 
-	// ¸½¼ş
+	// é™„ä»¶
 	struct FramebufferAttachmentSpecification
 	{
 		std::vector<FramebufferTextureSpecification> attachments;
@@ -46,14 +46,14 @@ namespace Yuicy {
 	{
 		uint32_t width = 1280;
 		uint32_t height = 720;
-		uint32_t samples = 1;               // MSAA ²ÉÑùÊı£¨1 = ÎŞ¿¹¾â³İ£©
+		uint32_t samples = 1;               // MSAA é‡‡æ ·æ•°ï¼ˆ1 = æ— æŠ—é”¯é½¿ï¼‰
 
 		FramebufferAttachmentSpecification attachments;
 
-		bool swapChainTarget = false;       // ÊÇ·ñÖ±½ÓäÖÈ¾µ½ÆÁÄ»£¨½»»»Á´£©
+		bool swapChainTarget = false;       // æ˜¯å¦ç›´æ¥æ¸²æŸ“åˆ°å±å¹•ï¼ˆäº¤æ¢é“¾ï¼‰
 	};
 
-	// Ö¡»º³å
+	// å¸§ç¼“å†²
 	class Framebuffer
 	{
 	public:
@@ -62,19 +62,19 @@ namespace Yuicy {
 		virtual void Bind() = 0;
 		virtual void Unbind() = 0;
 
-		// µ÷Õû´óĞ¡£¨´°¿Ú resize Ê±µ÷ÓÃ£©
+		// è°ƒæ•´å¤§å°ï¼ˆçª—å£ resize æ—¶è°ƒç”¨ï¼‰
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
 
-		// ¶ÁÈ¡ÏñËØÖµ£¨ÓÃÓÚÊµÌåÊ°È¡µÈ£©
+		// è¯»å–åƒç´ å€¼ï¼ˆç”¨äºå®ä½“æ‹¾å–ç­‰ï¼‰
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
 
-		// Çå³ıÖ¸¶¨¸½¼ş
+		// æ¸…é™¤æŒ‡å®šé™„ä»¶
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;
 
-		// »ñÈ¡ÑÕÉ«¸½¼şµÄÎÆÀí ID£¨ÓÃÓÚºó´¦Àí Shader ²ÉÑù£©
+		// è·å–é¢œè‰²é™„ä»¶çš„çº¹ç† IDï¼ˆç”¨äºåå¤„ç† Shader é‡‡æ ·ï¼‰
 		virtual uint32_t GetColorAttachmentRendererID(uint32_t index = 0) const = 0;
 
-		// »ñÈ¡¹æ¸ñ
+		// è·å–è§„æ ¼
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
 		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);

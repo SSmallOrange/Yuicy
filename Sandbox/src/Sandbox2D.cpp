@@ -151,6 +151,18 @@ void Sandbox2D::OnAttach()
 			cameraController->Target = m_Player;
 		}
 	}
+
+	// 创建 Framebuffer
+	Yuicy::FramebufferSpecification fbSpec;
+	fbSpec.width = (uint32_t)m_ViewportSize.x;
+	fbSpec.height = (uint32_t)m_ViewportSize.y;
+	fbSpec.attachments = {
+		Yuicy::FramebufferTextureFormat::RGBA8,           // 颜色缓冲
+		Yuicy::FramebufferTextureFormat::DEPTH24STENCIL8  // 深度缓冲
+	};
+	m_framebuffer = Yuicy::Framebuffer::Create(fbSpec);
+
+	m_postProcessing.Init();
 }
 
 void Sandbox2D::OnDetach()
@@ -163,6 +175,10 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 	YUICY_PROFILE_FUNCTION();
 
 	m_weatherSystem.OnUpdate(ts);
+	m_postProcessing.OnUpdate(ts);
+
+	// 渲染到 Framebuffer
+	m_framebuffer->Bind();
 
 	Yuicy::Renderer2D::ResetStats();
 
@@ -188,6 +204,13 @@ void Sandbox2D::OnUpdate(Yuicy::Timestep ts)
 		);
 		Yuicy::Renderer2D::EndScene();
 	}
+
+	m_framebuffer->Unbind();
+
+	Yuicy::RenderCommand::SetClearColor({ 0, 0, 0, 1 });
+	Yuicy::RenderCommand::Clear();
+
+	m_postProcessing.Render(m_framebuffer);
 }
 
 void Sandbox2D::OnImGuiRender()
@@ -260,6 +283,89 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::SameLine();
 	if (ImGui::Button("Clear")) m_weatherSystem.FadeOut();
 
+	// 预设后处理效果
+	ImGui::Separator();
+	ImGui::Text("Preset Effects:");
+
+	if (ImGui::Button("Night Mode"))
+	{
+		Yuicy::PostProcessConfig nightConfig;
+		nightConfig.brightness = 0.6f;
+		nightConfig.saturation = 0.7f;
+		nightConfig.ambientTint = { 0.6f, 0.65f, 0.85f, 1.0f };
+		nightConfig.vignetteEnabled = true;
+		nightConfig.vignetteIntensity = 0.5f;
+		m_postProcessing.FadeTo(nightConfig, 1.5f);
+	}
+	ImGui::SameLine();
+
+	if (ImGui::Button("Day Mode"))
+	{
+		Yuicy::PostProcessConfig dayConfig;
+		dayConfig.brightness = 1.0f;
+		dayConfig.saturation = 1.0f;
+		dayConfig.ambientTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+		dayConfig.vignetteEnabled = false;
+		m_postProcessing.FadeTo(dayConfig, 1.5f);
+	}
+
+	if (ImGui::Button("Foggy"))
+	{
+		Yuicy::PostProcessConfig foggyConfig;
+		foggyConfig.fogEnabled = true;
+		foggyConfig.fogDensity = 0.4f;
+		foggyConfig.fogColor = { 0.75f, 0.78f, 0.82f, 1.0f };
+		foggyConfig.saturation = 0.7f;
+		foggyConfig.contrast = 0.9f;
+		m_postProcessing.FadeTo(foggyConfig, 2.0f);
+	}
+	ImGui::SameLine();
+
+	if (ImGui::Button("Reset"))
+	{
+		m_postProcessing.FadeTo(Yuicy::PostProcessConfig(), 1.0f);
+	}
+
+	// 效果叠加示例
+	ImGui::Separator();
+	ImGui::Text("Effect Layers:");
+
+	if (ImGui::Button("Add Indoor Effect"))
+	{
+		Yuicy::PostProcessConfig indoorEffect;
+		indoorEffect.brightness = 0.75f;
+		indoorEffect.ambientTint = { 0.95f, 0.9f, 0.8f, 1.0f };  // 暖色调
+		m_postProcessing.PushEffect("Indoor", indoorEffect, 5);
+	}
+	ImGui::SameLine();
+
+	if (ImGui::Button("Remove Indoor"))
+	{
+		m_postProcessing.PopEffect("Indoor");
+	}
+
+	if (ImGui::Button("Add Danger Zone"))
+	{
+		Yuicy::PostProcessConfig dangerEffect;
+		dangerEffect.ambientTint = { 1.0f, 0.85f, 0.85f, 1.0f };  // 淡红色
+		dangerEffect.vignetteEnabled = true;
+		dangerEffect.vignetteIntensity = 0.3f;
+		dangerEffect.vignetteRadius = 0.6f;
+		m_postProcessing.PushEffect("Danger", dangerEffect, 10);
+	}
+	ImGui::SameLine();
+
+	if (ImGui::Button("Remove Danger"))
+	{
+		m_postProcessing.PopEffect("Danger");
+	}
+
+	if (ImGui::Button("Clear All Effects"))
+	{
+		m_postProcessing.ClearAllEffects();
+	}
+
+
 	ImGui::Separator();
 	ImGui::Text("Controls:");
 	ImGui::Text("A/D or Left/Right: Move");
@@ -288,6 +394,10 @@ void Sandbox2D::OnEvent(Yuicy::Event& e)
 			return false;
 		m_ViewportSize = { (float)e.GetWidth(), (float)e.GetHeight() };
 		m_ActiveScene->OnViewportResize(e.GetWidth(), e.GetHeight());
+
+		// 同步调整 Framebuffer 大小
+		m_framebuffer->Resize(e.GetWidth(), e.GetHeight());
+
 		return false;
 	});
 
@@ -315,6 +425,11 @@ void Sandbox2D::OnEvent(Yuicy::Event& e)
 					cameraController->Target = m_Player;
 				}
 			}
+		}
+		// 按 F 键触发闪光
+		if (e.GetKeyCode() == Yuicy::Key::F)
+		{
+			m_postProcessing.TriggerFlash(0.9f, { 1.0f, 1.0f, 0.9f }, 0.1f);
 		}
 		return false;
 	});
