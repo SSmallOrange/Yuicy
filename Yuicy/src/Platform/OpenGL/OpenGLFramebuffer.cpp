@@ -5,10 +5,10 @@
 
 namespace Yuicy {
 
-	// ◊Ó¥Û÷ß≥÷µƒ Framebuffer ≥ﬂ¥Á
+	// ÊúÄÂ§ßÊîØÊåÅÁöÑ Framebuffer Â∞∫ÂØ∏
 	static const uint32_t s_maxFramebufferSize = 8192;
 
-	// ≈–∂œ «∑ÒŒ™…Ó∂»∏Ò Ω
+	// Âà§Êñ≠ÊòØÂê¶‰∏∫Ê∑±Â∫¶Ê†ºÂºè
 	static bool IsDepthFormat(FramebufferTextureFormat format)
 	{
 		switch (format)
@@ -20,7 +20,7 @@ namespace Yuicy {
 		}
 	}
 
-	// Ω´∏Ò Ω◊™ªªŒ™ OpenGL Œ∆¿Ì∏Ò Ω
+	// Â∞ÜÊ†ºÂºèËΩ¨Êç¢‰∏∫ OpenGL Á∫πÁêÜÊ†ºÂºè
 	static GLenum TextureFormatToGL(FramebufferTextureFormat format)
 	{
 		switch (format)
@@ -34,19 +34,19 @@ namespace Yuicy {
 		}
 	}
 
-	// ∞Û∂®Œ∆¿ÌµΩ Framebuffer
+	// ÁªëÂÆöÁ∫πÁêÜÂà∞ Framebuffer
 	static void BindTexture(bool multisampled, uint32_t id)
 	{
 		glBindTexture(multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, id);
 	}
 
-	// ¥¥Ω®Œ∆¿Ì
+	// ÂàõÂª∫Á∫πÁêÜ
 	static void CreateTextures(bool multisampled, uint32_t* outID, uint32_t count)
 	{
 		glCreateTextures(multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, count, outID);
 	}
 
-	// ∏Ωº”—’…´Œ∆¿Ì
+	// ÈôÑÂä†È¢úËâ≤Á∫πÁêÜ
 	static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format,
 		uint32_t width, uint32_t height, int index)
 	{
@@ -54,15 +54,15 @@ namespace Yuicy {
 
 		if (multisampled)
 		{
-			// ∂‡÷ÿ≤…—˘Œ∆¿Ì
+			// Â§öÈáçÈááÊ†∑Á∫πÁêÜ
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, GL_FALSE);
 		}
 		else
 		{
-			// ∆’Õ®Œ∆¿Ì
+			// ÊôÆÈÄöÁ∫πÁêÜ
 			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
 
-			// …Ë÷√Œ∆¿Ì≤Œ ˝
+			// ËÆæÁΩÆÁ∫πÁêÜÂèÇÊï∞
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -70,12 +70,12 @@ namespace Yuicy {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		}
 
-		// ∏Ωº”µΩ Framebuffer
+		// ÈôÑÂä†Âà∞ Framebuffer
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index,
 			multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, id, 0);
 	}
 
-	// ∏Ωº”…Ó∂»Œ∆¿Ì
+	// ÈôÑÂä†Ê∑±Â∫¶Á∫πÁêÜ
 	static void AttachDepthTexture(uint32_t id, int samples, GLenum format, GLenum attachmentType,
 		uint32_t width, uint32_t height)
 	{
@@ -103,12 +103,12 @@ namespace Yuicy {
 	OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpecification& spec)
 		: m_specification(spec)
 	{
-		// ∑÷¿Î—’…´∏Ωº˛∫Õ…Ó∂»∏Ωº˛µƒπÊ∏Ò
+		// ÂàÜÁ¶ªÈ¢úËâ≤ÈôÑ‰ª∂ÂíåÊ∑±Â∫¶ÈôÑ‰ª∂ÁöÑËßÑÊ†º
 		for (auto& attachment : m_specification.attachments.attachments)
 		{
 			if (IsDepthFormat(attachment.textureFormat))
 			{
-				m_depthAttachmentSpecification = attachment;  // ÷ªƒ‹”–“ª∏ˆ…Ó∂»∏Ωº˛
+				m_depthAttachmentSpecification = attachment;  // Âè™ËÉΩÊúâ‰∏Ä‰∏™Ê∑±Â∫¶ÈôÑ‰ª∂
 			}
 			else
 			{
@@ -116,7 +116,7 @@ namespace Yuicy {
 			}
 		}
 
-		// ¥¥Ω® Framebuffer
+		// ÂàõÂª∫ Framebuffer
 		Invalidate();
 	}
 
@@ -129,7 +129,7 @@ namespace Yuicy {
 
 	void OpenGLFramebuffer::Invalidate()
 	{
-		// »Áπ˚“—¥Ê‘⁄£¨œ»…æ≥˝æ…◊ ‘¥
+		// Â¶ÇÊûúÂ∑≤Â≠òÂú®ÔºåÂÖàÂà†Èô§ÊóßËµÑÊ∫ê
 		if (m_rendererID)
 		{
 			glDeleteFramebuffers(1, &m_rendererID);
@@ -140,13 +140,13 @@ namespace Yuicy {
 			m_depthAttachment = 0;
 		}
 
-		// ¥¥Ω® Framebuffer ∂‘œÛ
+		// ÂàõÂª∫ Framebuffer ÂØπË±°
 		glCreateFramebuffers(1, &m_rendererID);
 		glBindFramebuffer(GL_FRAMEBUFFER, m_rendererID);
 
 		bool multisample = m_specification.samples > 1;
 
-		// ¥¥Ω®—’…´∏Ωº˛
+		// ÂàõÂª∫È¢úËâ≤ÈôÑ‰ª∂
 		if (!m_colorAttachmentSpecifications.empty())
 		{
 			m_colorAttachments.resize(m_colorAttachmentSpecifications.size());
@@ -179,7 +179,7 @@ namespace Yuicy {
 			}
 		}
 
-		// ¥¥Ω®…Ó∂»∏Ωº˛
+		// ÂàõÂª∫Ê∑±Â∫¶ÈôÑ‰ª∂
 		if (m_depthAttachmentSpecification.textureFormat != FramebufferTextureFormat::None)
 		{
 			CreateTextures(multisample, &m_depthAttachment, 1);
@@ -198,7 +198,7 @@ namespace Yuicy {
 			}
 		}
 
-		// …Ë÷√∂‡∏ˆ—’…´ª∫≥ÂµƒªÊ÷∆ƒø±Í
+		// ËÆæÁΩÆÂ§ö‰∏™È¢úËâ≤ÁºìÂÜ≤ÁöÑÁªòÂà∂ÁõÆÊ†á
 		if (m_colorAttachments.size() > 1)
 		{
 			YUICY_CORE_ASSERT(m_colorAttachments.size() <= 4, "Only support up to 4 color attachments!");
@@ -209,14 +209,14 @@ namespace Yuicy {
 		}
 		else if (m_colorAttachments.empty())
 		{
-			// Ωˆ…Ó∂» pass£®Œﬁ—’…´ ‰≥ˆ£©
+			// ‰ªÖÊ∑±Â∫¶ passÔºàÊó†È¢úËâ≤ËæìÂá∫Ôºâ
 			glDrawBuffer(GL_NONE);
 		}
 
 		YUICY_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
 			"Framebuffer is incomplete!");
 
-		// Ω‚∞Û
+		// Ëß£Áªë
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
@@ -228,12 +228,12 @@ namespace Yuicy {
 
 	void OpenGLFramebuffer::Unbind()
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);  // ∞Û∂®ªÿƒ¨»œª∫≥Â
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);  // ÁªëÂÆöÂõûÈªòËÆ§ÁºìÂÜ≤
 	}
 
 	void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height)
 	{
-		// ∑¿÷πŒﬁ–ß≥ﬂ¥Á
+		// Èò≤Ê≠¢Êó†ÊïàÂ∞∫ÂØ∏
 		if (width == 0 || height == 0 || width > s_maxFramebufferSize || height > s_maxFramebufferSize)
 		{
 			YUICY_CORE_WARN("Attempted to resize framebuffer to ({}, {})", width, height);
@@ -243,7 +243,7 @@ namespace Yuicy {
 		m_specification.width = width;
 		m_specification.height = height;
 
-		// ÷ÿ–¬¥¥Ω®
+		// ÈáçÊñ∞ÂàõÂª∫
 		Invalidate();
 	}
 

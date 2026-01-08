@@ -11,7 +11,7 @@ namespace Yuicy {
 		OpenGLFramebuffer(const FramebufferSpecification& spec);
 		virtual ~OpenGLFramebuffer();
 
-		// 重新创建 Framebuffer（内部使用）
+		// 閲嶆柊鍒涘缓 Framebuffer锛堝唴閮ㄤ娇鐢級
 		void Invalidate();
 
 		virtual void Bind() override;
@@ -36,7 +36,7 @@ namespace Yuicy {
 		uint32_t m_rendererID = 0;
 		FramebufferSpecification m_specification;
 
-		// 附件存储
+		// 闄勪欢瀛樺偍
 		std::vector<FramebufferTextureSpecification> m_colorAttachmentSpecifications;
 		FramebufferTextureSpecification m_depthAttachmentSpecification = FramebufferTextureFormat::None;
 
