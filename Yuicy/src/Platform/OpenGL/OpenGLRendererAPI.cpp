@@ -31,6 +31,7 @@ namespace Yuicy {
 
 	void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount)
 	{
+		vertexArray->Bind();
 		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
 		// 目前只draw 三角形图元
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
