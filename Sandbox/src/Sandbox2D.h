@@ -34,4 +34,8 @@ private:
 
 	// 天气
 	Yuicy::WeatherSystem m_weatherSystem{ 3000 };
+	// FrameBuffer
+	Yuicy::Ref<Yuicy::Framebuffer> m_framebuffer;
+
+	Yuicy::PostProcessing m_postProcessing;
 };
