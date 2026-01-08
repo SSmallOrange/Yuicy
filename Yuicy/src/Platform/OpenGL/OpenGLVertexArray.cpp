@@ -109,7 +109,7 @@ namespace Yuicy {
 				YUICY_CORE_ASSERT(false, "Unknown ShaderDataType!");
 			}
 		}
-
+		glBindVertexArray(0);
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
 
