@@ -163,6 +163,9 @@ void Sandbox2D::OnAttach()
 	m_framebuffer = Yuicy::Framebuffer::Create(fbSpec);
 
 	m_postProcessing.Init();
+
+	// 绑定物理世界到天气系统（用于雨滴碰撞检测）
+	m_weatherSystem.SetPhysicsWorld(m_ActiveScene->GetPhysicsWorld());
 }
 
 void Sandbox2D::OnDetach()
