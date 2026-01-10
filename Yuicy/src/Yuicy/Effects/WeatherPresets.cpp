@@ -168,6 +168,19 @@ namespace Yuicy {
 		config.particles.spawnWidthMultiplier = 1.5f;
 		config.particles.spawnHeightOffset = 0.6f;
 
+		// 物理雨滴配置
+		config.particles.enablePhysics = true;
+		config.particles.physicsRatio = 0.02f;
+		config.particles.splashConfig.colorStart = { 0.6f, 0.7f, 0.9f, 0.7f };
+		config.particles.splashConfig.colorEnd = { 0.5f, 0.6f, 0.8f, 0.0f };
+		config.particles.splashConfig.sizeMin = 0.02f;
+		config.particles.splashConfig.sizeMax = 0.04f;
+		config.particles.splashConfig.speedMin = 1.5f;
+		config.particles.splashConfig.speedMax = 3.0f;
+		config.particles.splashConfig.lifetime = 0.25f;
+		config.particles.splashConfig.particleCount = 5;
+		config.particles.splashConfig.spreadAngle = 1.8f;
+
 		return config;
 	}
 

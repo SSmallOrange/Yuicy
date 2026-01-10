@@ -7,6 +7,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+class b2World;
+
 namespace Yuicy {
 
 	class WeatherSystem
@@ -37,6 +39,9 @@ namespace Yuicy {
 		// Render particles
 		void OnRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize);
 
+		// 设置物理世界（用于雨滴碰撞检测）
+		void SetPhysicsWorld(b2World* world) { m_physicsWorld = world; }
+
 	public:
 		WeatherType GetCurrentWeather() const { return m_currentConfig.type; }
 		const std::string& GetCurrentWeatherName() const { return m_currentConfig.name; }
@@ -52,6 +57,10 @@ namespace Yuicy {
 		float RandomRange(float min, float max);
 
 		void UpdateTransition(Timestep ts);
+
+		// 物理雨滴相关
+		void EmitPhysicsRaindrop(const glm::vec2& cameraPos, const glm::vec2& viewportSize);
+		void UpdatePhysicsRaindrops(float dt);
 
 	private:
 		struct Particle
@@ -69,6 +78,14 @@ namespace Yuicy {
 		};
 
 		void ApplyParticleMotion(Particle& particle, float dt);
+
+		// 物理雨滴结构
+		struct PhysicsRaindrop
+		{
+			glm::vec2 position = { 0.0f, 0.0f };
+			glm::vec2 velocity = { 0.0f, -8.0f };
+			bool active = false;
+		};
 
 	private:
 
@@ -91,6 +108,13 @@ namespace Yuicy {
 		glm::vec2 m_lastViewportSize = { 10.0f, 10.0f };
 
 		float m_globalTime = 0.0f;
+
+		// 物理雨滴
+		static constexpr uint32_t MAX_PHYSICS_RAINDROPS = 50;
+		std::vector<PhysicsRaindrop> m_physicsRaindrops;
+		uint32_t m_physicsRaindropIndex = 0;
+		float m_physicsSpawnAccumulator = 0.0f;
+		b2World* m_physicsWorld = nullptr;
 	};
 
 }

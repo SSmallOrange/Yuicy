@@ -4,6 +4,7 @@
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Effects/PostProcessTypes.h"
+#include "Yuicy/Effects/SplashEffect.h"
 
 namespace Yuicy {
 
@@ -61,6 +62,11 @@ namespace Yuicy {
 		float spawnHeightOffset = 0.6f;     // 生成位置在视口顶部偏移
 
 		Ref<Texture2D> texture = nullptr;	// 绘制纹理
+
+		// 物理雨滴配置
+		bool enablePhysics = false;			// 是否启用物理雨滴
+		float physicsRatio = 0.02f;			// 物理雨滴占比（相对于总粒子数）
+		SplashConfig splashConfig;			// 溅射效果配置
 	};
 
 	struct WeatherTransitionConfig

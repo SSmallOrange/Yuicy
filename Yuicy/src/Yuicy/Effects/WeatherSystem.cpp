@@ -1,17 +1,47 @@
 #include "pch.h"
 #include "WeatherSystem.h"
 #include "WeatherPresets.h"
+#include "SplashEffect.h"
 #include "Yuicy/Renderer/Renderer2D.h"
+
+#include <box2d/b2_world.h>
+#include <box2d/b2_body.h>
+#include <box2d/b2_fixture.h>
 
 #include <cstdlib>
 #include <ctime>
 
 namespace Yuicy {
 
+	class RaindropRaycastCallback : public b2RayCastCallback
+	{
+	public:
+		bool hit = false;
+		b2Vec2 hitPoint;
+		b2Vec2 hitNormal;
+
+		float ReportFixture(b2Fixture* fixture, const b2Vec2& point,
+			const b2Vec2& normal, float fraction) override
+		{
+			// 忽略 sensor
+			if (fixture->IsSensor())
+				return -1.0f;
+
+			hit = true;
+			hitPoint = point;
+			hitNormal = normal;
+			return fraction;
+		}
+	};
+
 	WeatherSystem::WeatherSystem(uint32_t maxParticles)
 	{
 		m_particlePool.resize(maxParticles);
 		m_poolIndex = 0;
+
+		// 初始化物理雨滴池
+		m_physicsRaindrops.resize(MAX_PHYSICS_RAINDROPS);
+		m_physicsRaindropIndex = 0;
 
 		std::srand(static_cast<unsigned>(std::time(nullptr)));
 	}
@@ -119,6 +149,15 @@ namespace Yuicy {
 			// 旋转
 			particle.rotation += m_currentConfig.particles.rotationSpeed * dt;
 		}
+
+		// 更新物理雨滴
+		if (m_currentConfig.particles.enablePhysics && m_physicsWorld)
+		{
+			UpdatePhysicsRaindrops(dt);
+		}
+
+		// 更新溅射效果
+		SplashEffect::OnUpdate(ts);
 	}
 
 	void WeatherSystem::UpdateTransition(Timestep ts)
@@ -291,6 +330,9 @@ namespace Yuicy {
 				);
 			}
 		}
+
+		// 渲染溅射效果
+		SplashEffect::OnRender();
 	}
 
 	void WeatherSystem::EmitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize)
@@ -357,6 +399,89 @@ namespace Yuicy {
 	float WeatherSystem::RandomRange(float min, float max)
 	{
 		return min + RandomFloat() * (max - min);
+	}
+
+	void WeatherSystem::EmitPhysicsRaindrop(const glm::vec2& cameraPos, const glm::vec2& viewportSize)
+	{
+		PhysicsRaindrop& drop = m_physicsRaindrops[m_physicsRaindropIndex];
+		m_physicsRaindropIndex = (m_physicsRaindropIndex + 1) % MAX_PHYSICS_RAINDROPS;
+
+		drop.active = true;
+
+		// 生成位置
+		float spawnWidth = viewportSize.x * m_currentConfig.particles.spawnWidthMultiplier;
+		float spawnY = cameraPos.y + viewportSize.y * m_currentConfig.particles.spawnHeightOffset;
+		float spawnXMin = cameraPos.x - spawnWidth * 0.5f;
+		float spawnXMax = cameraPos.x + spawnWidth * 0.5f;
+
+		drop.position.x = RandomRange(spawnXMin, spawnXMax);
+		drop.position.y = spawnY;
+
+		// 速度
+		drop.velocity = m_currentConfig.particles.velocity;
+		drop.velocity.x += RandomRange(-m_currentConfig.particles.velocityVariation.x, m_currentConfig.particles.velocityVariation.x);
+		drop.velocity.y += RandomRange(-m_currentConfig.particles.velocityVariation.y, m_currentConfig.particles.velocityVariation.y);
+	}
+
+	void WeatherSystem::UpdatePhysicsRaindrops(float dt)
+	{
+		// 生成新的物理雨滴
+		float physicsSpawnRate = m_currentConfig.particles.spawnRate * m_currentConfig.particles.physicsRatio * m_currentConfig.intensity;
+		m_physicsSpawnAccumulator += physicsSpawnRate * dt;
+
+		while (m_physicsSpawnAccumulator >= 1.0f)
+		{
+			m_physicsSpawnAccumulator -= 1.0f;
+			EmitPhysicsRaindrop(m_lastCameraPos, m_lastViewportSize);
+		}
+
+		// 更新物理雨滴并检测碰撞
+		for (auto& drop : m_physicsRaindrops)
+		{
+			if (!drop.active)
+				continue;
+
+			// 保存旧位置
+			glm::vec2 oldPos = drop.position;
+
+			// 重力
+			drop.velocity += m_currentConfig.particles.gravity * dt;
+
+			// 风力
+			float windEffect = m_currentConfig.windStrength * 2.0f;
+			drop.position.x += windEffect * dt;
+
+			// 更新位置
+			drop.position += drop.velocity * dt;
+
+			// 超出视口检测
+			float bottomY = m_lastCameraPos.y - m_lastViewportSize.y * 0.6f;
+			if (drop.position.y < bottomY)
+			{
+				drop.active = false;
+				continue;
+			}
+
+			// Box2D Raycast 检测碰撞
+			if (m_physicsWorld)
+			{
+				b2Vec2 p1(oldPos.x, oldPos.y);
+				b2Vec2 p2(drop.position.x, drop.position.y);
+
+				RaindropRaycastCallback callback;
+				m_physicsWorld->RayCast(&callback, p1, p2);
+
+				if (callback.hit)
+				{
+					// 触发溅射效果
+					glm::vec2 hitPos(callback.hitPoint.x, callback.hitPoint.y);
+					SplashEffect::Emit(hitPos, m_currentConfig.particles.splashConfig);
+
+					// 禁用该雨滴
+					drop.active = false;
+				}
+			}
+		}
 	}
 
 }
