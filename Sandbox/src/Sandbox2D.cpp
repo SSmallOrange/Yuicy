@@ -365,6 +365,25 @@ void Sandbox2D::OnImGuiRender()
 		m_postProcessing.ClearAllEffects();
 	}
 
+	// 屏幕雨滴效果
+	ImGui::Separator();
+	ImGui::Text("Screen Raindrops:");
+
+	static bool raindropsEnabled = false;
+	static float raindropsIntensity = 0.5f;
+
+	if (ImGui::Checkbox("Raindrops Enabled", &raindropsEnabled))
+	{
+		m_postProcessing.SetRaindropsEnabled(raindropsEnabled);
+	}
+
+	if (raindropsEnabled)
+	{
+		if (ImGui::SliderFloat("Raindrops Intensity", &raindropsIntensity, 0.0f, 1.0f))
+		{
+			m_postProcessing.SetRaindropsIntensity(raindropsIntensity);
+		}
+	}
 
 	ImGui::Separator();
 	ImGui::Text("Controls:");

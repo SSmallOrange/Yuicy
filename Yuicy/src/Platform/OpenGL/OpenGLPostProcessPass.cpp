@@ -108,5 +108,10 @@ namespace Yuicy {
 		m_shader->SetInt("u_FlashEnabled", config.flashEnabled ? 1 : 0);
 		m_shader->SetFloat("u_FlashIntensity", config.flashIntensity);
 		m_shader->SetFloat3("u_FlashColor", config.flashColor);
+
+		// 屏幕雨滴
+		m_shader->SetInt("u_RaindropsEnabled", config.raindropsEnabled ? 1 : 0);
+		m_shader->SetFloat("u_RaindropsIntensity", config.raindropsIntensity);
+		m_shader->SetFloat("u_RaindropsTime", config.raindropsTime);
 	}
 }

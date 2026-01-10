@@ -24,6 +24,10 @@ namespace Yuicy {
 		float flashIntensity = 0.0f;					// 强度
 		glm::vec3 flashColor = { 1.0f, 1.0f, 1.0f };	// 颜色
 
+		bool raindropsEnabled = false;			// 屏幕雨滴
+		float raindropsIntensity = 0.5f;		// 雨滴强度 0~1
+		float raindropsTime = 0.0f;				// 时间
+
 		std::string sourceName = "Default";
 		int priority = 0;                     // 优先级
 	};

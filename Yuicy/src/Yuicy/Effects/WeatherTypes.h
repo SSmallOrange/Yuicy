@@ -9,72 +9,72 @@ namespace Yuicy {
 
 	enum class WeatherType : uint8_t
 	{
-		None = 0,		// ÎŞÌìÆø
-		Rain,			// ÓêÌì
-		Snow,			// Ñ©Ìì
-		Storm,			// ±©·çÓê
-		Fog,			// ÎíÌì
-		Drizzle,        // Ã«Ã«Óê
-		Blizzard,       // ±©·çÑ©
-		Sandstorm,      // É³³¾±©
-		Leaves,         // ÂäÒ¶
-		Fireflies,      // Ó©»ğ³æ
-		Custom			// ×Ô¶¨Òå
+		None = 0,		// æ— å¤©æ°”
+		Rain,			// é›¨å¤©
+		Snow,			// é›ªå¤©
+		Storm,			// æš´é£é›¨
+		Fog,			// é›¾å¤©
+		Drizzle,        // æ¯›æ¯›é›¨
+		Blizzard,       // æš´é£é›ª
+		Sandstorm,      // æ²™å°˜æš´
+		Leaves,         // è½å¶
+		Fireflies,      // è¤ç«è™«
+		Custom			// è‡ªå®šä¹‰
 	};
 
 	enum class WeatherIntensity : uint8_t
 	{
-		Light = 0,      // ÇáÎ¢
-		Normal,         // Õı³£
-		Heavy,          // Ç¿ÁÒ
-		Extreme         // ¼«¶Ë
+		Light = 0,      // è½»å¾®
+		Normal,         // æ­£å¸¸
+		Heavy,          // å¼ºçƒˆ
+		Extreme         // æç«¯
 	};
 
 	enum class ParticleMotion : uint8_t
 	{
-		Linear = 0,     // Ö±ÏßÏÂÂä
-		Swaying,        // ×óÓÒÆ®¶¯
-		Spiral,         // ÂİĞıÔË¶¯
-		Random,         // Ëæ»úÆ®¶¯
-		Rising          // ÏòÉÏÆ®¶¯
+		Linear = 0,     // ç›´çº¿ä¸‹è½
+		Swaying,        // å·¦å³é£˜åŠ¨
+		Spiral,         // èºæ—‹è¿åŠ¨
+		Random,         // éšæœºé£˜åŠ¨
+		Rising          // å‘ä¸Šé£˜åŠ¨
 	};
 
 	struct WeatherParticleConfig
 	{
-		float spawnRate = 100.0f;           // Á£×ÓÊıÁ¿
-		float particleLifetime = 3.0f;      // Á£×Ó´æ»îÊ±¼ä£¨S£©
+		float spawnRate = 100.0f;           // ç²’å­æ•°é‡
+		float particleLifetime = 3.0f;      // ç²’å­å­˜æ´»æ—¶é—´ï¼ˆSï¼‰
 
-		glm::vec2 velocity = { 0.0f, -5.0f };           // ËÙ¶È
-		glm::vec2 velocityVariation = { 0.5f, 0.5f };   // ËÙ¶È±ä»¯·¶Î§
-		glm::vec2 gravity = { 0.0f, 0.0f };             // ¼ÓËÙ¶È
+		glm::vec2 velocity = { 0.0f, -5.0f };           // é€Ÿåº¦
+		glm::vec2 velocityVariation = { 0.5f, 0.5f };   // é€Ÿåº¦å˜åŒ–èŒƒå›´
+		glm::vec2 gravity = { 0.0f, 0.0f };             // åŠ é€Ÿåº¦
 		ParticleMotion motionType = ParticleMotion::Linear;
-		float motionFrequency = 5.0f;       // Æ®¶¯ÆµÂÊ£¨ÓÃÓÚ Swaying/Spiral£©
-		float motionAmplitude = 0.3f;       // Æ®¶¯·ù¶È
+		float motionFrequency = 5.0f;       // é£˜åŠ¨é¢‘ç‡ï¼ˆç”¨äº Swaying/Spiralï¼‰
+		float motionAmplitude = 0.3f;       // é£˜åŠ¨å¹…åº¦
 
-		float sizeMin = 0.02f;              // Á£×Ó³ß´ç
+		float sizeMin = 0.02f;              // ç²’å­å°ºå¯¸
 		float sizeMax = 0.05f;
-		glm::vec4 colorStart = { 1.0f, 1.0f, 1.0f, 0.8f };  // ³õÊ¼ÑÕÉ«
-		glm::vec4 colorEnd = { 1.0f, 1.0f, 1.0f, 0.0f };    // ÏûÍöÊ±ÑÕÉ«
-		float rotationSpeed = 0.0f;							// Ğı×ªËÙ¶È
+		glm::vec4 colorStart = { 1.0f, 1.0f, 1.0f, 0.8f };  // åˆå§‹é¢œè‰²
+		glm::vec4 colorEnd = { 1.0f, 1.0f, 1.0f, 0.0f };    // æ¶ˆäº¡æ—¶é¢œè‰²
+		float rotationSpeed = 0.0f;							// æ—‹è½¬é€Ÿåº¦
 
-		float spawnWidthMultiplier = 1.5f;  // Éú³ÉÇøÓò¿í¶È
-		float spawnHeightOffset = 0.6f;     // Éú³ÉÎ»ÖÃÔÚÊÓ¿Ú¶¥²¿Æ«ÒÆ
+		float spawnWidthMultiplier = 1.5f;  // ç”ŸæˆåŒºåŸŸå®½åº¦
+		float spawnHeightOffset = 0.6f;     // ç”Ÿæˆä½ç½®åœ¨è§†å£é¡¶éƒ¨åç§»
 
-		Ref<Texture2D> texture = nullptr;	// »æÖÆÎÆÀí
+		Ref<Texture2D> texture = nullptr;	// ç»˜åˆ¶çº¹ç†
 	};
 
 	struct WeatherTransitionConfig
 	{
-		bool enabled = true;                // ¿ªÆô¹ı¶É
-		float duration = 2.0f;              // ¹ı¶ÉÊ±³¤£¨S£©
-		bool fadeOutOld = true;             // ¾ÉÌìÆøÊÇ·ñµ­³ö
+		bool enabled = true;                // å¼€å¯è¿‡æ¸¡
+		float duration = 2.0f;              // è¿‡æ¸¡æ—¶é•¿ï¼ˆSï¼‰
+		bool fadeOutOld = true;             // æ—§å¤©æ°”æ˜¯å¦æ·¡å‡º
 	};
 
 	struct WeatherConfig
 	{
 		WeatherType type = WeatherType::None;
-		float intensity = 1.0f;             // Ç¿¶ÈÏµÊı£¨Ó°ÏìÁ£×ÓÊıÁ¿£©
-		float windStrength = 0.0f;          // ·çÁ¦ [-1, 1]
+		float intensity = 1.0f;             // å¼ºåº¦ç³»æ•°ï¼ˆå½±å“ç²’å­æ•°é‡ï¼‰
+		float windStrength = 0.0f;          // é£åŠ› [-1, 1]
 
 		WeatherParticleConfig particles;
 		WeatherTransitionConfig transition;

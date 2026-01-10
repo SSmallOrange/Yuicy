@@ -134,6 +134,13 @@ namespace Yuicy {
 				merged.flashIntensity = glm::max(merged.flashIntensity, cfg.flashIntensity);
 				merged.flashColor = cfg.flashColor;
 			}
+
+			// 雨滴：取最大强度
+			if (cfg.raindropsEnabled)
+			{
+				merged.raindropsEnabled = true;
+				merged.raindropsIntensity = glm::max(merged.raindropsIntensity, cfg.raindropsIntensity);
+			}
 		}
 
 		m_finalConfig = merged;
@@ -167,6 +174,8 @@ namespace Yuicy {
 	void PostProcessing::SetVignetteEnabled(bool enabled) { m_finalConfig.vignetteEnabled = enabled; }
 	void PostProcessing::SetVignetteIntensity(float intensity) { m_finalConfig.vignetteIntensity = glm::clamp(intensity, 0.0f, 1.0f); }
 	void PostProcessing::SetVignetteRadius(float radius) { m_finalConfig.vignetteRadius = glm::clamp(radius, 0.0f, 1.0f); }
+	void PostProcessing::SetRaindropsEnabled(bool enabled) { m_finalConfig.raindropsEnabled = enabled; }
+	void PostProcessing::SetRaindropsIntensity(float intensity) { m_finalConfig.raindropsIntensity = glm::clamp(intensity, 0.0f, 1.0f); }
 
 	void PostProcessing::OnUpdate(Timestep ts)
 	{
@@ -192,6 +201,12 @@ namespace Yuicy {
 				m_finalConfig.flashIntensity = m_flashStartIntensity * fadeOut;
 				m_finalConfig.flashColor = m_flashColor;
 			}
+		}
+
+		// 累加雨滴时间
+		if (m_finalConfig.raindropsEnabled)
+		{
+			m_finalConfig.raindropsTime += dt;
 		}
 
 		// 处理渐变效果

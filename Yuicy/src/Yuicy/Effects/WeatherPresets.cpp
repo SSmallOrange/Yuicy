@@ -7,14 +7,14 @@ namespace Yuicy {
 	std::unordered_map<std::string, WeatherConfig> WeatherPresets::s_presets;
 
 	// ============================================================
-	// ³õÊ¼»¯ÄÚÖÃÔ¤Éè
+	// åˆå§‹åŒ–å†…ç½®é¢„è®¾
 	// ============================================================
 	void WeatherPresets::InitializeBuiltInPresets()
 	{
 		if (s_initialized) return;
 		s_initialized = true;
 
-		// ×¢²áËùÓĞÄÚÖÃÔ¤Éè
+		// æ³¨å†Œæ‰€æœ‰å†…ç½®é¢„è®¾
 		RegisterPreset("LightRain", LightRain());
 		RegisterPreset("Rain", Rain());
 		RegisterPreset("HeavyRain", HeavyRain());
@@ -32,7 +32,7 @@ namespace Yuicy {
 	}
 
 	// ============================================================
-	// Ô¤Éè»ñÈ¡½Ó¿Ú
+	// é¢„è®¾è·å–æ¥å£
 	// ============================================================
 
 	WeatherConfig WeatherPresets::Get(WeatherType type, WeatherIntensity intensity)
@@ -324,7 +324,7 @@ namespace Yuicy {
 	}
 
 	// ============================================================
-	// ÌØÊâÌìÆøÔ¤Éè
+	// ç‰¹æ®Šå¤©æ°”é¢„è®¾
 	// ============================================================
 
 	WeatherConfig WeatherPresets::Drizzle()
@@ -334,7 +334,7 @@ namespace Yuicy {
 		config.name = "Drizzle";
 		config.intensity = 0.4f;
 
-		// Ã«Ã«Óê£º·Ç³£Ï¸Ğ¡¡¢»ºÂıµÄÓêµÎ
+		// æ¯›æ¯›é›¨ï¼šéå¸¸ç»†å°ã€ç¼“æ…¢çš„é›¨æ»´
 		config.particles.spawnRate = 150.0f;
 		config.particles.particleLifetime = 3.0f;
 		config.particles.velocity = { 0.0f, -4.0f };
@@ -358,7 +358,7 @@ namespace Yuicy {
 		config.intensity = 2.0f;
 		config.windStrength = 0.85f;
 
-		// É³³¾±©£ººáÏòÒÆ¶¯µÄ»ÆÉ«Á£×Ó
+		// æ²™å°˜æš´ï¼šæ¨ªå‘ç§»åŠ¨çš„é»„è‰²ç²’å­
 		config.particles.spawnRate = 400.0f;
 		config.particles.particleLifetime = 3.0f;
 		config.particles.velocity = { 8.0f, -1.0f };
@@ -372,7 +372,7 @@ namespace Yuicy {
 		config.particles.motionAmplitude = 0.5f;
 		config.particles.rotationSpeed = 3.0f;
 		config.particles.spawnWidthMultiplier = 2.0f;
-		config.particles.spawnHeightOffset = 0.3f;  // ´Ó²àÃæÉú³É¸ü¶à
+		config.particles.spawnHeightOffset = 0.3f;  // ä»ä¾§é¢ç”Ÿæˆæ›´å¤š
 
 		return config;
 	}
@@ -414,7 +414,7 @@ namespace Yuicy {
 
 		config.particles.spawnRate = 8.0f;
 		config.particles.particleLifetime = 15.0f;
-		config.particles.velocity = { 0.0f, 0.2f };  // ÇáÎ¢ÏòÉÏ
+		config.particles.velocity = { 0.0f, 0.2f };  // è½»å¾®å‘ä¸Š
 		config.particles.velocityVariation = { 0.5f, 0.5f };
 		config.particles.sizeMin = 0.03f;
 		config.particles.sizeMax = 0.06f;
@@ -427,7 +427,7 @@ namespace Yuicy {
 		config.particles.rotationSpeed = 0.0f;
 
 		config.particles.spawnWidthMultiplier = 1.2f;
-		config.particles.spawnHeightOffset = 0.0f;  // ´ÓÖĞ¼äÇøÓòÉú³É
+		config.particles.spawnHeightOffset = 0.0f;  // ä»ä¸­é—´åŒºåŸŸç”Ÿæˆ
 
 		config.transition.duration = 6.0f;
 

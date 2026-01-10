@@ -61,6 +61,9 @@ namespace Yuicy {
 		void SetVignetteIntensity(float intensity);
 		void SetVignetteRadius(float radius);
 
+		void SetRaindropsEnabled(bool enabled);
+		void SetRaindropsIntensity(float intensity);
+
 	private:
 		void MergeEffects();  // 合并所有效果层到 m_finalConfig
 
