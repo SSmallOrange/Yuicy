@@ -4,6 +4,7 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Renderer/Renderer2D.h"
+#include "Yuicy/Renderer/RenderCommand.h"
 #include "Yuicy/Scene/ContactListener.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
 
@@ -444,33 +445,56 @@ namespace Yuicy {
 
 		if (mainCamera)
 		{
+			// 禁用2D渲染的深度测试（使用画家算法和排序顺序）
+			RenderCommand::SetDepthTest(false);
+
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
 
-			// TODO: 按 SortingOrder 排序
-			
-			// 获取所有需要渲染的精灵
+			struct SpriteRenderData
+			{
+				glm::mat4 Transform;
+				SpriteRendererComponent* Sprite;
+			};
+			std::vector<SpriteRenderData> renderQueue;
+
 			auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+			renderQueue.reserve(group.size());
+
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+				renderQueue.push_back({ transform.GetTransform(), &sprite });
+			}
+
+			std::sort(renderQueue.begin(), renderQueue.end(),
+				[](const SpriteRenderData& a, const SpriteRenderData& b)
+				{
+					return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
+				});
+
+			for (const auto& data : renderQueue)
+			{
+				const auto& sprite = *data.Sprite;
 
 				if (sprite.SubTexture)
 				{
-					Renderer2D::DrawSprite(transform.GetTransform(), 
+					Renderer2D::DrawSprite(data.Transform, 
 						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
 				}
 				else if (sprite.Texture)
 				{
-					Renderer2D::DrawSprite(transform.GetTransform(),
+					Renderer2D::DrawSprite(data.Transform,
 						sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
 				}
 				else
 				{
-					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color);
+					Renderer2D::DrawQuad(data.Transform, sprite.Color);
 				}
 			}
 
 			Renderer2D::EndScene();
+
+			RenderCommand::SetDepthTest(true);
 		}
 	}
 
