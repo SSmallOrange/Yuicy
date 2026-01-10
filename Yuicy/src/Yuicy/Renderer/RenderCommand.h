@@ -27,6 +27,11 @@ namespace Yuicy {
 			s_RendererAPI->Clear();
 		}
 
+		inline static void SetDepthTest(bool enable)
+		{
+			s_RendererAPI->SetDepthTest(enable);
+		}
+
 		// 批处理
 		inline static void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t count = 0)
 		{

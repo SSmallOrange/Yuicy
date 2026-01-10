@@ -9,7 +9,7 @@ namespace Yuicy {
 	class Application
 	{
 	public:
-		Application();
+		Application(const WindowProps& props = WindowProps());
 		virtual ~Application();
 
 		void Run();
