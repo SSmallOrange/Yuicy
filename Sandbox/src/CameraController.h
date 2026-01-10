@@ -2,13 +2,13 @@
 
 #include "Yuicy.h"
 
-// 相机跟随脚本
+// 鐩告満璺熼殢鑴氭湰
 class CameraController : public Yuicy::ScriptableEntity
 {
 public:
-	Yuicy::Entity Target;  // 跟随目标
+	Yuicy::Entity Target;  // 璺熼殢鐩爣
 	float SmoothSpeed = 5.0f;
-	glm::vec2 Offset = { 0.0f, 1.0f };  // 相机偏移
+	glm::vec2 Offset = { 0.0f, 1.0f };  // 鐩告満鍋忕Щ
 
 	void OnUpdate(Yuicy::Timestep ts) override
 	{
@@ -18,14 +18,14 @@ public:
 		auto& cameraTransform = GetComponent<Yuicy::TransformComponent>();
 		auto& targetTransform = Target.GetComponent<Yuicy::TransformComponent>();
 
-		// 目标位置（加上偏移）
+		// 鐩爣浣嶇疆锛堝姞涓婂亸绉伙級
 		glm::vec3 targetPos = {
 			targetTransform.Translation.x + Offset.x,
 			targetTransform.Translation.y + Offset.y,
-			cameraTransform.Translation.z  // 保持 Z 不变
+			cameraTransform.Translation.z  // 淇濇寔 Z 涓嶅彉
 		};
 
-		// 平滑跟随
+		// 骞虫粦璺熼殢
 		cameraTransform.Translation = glm::mix(
 			cameraTransform.Translation,
 			targetPos,

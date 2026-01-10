@@ -35,11 +35,11 @@ namespace Yuicy {
 
 	void WeatherSystem::TransitionTo(const WeatherConfig& config)
 	{
-		// ±£´æµ±Ç°ÅäÖÃ×÷Îª¹ı¶ÉÆğµã
+		// ä¿å­˜å½“å‰é…ç½®ä½œä¸ºè¿‡æ¸¡èµ·ç‚¹
 		m_previousConfig = m_currentConfig;
 		m_targetConfig = config;
 
-		// ¿ªÊ¼¹ı¶É
+		// å¼€å§‹è¿‡æ¸¡
 		m_isTransitioning = true;
 		m_transitionProgress = 0.0f;
 		m_transitionDuration = config.transition.duration;
@@ -105,18 +105,18 @@ namespace Yuicy {
 				continue;
 			}
 
-			// ÖØÁ¦
+			// é‡åŠ›
 			particle.velocity += m_currentConfig.particles.gravity * dt;
 
-			// ·çÁ¦Ó°Ïì£ºwindStrength * »ù´¡·çËÙÏµÊı
+			// é£åŠ›å½±å“ï¼šwindStrength * åŸºç¡€é£é€Ÿç³»æ•°
 			float windEffect = m_currentConfig.windStrength * 2.0f;
 			particle.position.x += windEffect * dt;
 
 			ApplyParticleMotion(particle, dt);
 
-			// Î»ÖÃ
+			// ä½ç½®
 			particle.position += particle.velocity * dt;
-			// Ğı×ª
+			// æ—‹è½¬
 			particle.rotation += m_currentConfig.particles.rotationSpeed * dt;
 		}
 	}
@@ -128,40 +128,40 @@ namespace Yuicy {
 
 		if (m_transitionProgress >= 1.0f)
 		{
-			// ¹ı¶ÉÍê³É
+			// è¿‡æ¸¡å®Œæˆ
 			m_transitionProgress = 1.0f;
 			m_currentConfig = m_targetConfig;
 			m_isTransitioning = false;
 		}
 		else
 		{
-			// ²åÖµ¹ı¶ÉÖĞµÄ²ÎÊı
-			// Ê¹ÓÃÆ½»¬µÄ»º¶¯º¯Êı
+			// æ’å€¼è¿‡æ¸¡ä¸­çš„å‚æ•°
+			// ä½¿ç”¨å¹³æ»‘çš„ç¼“åŠ¨å‡½æ•°
 			float t = m_transitionProgress;
 			float smoothT = t * t * (3.0f - 2.0f * t);  // smoothstep
 
-			// ²åÖµÇ¿¶È
+			// æ’å€¼å¼ºåº¦
 			m_currentConfig.intensity = glm::mix(
 				m_previousConfig.intensity,
 				m_targetConfig.intensity,
 				smoothT
 			);
 
-			// ²åÖµ·çÁ¦
+			// æ’å€¼é£åŠ›
 			m_currentConfig.windStrength = glm::mix(
 				m_previousConfig.windStrength,
 				m_targetConfig.windStrength,
 				smoothT
 			);
 
-			// ²åÖµÁ£×ÓÉú³ÉÂÊ
+			// æ’å€¼ç²’å­ç”Ÿæˆç‡
 			m_currentConfig.particles.spawnRate = glm::mix(
 				m_previousConfig.particles.spawnRate,
 				m_targetConfig.particles.spawnRate,
 				smoothT
 			);
 
-			// ²åÖµÑÕÉ«
+			// æ’å€¼é¢œè‰²
 			m_currentConfig.particles.colorStart = glm::mix(
 				m_previousConfig.particles.colorStart,
 				m_targetConfig.particles.colorStart,
@@ -173,7 +173,7 @@ namespace Yuicy {
 				smoothT
 			);
 
-			// ÔÚ¹ı¶ÉÖĞµãÇĞ»»ÀàĞÍ
+			// åœ¨è¿‡æ¸¡ä¸­ç‚¹åˆ‡æ¢ç±»å‹
 			if (m_transitionProgress > 0.5f && m_currentConfig.type != m_targetConfig.type)
 			{
 				m_currentConfig.type = m_targetConfig.type;
@@ -191,7 +191,7 @@ namespace Yuicy {
 		switch (config.motionType)
 		{
 		case ParticleMotion::Swaying:
-			// ×óÓÒÆ®¶¯£¨ÓÃÓÚÑ©»¨¡¢ÂäÒ¶£©
+			// å·¦å³é£˜åŠ¨ï¼ˆç”¨äºé›ªèŠ±ã€è½å¶ï¼‰
 		{
 			float sway = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
 			particle.position.x += sway;
@@ -199,7 +199,7 @@ namespace Yuicy {
 		break;
 
 		case ParticleMotion::Spiral:
-			// ÂİĞıÔË¶¯
+			// èºæ—‹è¿åŠ¨
 		{
 			float spiralX = std::cos(time * config.motionFrequency) * config.motionAmplitude * dt;
 			float spiralY = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt * 0.5f;
@@ -209,9 +209,9 @@ namespace Yuicy {
 		break;
 
 		case ParticleMotion::Random:
-			// Ëæ»úÆ®¶¯£¨ÓÃÓÚÓ©»ğ³æ¡¢É³³¾£©
+			// éšæœºé£˜åŠ¨ï¼ˆç”¨äºè¤ç«è™«ã€æ²™å°˜ï¼‰
 		{
-			// Ê¹ÓÃ°ØÁÖÔëÉùµÄ¼ò»¯°æ±¾
+			// ä½¿ç”¨æŸæ—å™ªå£°çš„ç®€åŒ–ç‰ˆæœ¬
 			float noiseX = std::sin(time * config.motionFrequency + particle.phaseOffset * 10.0f);
 			float noiseY = std::cos(time * config.motionFrequency * 0.7f + particle.phaseOffset * 7.0f);
 			particle.position.x += noiseX * config.motionAmplitude * dt;
@@ -220,18 +220,18 @@ namespace Yuicy {
 		break;
 
 		case ParticleMotion::Rising:
-			// ÏòÉÏÆ®¶¯£¨ÓÃÓÚ»ğ»¨¡¢Ó©»ğ³æ£©
+			// å‘ä¸Šé£˜åŠ¨ï¼ˆç”¨äºç«èŠ±ã€è¤ç«è™«ï¼‰
 		{
 			float rise = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
 			particle.position.x += rise;
-			// ¼õÈõÏÂÂäËÙ¶È
+			// å‡å¼±ä¸‹è½é€Ÿåº¦
 			particle.velocity.y *= 0.995f;
 		}
 		break;
 
 		case ParticleMotion::Linear:
 		default:
-			// Ö±ÏßÔË¶¯£¬ÎŞ¶îÍâ´¦Àí
+			// ç›´çº¿è¿åŠ¨ï¼Œæ— é¢å¤–å¤„ç†
 			break;
 		}
 	}
@@ -251,19 +251,19 @@ namespace Yuicy {
 			if (!particle.active)
 				continue;
 
-			// ¼ÆËãÉúÃüÖÜÆÚ½ø¶È [0, 1]
+			// è®¡ç®—ç”Ÿå‘½å‘¨æœŸè¿›åº¦ [0, 1]
 			float lifeProgress = particle.life / particle.maxLife;
 
-			// ÑÕÉ«²åÖµ
+			// é¢œè‰²æ’å€¼
 			glm::vec4 color = glm::mix(m_currentConfig.particles.colorEnd, m_currentConfig.particles.colorStart, lifeProgress);
 
-			// Í¸Ã÷¶ÈË¥¼õ
+			// é€æ˜åº¦è¡°å‡
 			color.a *= lifeProgress;
 
-			// ¹ı¶ÉÆÚ¼ä¶îÍâµÄÍ¸Ã÷¶Èµ÷Õû
+			// è¿‡æ¸¡æœŸé—´é¢å¤–çš„é€æ˜åº¦è°ƒæ•´
 			if (m_isTransitioning && m_currentConfig.transition.fadeOutOld)
 			{
-				// ÔÚ¹ı¶ÉÇ°°ë¶Îµ­³ö¾ÉÁ£×Ó
+				// åœ¨è¿‡æ¸¡å‰åŠæ®µæ·¡å‡ºæ—§ç²’å­
 				if (m_transitionProgress < 0.5f)
 				{
 					color.a *= 1.0f - m_transitionProgress;
@@ -295,12 +295,12 @@ namespace Yuicy {
 
 	void WeatherSystem::EmitParticles(float deltaTime, const glm::vec2& cameraPos, const glm::vec2& viewportSize)
 	{
-		// ¼ÆËã±¾Ö¡Ó¦¸ÃÉú³ÉµÄÁ£×ÓÊıÁ¿
-		// spawnRate * intensity = Êµ¼ÊÉú³ÉËÙÂÊ
+		// è®¡ç®—æœ¬å¸§åº”è¯¥ç”Ÿæˆçš„ç²’å­æ•°é‡
+		// spawnRate * intensity = å®é™…ç”Ÿæˆé€Ÿç‡
 		float spawnRate = m_currentConfig.particles.spawnRate * m_currentConfig.intensity;
 		m_spawnAccumulator += spawnRate * deltaTime;
 
-		// Éú³ÉÇøÓò
+		// ç”ŸæˆåŒºåŸŸ
 		float spawnWidth = viewportSize.x * m_currentConfig.particles.spawnWidthMultiplier;
 		float spawnY = cameraPos.y + viewportSize.y * m_currentConfig.particles.spawnHeightOffset;
 		float spawnXMin = cameraPos.x - spawnWidth * 0.5f;
@@ -314,20 +314,20 @@ namespace Yuicy {
 			spawnYMax = cameraPos.y + viewportSize.y * 0.3f;
 		}
 
-		// Éú³ÉÀÛ»ıµÄÁ£×Ó
+		// ç”Ÿæˆç´¯ç§¯çš„ç²’å­
 		while (m_spawnAccumulator >= 1.0f)
 		{
 			m_spawnAccumulator -= 1.0f;
 			Particle& particle = m_particlePool[m_poolIndex];
 
-			// ¼¤»îÁ£×Ó
+			// æ¿€æ´»ç²’å­
 			particle.active = true;
 
-			// ÔÚ¶¥²¿Ëæ»úÉú³ÉÁ£×Ó
+			// åœ¨é¡¶éƒ¨éšæœºç”Ÿæˆç²’å­
 			particle.position.x = RandomRange(spawnXMin, spawnXMax);
 			particle.position.y = spawnY + RandomRange(-0.5f, 0.5f);
 
-			// ÉèÖÃËÙ¶È = »ù´¡ËÙ¶È + Ëæ»úÆ«ÒÆ
+			// è®¾ç½®é€Ÿåº¦ = åŸºç¡€é€Ÿåº¦ + éšæœºåç§»
 			particle.velocity = m_currentConfig.particles.velocity;
 			particle.velocity.x += RandomRange(
 				-m_currentConfig.particles.velocityVariation.x,
@@ -338,12 +338,12 @@ namespace Yuicy {
 				m_currentConfig.particles.velocityVariation.y
 			);
 
-			particle.size = RandomRange(m_currentConfig.particles.sizeMin, m_currentConfig.particles.sizeMax);								// Ëæ»ú´óĞ¡
-			particle.rotation = RandomRange(0.0f, 6.28318f);				// Ëæ»ú³õÊ¼Ğı×ª
-			particle.maxLife = m_currentConfig.particles.particleLifetime;			// ÉúÃüÖµ
+			particle.size = RandomRange(m_currentConfig.particles.sizeMin, m_currentConfig.particles.sizeMax);								// éšæœºå¤§å°
+			particle.rotation = RandomRange(0.0f, 6.28318f);				// éšæœºåˆå§‹æ—‹è½¬
+			particle.maxLife = m_currentConfig.particles.particleLifetime;			// ç”Ÿå‘½å€¼
 			particle.life = particle.maxLife;
-			particle.color = m_currentConfig.particles.colorStart;					// ³õÊ¼ÑÕÉ«
-			particle.phaseOffset = RandomRange(0.0f, 6.28318f);						// Ëæ»úÆ«ÒÆ
+			particle.color = m_currentConfig.particles.colorStart;					// åˆå§‹é¢œè‰²
+			particle.phaseOffset = RandomRange(0.0f, 6.28318f);						// éšæœºåç§»
 
 			m_poolIndex = (m_poolIndex + 1) % m_particlePool.size();
 		}

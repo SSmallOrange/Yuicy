@@ -12,20 +12,20 @@ namespace Yuicy {
 	class WeatherSystem
 	{
 	public:
-		// maxParticles: Á£×Ó³Ø´óĞ¡
+		// maxParticles: ç²’å­æ± å¤§å°
 		WeatherSystem(uint32_t maxParticles = 5000);
 		~WeatherSystem() = default;
 
 		void SetWeather(WeatherType type, WeatherIntensity intensity = WeatherIntensity::Normal);
 		void SetWeather(const WeatherConfig& config);
 
-		// Æ½»¬¹ı¶É
+		// å¹³æ»‘è¿‡æ¸¡
 		void TransitionTo(WeatherType type, WeatherIntensity intensity = WeatherIntensity::Normal);
 		void TransitionTo(const WeatherConfig& config);
 		void TransitionTo(const std::string& presetName);
 
 		void Clear();
-		void FadeOut(float duration = 2.0f);  // µ­³ö
+		void FadeOut(float duration = 2.0f);  // æ·¡å‡º
 
 		void SetWindStrength(float strength);
 		void SetIntensity(float intensity);
@@ -61,30 +61,30 @@ namespace Yuicy {
 			glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
 			float size = 0.05f;
 			float rotation = 0.0f;
-			float life = 0.0f;          // Ê£ÓàÉúÃü
-			float maxLife = 1.0f;       // ³õÊ¼ÉúÃü
+			float life = 0.0f;          // å‰©ä½™ç”Ÿå‘½
+			float maxLife = 1.0f;       // åˆå§‹ç”Ÿå‘½
 			bool active = false;
 
-			float phaseOffset = 0.0f;   // ÓÃÓÚÔË¶¯ÏàÎ»Æ«ÒÆ
+			float phaseOffset = 0.0f;   // ç”¨äºè¿åŠ¨ç›¸ä½åç§»
 		};
 
 		void ApplyParticleMotion(Particle& particle, float dt);
 
 	private:
 
-		// µ±Ç°ÅäÖÃ
+		// å½“å‰é…ç½®
 		WeatherConfig m_currentConfig;
 
-		// ¹ı¶É×´Ì¬
+		// è¿‡æ¸¡çŠ¶æ€
 		bool m_isTransitioning = false;
-		float m_transitionProgress = 0.0f;		// ¹ı¶É½ø¶È
-		float m_transitionDuration = 2.0f;		// ¹ı¶É¼ä¸ô
-		WeatherConfig m_targetConfig;			// Ä¿±ê×´Ì¬
-		WeatherConfig m_previousConfig;			// ÏÈÇ°×´Ì¬
+		float m_transitionProgress = 0.0f;		// è¿‡æ¸¡è¿›åº¦
+		float m_transitionDuration = 2.0f;		// è¿‡æ¸¡é—´éš”
+		WeatherConfig m_targetConfig;			// ç›®æ ‡çŠ¶æ€
+		WeatherConfig m_previousConfig;			// å…ˆå‰çŠ¶æ€
 
-		std::vector<Particle> m_particlePool;       // Á£×Ó¶ÔÏó³Ø
+		std::vector<Particle> m_particlePool;       // ç²’å­å¯¹è±¡æ± 
 		uint32_t m_poolIndex = 0;
-		float m_spawnAccumulator = 0.0f;            // Éú³É¼ÆÊ±Æ÷ÀÛ¼ÓÆ÷
+		float m_spawnAccumulator = 0.0f;            // ç”Ÿæˆè®¡æ—¶å™¨ç´¯åŠ å™¨
 
 		// camera info for spawning
 		glm::vec2 m_lastCameraPos = { 0.0f, 0.0f };

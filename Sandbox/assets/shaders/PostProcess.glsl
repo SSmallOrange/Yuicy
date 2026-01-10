@@ -37,6 +37,11 @@ uniform int u_FlashEnabled;
 uniform float u_FlashIntensity;
 uniform vec3 u_FlashColor;
 
+// 屏幕雨滴
+uniform int u_RaindropsEnabled;
+uniform float u_RaindropsIntensity;
+uniform float u_RaindropsTime;
+
 vec3 AdjustSaturation(vec3 color, float saturation)
 {
     float gray = dot(color, vec3(0.299, 0.587, 0.114));
@@ -63,9 +68,81 @@ float CalculateVignette(vec2 uv, float intensity, float radius)
     return mix(1.0, vignette, intensity);
 }
 
+// 屏幕雨滴函数
+
+#define S(a, b, t) smoothstep(a, b, t)
+
+float N21(vec2 p)
+{
+    p = fract(p * vec2(123.34, 345.45));
+    p += dot(p, p + 34.345);
+    return fract(p.x * p.y);
+}
+
+float saw(float x)
+{
+    return (cos(x) + cos(x * 3.0) * 0.5 + sin(x * 5.0) * 0.1) * 0.4 + 0.5;
+}
+
+vec2 GetDrops(vec2 uv, float seed, float m)
+{
+    float t = u_RaindropsTime + m * 30.0;
+    vec2 o = vec2(0.0);
+    
+    uv.y += t * 0.05;
+    
+    uv *= vec2(10.0, 2.5) * seed;
+    vec2 id = floor(uv);
+    vec2 st = fract(uv) - 0.5;
+    
+    float n = N21(id + seed);
+    float x = n - 0.5;
+    float ti = fract(t + n * 6.28);
+    float y = (saw(ti) - 0.5) * 0.9;
+    
+    vec2 p = vec2(x, y);
+    float d = length(st - p);
+    
+    float mainDrop = S(0.2, 0.0, d);
+    
+    // 尾迹
+    float trailMask = S(0.0, 0.2, st.y - p.y);
+    trailMask *= S(0.5, 0.0, st.y - p.y);
+    trailMask *= S(0.05, 0.03, abs(st.x - p.x));
+    
+    float td = length(st - vec2(p.x, st.y));
+    float dropTrail = S(0.1, 0.02, td);
+    dropTrail *= trailMask;
+    
+    o = (mainDrop + dropTrail * 0.5) * (st - p);
+    
+    return o;
+}
+
+vec2 CalculateRaindropsOffset(vec2 uv, float intensity)
+{
+    vec2 offs = vec2(0.0);
+    
+    offs += GetDrops(uv, 1.0, intensity);
+    offs += GetDrops(uv * 1.4 + 7.23, 1.25, intensity);
+    offs += GetDrops(uv * 2.1 + 1.17, 1.5, intensity) * 0.5;
+    
+    return offs * 0.03 * intensity;
+}
+
+
 void main()
 {
-    vec4 sceneColor = texture(u_ScreenTexture, v_TexCoord);
+    vec2 uv = v_TexCoord;
+    
+    // 应用屏幕雨滴偏移
+    if (u_RaindropsEnabled != 0 && u_RaindropsIntensity > 0.0)
+    {
+        vec2 offs = CalculateRaindropsOffset(uv, u_RaindropsIntensity);
+        uv = clamp(uv + offs, vec2(0.0), vec2(1.0));
+    }
+    
+    vec4 sceneColor = texture(u_ScreenTexture, uv);
     vec3 color = sceneColor.rgb;
 
     color *= u_AmbientTint.rgb;

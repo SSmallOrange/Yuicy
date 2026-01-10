@@ -9,41 +9,41 @@ namespace Yuicy {
 	class WeatherPresets
 	{
 	public:
-		// »ñÈ¡ÄÚÖÃÔ¤Éè
+		// è·å–å†…ç½®é¢„è®¾
 		static WeatherConfig Get(WeatherType type, WeatherIntensity intensity = WeatherIntensity::Normal);
 
-		// ¸ù¾İÃû³Æ»ñÈ¡Ô¤Éè
+		// æ ¹æ®åç§°è·å–é¢„è®¾
 		static WeatherConfig GetByName(const std::string& name);
 
-		// ×¢²á×Ô¶¨ÒåÔ¤Éè
+		// æ³¨å†Œè‡ªå®šä¹‰é¢„è®¾
 		static void RegisterPreset(const std::string& name, const WeatherConfig& config);
 
-		// ¼ì²éÔ¤ÉèÊÇ·ñ´æÔÚ
+		// æ£€æŸ¥é¢„è®¾æ˜¯å¦å­˜åœ¨
 		static bool HasPreset(const std::string& name);
 
-		// »ñÈ¡ËùÓĞÒÑ×¢²áÔ¤ÉèµÄÃû³Æ
+		// è·å–æ‰€æœ‰å·²æ³¨å†Œé¢„è®¾çš„åç§°
 		static std::vector<std::string> GetAllPresetNames();
 
-		// ÓêÌìÏµÁĞ
+		// é›¨å¤©ç³»åˆ—
 		static WeatherConfig LightRain();
 		static WeatherConfig Rain();
 		static WeatherConfig HeavyRain();
 		static WeatherConfig Storm();
 
-		// Ñ©ÌìÏµÁĞ
+		// é›ªå¤©ç³»åˆ—
 		static WeatherConfig LightSnow();
 		static WeatherConfig Snow();
 		static WeatherConfig HeavySnow();
 		static WeatherConfig Blizzard();
 
-		// ÌØÊâĞ§¹û
+		// ç‰¹æ®Šæ•ˆæœ
 		static WeatherConfig Drizzle();
 		static WeatherConfig Sandstorm();
 		static WeatherConfig FallingLeaves();
 		static WeatherConfig Fireflies();
 
 	private:
-		// ÄÚÖÃÔ¤Éè³õÊ¼»¯
+		// å†…ç½®é¢„è®¾åˆå§‹åŒ–
 		static void InitializeBuiltInPresets();
 
 	private:
