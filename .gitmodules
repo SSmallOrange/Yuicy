@@ -13,3 +13,6 @@
 [submodule "Yuicy/thirdparty/Box2D/box2d"]
 	path = Yuicy/thirdparty/Box2D/box2d
 	url = https://github.com/thecherno/box2d
+[submodule "Yuicy/thirdparty/sol2"]
+	path = Yuicy/thirdparty/sol2
+	url = https://github.com/ThePhD/sol2.git
