@@ -51,7 +51,7 @@ namespace TinyDungeon {
 			return false;
 		}
 
-		// 解析 header
+		// 瑙ｆ瀽 header
 		if (doc.HasMember("header") && doc["header"].IsObject())
 		{
 			const auto& header = doc["header"];
@@ -60,7 +60,7 @@ namespace TinyDungeon {
 			if (header.HasMember("version")) outData.header.version = header["version"].GetString();
 		}
 
-		// 解析 map 信息
+		// 瑙ｆ瀽 map 淇℃伅
 		if (doc.HasMember("map") && doc["map"].IsObject())
 		{
 			const auto& map = doc["map"];
@@ -78,7 +78,7 @@ namespace TinyDungeon {
 			}
 		}
 
-		// 解析 layers
+		// 瑙ｆ瀽 layers
 		if (doc.HasMember("layers") && doc["layers"].IsArray())
 		{
 			for (const auto& layerJson : doc["layers"].GetArray())
@@ -91,7 +91,7 @@ namespace TinyDungeon {
 				if (layerJson.HasMember("opacity")) layer.opacity = layerJson["opacity"].GetFloat();
 				if (layerJson.HasMember("tileCount")) layer.tileCount = layerJson["tileCount"].GetInt();
 
-				// 解析 tiles
+				// 瑙ｆ瀽 tiles
 				if (layerJson.HasMember("tiles") && layerJson["tiles"].IsArray())
 				{
 					for (const auto& tileJson : layerJson["tiles"].GetArray())
@@ -104,7 +104,7 @@ namespace TinyDungeon {
 						if (tileJson.HasMember("layer")) tile.layer = tileJson["layer"].GetInt();
 						if (tileJson.HasMember("zIndex")) tile.zIndex = tileJson["zIndex"].GetInt();
 
-						// 解析 position
+						// 瑙ｆ瀽 position
 						if (tileJson.HasMember("position") && tileJson["position"].IsObject())
 						{
 							const auto& pos = tileJson["position"];
@@ -114,7 +114,7 @@ namespace TinyDungeon {
 							if (pos.HasMember("pixelY")) tile.position.pixelY = pos["pixelY"].GetInt();
 						}
 
-						// 解析 size
+						// 瑙ｆ瀽 size
 						if (tileJson.HasMember("size") && tileJson["size"].IsObject())
 						{
 							const auto& size = tileJson["size"];
@@ -124,7 +124,7 @@ namespace TinyDungeon {
 							if (size.HasMember("pixelHeight")) tile.size.pixelHeight = size["pixelHeight"].GetInt();
 						}
 
-						// 解析 transform
+						// 瑙ｆ瀽 transform
 						if (tileJson.HasMember("transform") && tileJson["transform"].IsObject())
 						{
 							const auto& transform = tileJson["transform"];
@@ -133,7 +133,7 @@ namespace TinyDungeon {
 							if (transform.HasMember("rotation")) tile.transform.rotation = transform["rotation"].GetFloat();
 						}
 
-						// 解析 collision
+						// 瑙ｆ瀽 collision
 						if (tileJson.HasMember("collision") && tileJson["collision"].IsObject())
 						{
 							const auto& collision = tileJson["collision"];
@@ -142,7 +142,7 @@ namespace TinyDungeon {
 							if (collision.HasMember("typeId")) tile.collision.typeId = collision["typeId"].GetInt();
 						}
 
-						// 解析 tags
+						// 瑙ｆ瀽 tags
 						if (tileJson.HasMember("tags") && tileJson["tags"].IsArray())
 						{
 							for (const auto& tag : tileJson["tags"].GetArray())
@@ -152,7 +152,7 @@ namespace TinyDungeon {
 							}
 						}
 
-						// 解析 customData
+						// 瑙ｆ瀽 customData
 						if (tileJson.HasMember("customData") && tileJson["customData"].IsObject())
 						{
 							for (auto it = tileJson["customData"].MemberBegin();
@@ -170,7 +170,7 @@ namespace TinyDungeon {
 			}
 		}
 
-		// 解析 slices
+		// 瑙ｆ瀽 slices
 		if (doc.HasMember("slices") && doc["slices"].IsArray())
 		{
 			for (const auto& sliceJson : doc["slices"].GetArray())
@@ -182,7 +182,7 @@ namespace TinyDungeon {
 				if (sliceJson.HasMember("group")) slice.group = sliceJson["group"].GetString();
 				if (sliceJson.HasMember("decorationOnly")) slice.decorationOnly = sliceJson["decorationOnly"].GetBool();
 
-				// 解析 anchor
+				// 瑙ｆ瀽 anchor
 				if (sliceJson.HasMember("anchor") && sliceJson["anchor"].IsObject())
 				{
 					const auto& anchor = sliceJson["anchor"];
@@ -190,7 +190,7 @@ namespace TinyDungeon {
 					if (anchor.HasMember("y")) slice.anchor.y = anchor["y"].GetFloat();
 				}
 
-				// 解析 sourceRect
+				// 瑙ｆ瀽 sourceRect
 				if (sliceJson.HasMember("sourceRect") && sliceJson["sourceRect"].IsObject())
 				{
 					const auto& rect = sliceJson["sourceRect"];
@@ -204,7 +204,7 @@ namespace TinyDungeon {
 			}
 		}
 
-		// 解析 tilesets
+		// 瑙ｆ瀽 tilesets
 		if (doc.HasMember("tilesets") && doc["tilesets"].IsArray())
 		{
 			for (const auto& tilesetJson : doc["tilesets"].GetArray())
@@ -216,7 +216,7 @@ namespace TinyDungeon {
 				if (tilesetJson.HasMember("imageWidth")) tileset.imageWidth = tilesetJson["imageWidth"].GetInt();
 				if (tilesetJson.HasMember("imageHeight")) tileset.imageHeight = tilesetJson["imageHeight"].GetInt();
 
-				// 解析 tileset slices
+				// 瑙ｆ瀽 tileset slices
 				if (tilesetJson.HasMember("slices") && tilesetJson["slices"].IsArray())
 				{
 					for (const auto& sliceJson : tilesetJson["slices"].GetArray())
@@ -234,7 +234,7 @@ namespace TinyDungeon {
 						if (sliceJson.HasMember("collisionType")) slice.collisionType = sliceJson["collisionType"].GetInt();
 						if (sliceJson.HasMember("isDecorationOnly")) slice.isDecorationOnly = sliceJson["isDecorationOnly"].GetBool();
 
-						// 解析 anchor
+						// 瑙ｆ瀽 anchor
 						if (sliceJson.HasMember("anchor") && sliceJson["anchor"].IsObject())
 						{
 							const auto& anchor = sliceJson["anchor"];

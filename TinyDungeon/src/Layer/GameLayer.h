@@ -19,6 +19,7 @@ namespace TinyDungeon {
 	private:
 		void SetupScene();
 		void SetupCamera();
+		void SetupPlayer();
 		void SetupTileMap();
 		void RegisterParsers();
 
@@ -30,14 +31,20 @@ namespace TinyDungeon {
 		Yuicy::Ref<Yuicy::Scene> m_scene;
 		Yuicy::Ref<Yuicy::TileMap> m_tileMap;
 		Yuicy::Entity m_cameraEntity;
+		Yuicy::Entity m_playerEntity;
 
-		glm::vec2 m_viewportSize = { 1280.0f, 720.0f };
+		// Map size in world units (50x30 tiles)
+		const float m_mapWidth = 50.0f;
+		const float m_mapHeight = 30.0f;
+
+		glm::vec2 m_viewportSize = { 960.0f, 576.0f };
 		glm::vec4 m_clearColor = { 0.1f, 0.1f, 0.15f, 1.0f };
 
-		float m_zoomLevel = 10.0f;      // 初始缩放级别（正交大小）
-		float m_minZoom = 1.0f;         // 最小缩放
-		float m_maxZoom = 50.0f;        // 最大缩放
-		float m_zoomSpeed = 1.5f;       // 缩放速度
+		float m_zoomLevel = 8.0f;       // orthographic size (smaller = closer view, allows camera follow)
+		float m_minZoom = 5.0f;         // min zoom
+		float m_maxZoom = 15.0f;        // max zoom (15 shows entire map)
+		float m_zoomSpeed = 1.0f;       // zoom speed
+		float m_playerSpeed = 8.0f;     // player movement speed
 	};
 
 }

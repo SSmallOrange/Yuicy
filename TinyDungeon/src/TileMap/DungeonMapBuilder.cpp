@@ -29,10 +29,10 @@ namespace TinyDungeon {
 
 				Yuicy::Entity entity = scene->CreateEntity(entityName);
 
-				glm::vec2 worldPos = GridToWorld(data, tile.position.gridX, tile.position.gridY);
+				glm::vec3 worldPos = GridToWorld(data, tile.position.gridX, tile.position.gridY, tile.zIndex);
 
 				auto& transform = entity.GetComponent<Yuicy::TransformComponent>();
-				transform.Translation = { worldPos.x, worldPos.y, 0.0f };
+				transform.Translation = { worldPos.x, worldPos.y, worldPos.z };
 				transform.Rotation = { 0.0f, 0.0f, glm::radians(tile.transform.rotation) };
 				transform.Scale = {
 					static_cast<float>(tile.size.gridWidth),
@@ -84,11 +84,12 @@ namespace TinyDungeon {
 		return nullptr;
 	}
 
-	glm::vec2 DungeonMapBuilder::GridToWorld(TileMapData* data, int32_t gridX, int32_t gridY)
+	glm::vec3 DungeonMapBuilder::GridToWorld(TileMapData* data, int32_t gridX, int32_t gridY, int32_t gridZ)
 	{
 		// Y轴翻转：编辑器坐标系 -> 游戏世界坐标系
 		float worldX = static_cast<float>(gridX) + 0.5f;
 		float worldY = static_cast<float>(data->map.height - 1 - gridY) + 0.5f;
-		return { worldX, worldY };
+		float worldZ = static_cast<float>(gridZ * 0.05);  // 以层数做Z轴，10 -> 0.1  11 -> 0.11
+		return { worldX, worldY, worldZ };
 	}
 }

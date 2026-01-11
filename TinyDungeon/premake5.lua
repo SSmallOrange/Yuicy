@@ -24,6 +24,8 @@ project "TinyDungeon"
         "%{wks.location}/Yuicy/thirdparty/glm",
         "%{wks.location}/Yuicy/thirdparty/entt/include",
         "%{wks.location}/Yuicy/thirdparty/Box2D/box2d/include",
+        "%{wks.location}/Yuicy/thirdparty/sol2/include",
+        "%{wks.location}/Yuicy/thirdparty/lua/src",
         "%{prj.location}/thirdparty"
     }
     

@@ -15,6 +15,6 @@ namespace TinyDungeon {
 
 	private:
 		Yuicy::Ref<Yuicy::SubTexture2D> GetSubTextureBySliceId(TileMapData* data, const std::string& sliceId);
-		glm::vec2 GridToWorld(TileMapData* data, int32_t gridX, int32_t gridY);
+		glm::vec3 GridToWorld(TileMapData* data, int32_t gridX, int32_t gridY, int32_t gridZ);
 	};
 }

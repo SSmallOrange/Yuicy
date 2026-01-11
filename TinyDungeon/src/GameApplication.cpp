@@ -7,6 +7,7 @@ class TinyDungeonApp : public Yuicy::Application
 {
 public:
 	TinyDungeonApp()
+		: Yuicy::Application(Yuicy::WindowProps("TinyDungeon", 960, 576))
 	{
 		PushLayer(new TinyDungeon::GameLayer());
 	}
