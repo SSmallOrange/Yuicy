@@ -36,6 +36,12 @@ namespace Yuicy {
 		void InitializeScripts();			
 		void UpdateScripts(Timestep ts);	
 		void DestroyScripts();
+
+		// Lua 脚本
+		void InitializeLuaScripts();
+		void UpdateLuaScripts(Timestep ts);
+		void DestroyLuaScripts();
+		void ProcessLuaCollisionCallbacks();
 		// 碰撞回调
 		void ProcessCollisionCallbacks();
 		// 动画

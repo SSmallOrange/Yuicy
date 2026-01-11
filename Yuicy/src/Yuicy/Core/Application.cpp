@@ -2,6 +2,7 @@
 
 #include "Yuicy/Core/Application.h"
 #include "Yuicy/Events/ApplicationEvent.h"
+#include "Yuicy/Scripting/LuaScriptEngine.h"
 
 #include "Yuicy/Renderer/Renderer.h"
 #include <glfw/glfw3.h>
@@ -21,6 +22,7 @@ namespace Yuicy {
 		_window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
 		Renderer::Init();
+		LuaScriptEngine::Init();
 
 		_imGuiLayer = new ImGuiLayer();
 		PushOverlay(_imGuiLayer);
@@ -30,6 +32,7 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
+		LuaScriptEngine::Shutdown();
 	}
 
 	void Application::OnEvent(Event& e) {

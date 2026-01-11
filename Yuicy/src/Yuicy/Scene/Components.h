@@ -9,6 +9,9 @@
 #include "Yuicy/Renderer/SubTexture.h"
 #include "Yuicy/Scene/SceneCamera.h"
 
+#define SOL_ALL_SAFETIES_ON 1
+#include <sol/sol.hpp>
+
 namespace Yuicy {
 
 	class ScriptableEntity;
@@ -115,6 +118,29 @@ namespace Yuicy {
 				delete nsc->Instance;
 				nsc->Instance = nullptr;
 			};
+		}
+	};
+
+	struct LuaScriptComponent
+	{
+		std::string ScriptPath;
+		
+		// 脚本实例和回调函数
+		sol::table ScriptInstance;
+		sol::function OnCreateFunc;
+		sol::function OnUpdateFunc;
+		sol::function OnDestroyFunc;
+		sol::function OnCollisionEnterFunc;		// 碰撞回调
+		sol::function OnCollisionExitFunc;
+		sol::function OnTriggerEnterFunc;		// 触发回调
+		sol::function OnTriggerExitFunc;
+
+		bool IsLoaded = false;
+
+		LuaScriptComponent() = default;
+		LuaScriptComponent(const LuaScriptComponent&) = default;
+		LuaScriptComponent(const std::string& path)
+			: ScriptPath(path) {
 		}
 	};
 

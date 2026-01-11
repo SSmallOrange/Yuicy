@@ -39,3 +39,6 @@
 #include "Yuicy/Effects/WeatherSystem.h"
 #include "Yuicy/Effects/WeatherPresets.h"
 #include "Yuicy/Effects/PostProcessing.h"
+
+// Scripting
+#include "Yuicy/Scripting/LuaScriptEngine.h"

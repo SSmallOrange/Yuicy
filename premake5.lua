@@ -11,6 +11,7 @@ group "Dependencies"
     include "Yuicy/thirdparty/GLAD"
     include "Yuicy/thirdparty/imgui"
     include "Yuicy/thirdparty/Box2D/box2d"
+    include "Yuicy/thirdparty/lua"
 
 group ""
 project "Yuicy"
@@ -41,7 +42,9 @@ project "Yuicy"
         "Yuicy/thirdparty/glm",
         "Yuicy/thirdparty/stb_image",
         "Yuicy/thirdparty/entt/include",
-        "Yuicy/thirdparty/Box2D/box2d/include"
+        "Yuicy/thirdparty/Box2D/box2d/include",
+        "Yuicy/thirdparty/lua/src",
+        "Yuicy/thirdparty/sol2/include"
     }
     defines { 
         "PLATFORM_WINDOWS",
@@ -54,7 +57,8 @@ project "Yuicy"
         "GLFW", 
         "Glad",
         "imgui",
-        "Box2D"
+        "Box2D",
+        "lua"
     }
     filter "system:windows"
         systemversion "latest"

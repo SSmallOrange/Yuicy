@@ -17,6 +17,8 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_circle_shape.h>
 
+#include "Yuicy/Scripting/LuaScriptEngine.h"
+
 namespace Yuicy {
 
 	static b2BodyType Rigidbody2DTypeToBox2DBody(Rigidbody2DComponent::BodyType bodyType)
@@ -328,11 +330,13 @@ namespace Yuicy {
 		}
 
 		InitializeScripts();
+		InitializeLuaScripts();
 	}
 
 	void Scene::OnRuntimeStop()
 	{
 		DestroyScripts();
+		DestroyLuaScripts();
 
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
@@ -365,6 +369,7 @@ namespace Yuicy {
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
 		UpdateScripts(ts);		// 脚本更新
+		UpdateLuaScripts(ts);
 
 		UpdateAnimations(ts);   // 动画更新
 
@@ -405,8 +410,10 @@ namespace Yuicy {
 					transform.Rotation.z = body->GetAngle();
 				}
 			}
-			// 碰撞回调
+			// 原生脚本碰撞回调
 			ProcessCollisionCallbacks();
+			// Lua脚本回调
+			ProcessLuaCollisionCallbacks();
 		}
 
 		// 渲染场景
@@ -509,6 +516,159 @@ namespace Yuicy {
 			auto& cameraComponent = view.get<CameraComponent>(entity);
 			if (!cameraComponent.FixedAspectRatio)
 				cameraComponent.Camera.SetViewportSize(width, height);
+		}
+	}
+
+	// Lua Scripting
+	void Scene::InitializeLuaScripts()
+	{
+		auto view = m_Registry.view<LuaScriptComponent>();
+		for (auto e : view)
+		{
+			auto& lsc = view.get<LuaScriptComponent>(e);
+			if (!lsc.ScriptPath.empty() && !lsc.IsLoaded)
+			{
+				lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(lsc.ScriptPath);
+				if (lsc.ScriptInstance.valid())
+				{
+					lsc.IsLoaded = true;
+
+					// 注入 Entity 对象
+					lsc.ScriptInstance["entity"] = Entity{ e, this };
+
+					// 缓存函数
+					lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
+					lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
+					lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
+					lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
+					lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
+
+					lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
+					lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
+
+					// 调用 OnCreate
+					if (lsc.OnCreateFunc.valid())
+						lsc.OnCreateFunc(lsc.ScriptInstance);
+				}
+				else
+				{
+					YUICY_CORE_ERROR("[Scene] Failed to load Lua script: {}", lsc.ScriptPath);
+				}
+			}
+		}
+	}
+
+	void Scene::UpdateLuaScripts(Timestep ts)
+	{
+		auto view = m_Registry.view<LuaScriptComponent>();
+		for (auto e : view)
+		{
+			auto& lsc = view.get<LuaScriptComponent>(e);
+			if (lsc.IsLoaded && lsc.OnUpdateFunc.valid())
+			{
+				try {
+					auto result = lsc.OnUpdateFunc(lsc.ScriptInstance, (float)ts);
+					if (!result.valid()) {
+						sol::error err = result;
+						YUICY_CORE_ERROR("[Lua Error] OnUpdate: {}", err.what());
+					}
+				}
+				catch (const std::exception& e) {
+					YUICY_CORE_ERROR("[Lua Error] OnUpdate Exception: {}", e.what());
+				}
+			}
+		}
+	}
+
+	void Scene::DestroyLuaScripts()
+	{
+		auto view = m_Registry.view<LuaScriptComponent>();
+		for (auto e : view)
+		{
+			auto& lsc = view.get<LuaScriptComponent>(e);
+			if (lsc.IsLoaded && lsc.OnDestroyFunc.valid())
+			{
+				lsc.OnDestroyFunc(lsc.ScriptInstance);
+			}
+			lsc.IsLoaded = false;
+		}
+	}
+
+	void Scene::ProcessLuaCollisionCallbacks()
+	{
+		if (!m_ContactListener) return;
+
+		// Begin Contact
+		for (const auto& contact : m_ContactListener->GetBeginContacts())
+		{
+			Entity entityA = { (entt::entity)(uintptr_t)contact.EntityA, this };
+			Entity entityB = { (entt::entity)(uintptr_t)contact.EntityB, this };
+
+			if (entityA.HasComponent<LuaScriptComponent>())
+			{
+				auto& lsc = entityA.GetComponent<LuaScriptComponent>();
+
+				if (contact.IsSensorA || contact.IsSensorB)
+				{
+					if (lsc.IsLoaded && lsc.OnTriggerEnterFunc.valid())
+						lsc.OnTriggerEnterFunc(lsc.ScriptInstance, entityB);
+				}
+				else
+				{
+					if (lsc.IsLoaded && lsc.OnCollisionEnterFunc.valid())
+						lsc.OnCollisionEnterFunc(lsc.ScriptInstance, entityB);
+				}
+			}
+			if (entityB.HasComponent<LuaScriptComponent>())
+			{
+				auto& lsc = entityB.GetComponent<LuaScriptComponent>();
+				if (contact.IsSensorA || contact.IsSensorB)
+				{
+					if (lsc.IsLoaded && lsc.OnTriggerEnterFunc.valid())
+						lsc.OnTriggerEnterFunc(lsc.ScriptInstance, entityA);
+				}
+				else
+				{
+					if (lsc.IsLoaded && lsc.OnCollisionEnterFunc.valid())
+						lsc.OnCollisionEnterFunc(lsc.ScriptInstance, entityA);
+				}
+			}
+		}
+
+		// End Contact
+		for (const auto& contact : m_ContactListener->GetEndContacts())
+		{
+			Entity entityA = { (entt::entity)(uintptr_t)contact.EntityA, this };
+			Entity entityB = { (entt::entity)(uintptr_t)contact.EntityB, this };
+
+			if (entityA.HasComponent<LuaScriptComponent>())
+			{
+				auto& lsc = entityA.GetComponent<LuaScriptComponent>();
+				if (contact.IsSensorA || contact.IsSensorB)
+				{
+					if (lsc.IsLoaded && lsc.OnTriggerExitFunc.valid())
+						lsc.OnTriggerExitFunc(lsc.ScriptInstance, entityB);
+				}
+				else
+				{
+					if (lsc.IsLoaded && lsc.OnCollisionExitFunc.valid())
+						lsc.OnCollisionExitFunc(lsc.ScriptInstance, entityB);
+				}
+			}
+			if (entityB.HasComponent<LuaScriptComponent>())
+			{
+				auto& lsc = entityB.GetComponent<LuaScriptComponent>();
+				if (contact.IsSensorA || contact.IsSensorB)
+				{
+					if (lsc.IsLoaded && lsc.OnTriggerExitFunc.valid())
+						lsc.OnTriggerExitFunc(lsc.ScriptInstance, entityA);
+				}
+				else
+				{
+					if (lsc.IsLoaded && lsc.OnCollisionExitFunc.valid())
+						lsc.OnCollisionExitFunc(lsc.ScriptInstance, entityA);
+				}
+			}
 		}
 	}
 }
