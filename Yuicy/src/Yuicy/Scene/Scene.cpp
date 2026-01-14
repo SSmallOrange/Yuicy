@@ -194,52 +194,48 @@ namespace Yuicy {
 			auto& anim = view.get<AnimationComponent>(entity);
 			auto& sprite = view.get<SpriteRendererComponent>(entity);
 
-			// 跳过在播放或已经播放完成的片段
-			if (!anim.State.Playing || anim.State.Finished)
-				continue;
-
 			// 获取当前动画剪辑
 			AnimationClip* clip = anim.GetCurrentClip();
 			if (!clip || clip->Frames.empty())
 				continue;
 
-			// 累加时间
-			anim.State.Timer += ts;
-
-			// 检查是否需要切换到下一帧
-			while (anim.State.Timer >= clip->FrameDuration)
+			// 如果正在播放且未完成，更新帧计时
+			if (anim.State.Playing && !anim.State.Finished)
 			{
-				anim.State.Timer -= clip->FrameDuration;
-				anim.State.CurrentFrame++;
+				// 累加时间
+				anim.State.Timer += ts;
 
-				// 检查是否播放完成
-				if (anim.State.CurrentFrame >= static_cast<int>(clip->Frames.size()))
+				// 检查是否需要切换到下一帧
+				while (anim.State.Timer >= clip->FrameDuration)
 				{
-					if (clip->Loop)  // 循环播放
+					anim.State.Timer -= clip->FrameDuration;
+					anim.State.CurrentFrame++;
+
+					// 检查是否播放完成
+					if (anim.State.CurrentFrame >= static_cast<int>(clip->Frames.size()))
 					{
-						anim.State.CurrentFrame = 0;
-					}
-					else
-					{
-						// 非循环：停在最后一帧
-						anim.State.CurrentFrame = static_cast<int>(clip->Frames.size()) - 1;
-						anim.State.Finished = true;
-						anim.State.Playing = false;
-						break;
+						if (clip->Loop)  // 循环播放
+						{
+							anim.State.CurrentFrame = 0;
+						}
+						else
+						{
+							// 非循环：停在最后一帧
+							anim.State.CurrentFrame = static_cast<int>(clip->Frames.size()) - 1;
+							anim.State.Finished = true;
+							anim.State.Playing = false;
+							break;
+						}
 					}
 				}
 			}
 
-			// 更新精灵的 SubTexture 为当前动画帧
 			sprite.SubTexture = anim.GetCurrentFrame();
 		}
 	}
 
 	void Scene::OnRuntimeStart()
 	{
-		// 重置累加器
-		m_PhysicsAccumulator = 0.0f;
-
 		// 创建 Box2D 物理世界，设置重力
 		m_PhysicsWorld = new b2World({ 0.0f, -9.8f });
 
@@ -382,16 +378,9 @@ namespace Yuicy {
 			const int32_t velocityIterations = 6;
 			const int32_t positionIterations = 2;
 
-			// 累加实际时间
-			m_PhysicsAccumulator += ts;
-
-			// 以固定步长模拟物理
-			while (m_PhysicsAccumulator >= m_PhysicsTimeStep)
-			{
-				// Transform更新，BeginContact、EndContact等回调触发
-				m_PhysicsWorld->Step(m_PhysicsTimeStep, velocityIterations, positionIterations);
-				m_PhysicsAccumulator -= m_PhysicsTimeStep;
-			}
+			// 使用帧时间作为物理步长
+			float physicsStep = std::min((float)ts, 1.0f / 30.0f);
+			m_PhysicsWorld->Step(physicsStep, velocityIterations, positionIterations);
 
 			// 将物理模拟结果同步回 TransformComponent
 			auto view = m_Registry.view<Rigidbody2DComponent>();
@@ -477,7 +466,7 @@ namespace Yuicy {
 				[](const SpriteRenderData& a, const SpriteRenderData& b)
 				{
 					return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
-				});
+			});
 
 			for (const auto& data : renderQueue)
 			{
@@ -517,6 +506,18 @@ namespace Yuicy {
 			if (!cameraComponent.FixedAspectRatio)
 				cameraComponent.Camera.SetViewportSize(width, height);
 		}
+	}
+
+	Entity Scene::FindEntityByName(const std::string& name)
+	{
+		auto view = m_Registry.view<TagComponent>();
+		for (auto entity : view)
+		{
+			const auto& tag = view.get<TagComponent>(entity);
+			if (tag.Tag == name)
+				return Entity{ entity, this };
+		}
+		return Entity{};
 	}
 
 	// Lua Scripting

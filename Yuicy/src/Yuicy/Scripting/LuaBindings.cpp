@@ -5,7 +5,9 @@
 #include "Yuicy/Core/KeyCodes.h"
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Scene/Scene.h"
 
+#include <box2d/b2_body.h>
 #include <glm/glm.hpp>
 
 namespace Yuicy {
@@ -19,6 +21,7 @@ namespace Yuicy {
 			RegisterInput(lua);
 			RegisterComponents(lua);
 			RegisterEntity(lua);
+			RegisterScene(lua);
 		}
 
 		void RegisterLog(sol::state& lua)
@@ -200,6 +203,65 @@ namespace Yuicy {
 				sol::no_constructor,
 				"Tag", &TagComponent::Tag
 			);
+
+			// Rigidbody2DComponent
+			lua.new_usertype<Rigidbody2DComponent>("Rigidbody2DComponent",
+				sol::no_constructor,
+				"SetLinearVelocity", [](Rigidbody2DComponent& rb, float vx, float vy) {
+					if (rb.RuntimeBody)
+					{
+						b2Body* body = static_cast<b2Body*>(rb.RuntimeBody);
+						body->SetLinearVelocity(b2Vec2(vx, vy));
+					}
+				},
+				"GetLinearVelocity", [](Rigidbody2DComponent& rb) -> glm::vec2 {
+					if (rb.RuntimeBody)
+					{
+						b2Body* body = static_cast<b2Body*>(rb.RuntimeBody);
+						b2Vec2 vel = body->GetLinearVelocity();
+						return { vel.x, vel.y };
+					}
+					return { 0.0f, 0.0f };
+				},
+				"SetGravityScale", [](Rigidbody2DComponent& rb, float scale) {
+					if (rb.RuntimeBody)
+					{
+						b2Body* body = static_cast<b2Body*>(rb.RuntimeBody);
+						body->SetGravityScale(scale);
+					}
+				}
+			);
+
+			// AnimationComponent
+			lua.new_usertype<AnimationComponent>("AnimationComponent",
+				sol::no_constructor,
+				"Play", sol::overload(
+					[](AnimationComponent& anim, const std::string& clipName) { anim.Play(clipName); },
+					[](AnimationComponent& anim, const std::string& clipName, bool forceRestart) { anim.Play(clipName, forceRestart); }
+				),
+				"Stop", &AnimationComponent::Stop,
+				"Pause", &AnimationComponent::Pause,
+				"Resume", &AnimationComponent::Resume,
+				"IsPlaying", sol::overload(
+					sol::resolve<bool() const>(&AnimationComponent::IsPlaying),
+					sol::resolve<bool(const std::string&) const>(&AnimationComponent::IsPlaying)
+				),
+				"IsFinished", &AnimationComponent::IsFinished,
+				"GetCurrentClipName", [](AnimationComponent& anim) { return anim.State.CurrentClipName; }
+			);
+
+			// CameraComponent
+			lua.new_usertype<CameraComponent>("CameraComponent",
+				sol::no_constructor,
+				"Primary", &CameraComponent::Primary,
+				"FixedAspectRatio", &CameraComponent::FixedAspectRatio,
+				"GetOrthographicSize", [](CameraComponent& cc) -> float {
+					return cc.Camera.GetOrthographicSize();
+				},
+				"SetOrthographicSize", [](CameraComponent& cc, float size) {
+					cc.Camera.SetOrthographicSize(size);
+				}
+			);
 		}
 
 		void RegisterEntity(sol::state& lua)
@@ -208,6 +270,9 @@ namespace Yuicy {
 				sol::no_constructor,
 				"GetTransform", [](Entity& e) -> TransformComponent& {
 					return e.GetComponent<TransformComponent>();
+				},
+				"HasTransform", [](Entity& e) -> bool {
+					return e.HasComponent<TransformComponent>();
 				},
 				"GetSprite", [](Entity& e) -> SpriteRendererComponent& {
 					return e.GetComponent<SpriteRendererComponent>();
@@ -218,16 +283,50 @@ namespace Yuicy {
 				"HasSprite", [](Entity& e) -> bool {
 					return e.HasComponent<SpriteRendererComponent>();
 				},
+				"GetAnimation", [](Entity& e) -> AnimationComponent& {
+					return e.GetComponent<AnimationComponent>();
+				},
+				"HasAnimation", [](Entity& e) -> bool {
+					return e.HasComponent<AnimationComponent>();
+				},
+				"GetRigidbody", [](Entity& e) -> Rigidbody2DComponent& {
+					return e.GetComponent<Rigidbody2DComponent>();
+				},
+				"HasRigidbody", [](Entity& e) -> bool {
+					return e.HasComponent<Rigidbody2DComponent>();
+				},
+				"GetCamera", [](Entity& e) -> CameraComponent& {
+					return e.GetComponent<CameraComponent>();
+				},
+				"HasCamera", [](Entity& e) -> bool {
+					return e.HasComponent<CameraComponent>();
+				},
 				"IsValid", [](Entity& e) -> bool {
 					return (bool)e;
 				}
 			);
 		}
 
-		void RegisterScene(sol::state& lua)
+	void RegisterScene(sol::state& lua)
 		{
-			// Scene will be registered when needed for more complex operations
-			// For now, entity operations are sufficient
+			// Scene usertype
+			lua.new_usertype<Scene>("Scene",
+				sol::no_constructor,
+				"FindEntityByName", &Scene::FindEntityByName
+			);
+
+			// Global Scene table with static-like functions
+			// These use the entity's scene reference
+			sol::table sceneTable = lua.create_named_table("Scene");
+			sceneTable.set_function("FindEntityByName", [](Entity& self, const std::string& name) -> Entity {
+				if (!self)
+					return Entity{};
+				// Get scene from entity and find
+				Scene* scene = self.GetScene();
+				if (scene)
+					return scene->FindEntityByName(name);
+				return Entity{};
+			});
 		}
 	}
 

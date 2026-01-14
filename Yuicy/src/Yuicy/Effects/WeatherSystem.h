@@ -110,7 +110,7 @@ namespace Yuicy {
 		float m_globalTime = 0.0f;
 
 		// 物理雨滴
-		static constexpr uint32_t MAX_PHYSICS_RAINDROPS = 50;
+		static constexpr uint32_t MAX_PHYSICS_RAINDROPS = 200;
 		std::vector<PhysicsRaindrop> m_physicsRaindrops;
 		uint32_t m_physicsRaindropIndex = 0;
 		float m_physicsSpawnAccumulator = 0.0f;
