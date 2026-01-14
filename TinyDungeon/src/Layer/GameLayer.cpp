@@ -27,6 +27,52 @@ namespace TinyDungeon {
 
 		m_scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		m_scene->OnRuntimeStart();
+
+		// Framebuffer for post-processing
+		Yuicy::FramebufferSpecification fbSpec;
+		fbSpec.width = (uint32_t)m_viewportSize.x;
+		fbSpec.height = (uint32_t)m_viewportSize.y;
+		fbSpec.attachments = {
+			Yuicy::FramebufferTextureFormat::RGBA8,
+			Yuicy::FramebufferTextureFormat::DEPTH24STENCIL8
+		};
+		m_framebuffer = Yuicy::Framebuffer::Create(fbSpec);
+
+		// Post-processing
+		m_postProcessing.Init();
+
+// 		Yuicy::PostProcessConfig nightConfig;
+// 		nightConfig.brightness = 0.6f;
+// 		nightConfig.saturation = 0.7f;
+// 		nightConfig.ambientTint = { 0.6f, 0.65f, 0.85f, 1.0f };
+// 		nightConfig.vignetteEnabled = true;
+// 		nightConfig.vignetteIntensity = 0.25f;  // Reduced from 0.5
+// 		nightConfig.vignetteRadius = 0.9f;      // Larger radius = less dark area
+// 		m_postProcessing.FadeTo(nightConfig, 1.5f);
+
+		m_postProcessing.SetRaindropsEnabled(true);
+		m_postProcessing.SetRaindropsIntensity(1.0f);
+
+
+		Yuicy::WeatherConfig rainConfig = Yuicy::WeatherPresets::Get(Yuicy::WeatherType::Rain);
+		
+		rainConfig.particles.spawnRate = 150.0f;                        // 生成速率
+		rainConfig.particles.sizeMin = 0.06f;                           // 尺寸
+		rainConfig.particles.sizeMax = 0.12f;
+		rainConfig.particles.colorStart = { 0.8f, 0.9f, 1.0f, 1.0f };
+		rainConfig.particles.colorEnd = { 0.7f, 0.85f, 1.0f, 0.3f };
+
+		// 雨滴溅射效果
+		rainConfig.particles.splashConfig.sizeMin = 0.05f;
+		rainConfig.particles.splashConfig.sizeMax = 0.1f;
+		rainConfig.particles.splashConfig.particleCount = 8;
+		rainConfig.particles.splashConfig.colorStart = { 0.8f, 0.9f, 1.0f, 0.9f };
+
+		rainConfig.particles.enablePhysics = true;
+		rainConfig.particles.physicsRatio = 0.3f;
+
+		m_weatherSystem.SetWeather(rainConfig);
+		m_weatherSystem.SetPhysicsWorld(m_scene->GetPhysicsWorld());
 	}
 
 	void GameLayer::OnDetach()
@@ -36,45 +82,42 @@ namespace TinyDungeon {
 
 	void GameLayer::OnUpdate(Yuicy::Timestep ts)
 	{
-		// Player movement now handled by Lua script (player_controller.lua)
-		// Camera follows player with boundary clamping
-		if (m_cameraEntity && m_playerEntity)
-		{
-			auto& cameraTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
-			auto& playerTransform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
+		m_weatherSystem.OnUpdate(ts);
+		m_postProcessing.OnUpdate(ts);
 
-			// Camera target is player position (center on player)
-			float targetX = playerTransform.Translation.x;
-			float targetY = playerTransform.Translation.y;
-
-			// Calculate visible area half-size
-			// OrthographicSize is the FULL height, so half-height = zoomLevel / 2
-			float aspectRatio = m_viewportSize.x / m_viewportSize.y;
-			float halfHeight = m_zoomLevel / 2.0f;
-			float halfWidth = halfHeight * aspectRatio;
-
-			// Clamp camera center so edges don't go outside the map [0, mapWidth] x [0, mapHeight]
-			float minCamX = halfWidth;
-			float maxCamX = m_mapWidth - halfWidth;
-			float minCamY = halfHeight;
-			float maxCamY = m_mapHeight - halfHeight;
-
-			// Handle case where map is smaller than visible area (center the camera)
-			if (minCamX > maxCamX) targetX = m_mapWidth / 2.0f;
-			else targetX = std::clamp(targetX, minCamX, maxCamX);
-
-			if (minCamY > maxCamY) targetY = m_mapHeight / 2.0f;
-			else targetY = std::clamp(targetY, minCamY, maxCamY);
-
-			cameraTransform.Translation.x = targetX;
-			cameraTransform.Translation.y = targetY;
-		}
+		m_framebuffer->Bind();
 
 		Yuicy::Renderer2D::ResetStats();
 		Yuicy::RenderCommand::SetClearColor(m_clearColor);
 		Yuicy::RenderCommand::Clear();
 
+		// 场景渲染
 		m_scene->OnUpdateRuntime(ts);
+
+		// 天气渲染
+		if (m_cameraEntity && m_weatherSystem.IsActive())
+		{
+			auto& cameraComp = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
+			auto& camTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
+
+			float orthoSize = cameraComp.Camera.GetOrthographicSize();
+			float aspectRatio = m_viewportSize.x / m_viewportSize.y;
+			glm::vec2 viewportWorldSize = { orthoSize * aspectRatio, orthoSize };
+
+			Yuicy::Renderer2D::BeginScene(cameraComp.Camera, camTransform.GetTransform());
+			m_weatherSystem.OnRender(
+				{ camTransform.Translation.x, camTransform.Translation.y },
+				viewportWorldSize
+			);
+			Yuicy::Renderer2D::EndScene();
+		}
+
+		m_framebuffer->Unbind();
+
+		// 后处理
+		Yuicy::RenderCommand::SetClearColor({ 0, 0, 0, 1 });
+		Yuicy::RenderCommand::Clear();
+		m_postProcessing.Render(m_framebuffer);
 	}
 
 	void GameLayer::OnImGuiRender()
@@ -82,57 +125,30 @@ namespace TinyDungeon {
 		ImGui::Begin("TinyDungeon Debug");
 
 		auto stats = Yuicy::Renderer2D::GetStats();
-		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-		ImGui::Text("Quads: %d", stats.QuadCount);
-		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::Text("Draw Calls: %d | Quads: %d | FPS: %.1f", stats.DrawCalls, stats.QuadCount, ImGui::GetIO().Framerate);
 
+		// 相机、玩家位置
 		ImGui::Separator();
-		ImGui::ColorEdit4("Clear Color", &m_clearColor.x);
-
-		// Debug camera bounds
-		float aspectRatio = m_viewportSize.x / m_viewportSize.y;
-		float halfHeight = m_zoomLevel / 2.0f;  // OrthographicSize is full height
-		float halfWidth = halfHeight * aspectRatio;
-		ImGui::Separator();
-		ImGui::Text("Viewport: %.0f x %.0f", m_viewportSize.x, m_viewportSize.y);
-		ImGui::Text("Aspect: %.3f", aspectRatio);
-		ImGui::Text("Half Size: %.2f x %.2f", halfWidth, halfHeight);
-		ImGui::Text("Cam Bounds X: [%.2f, %.2f]", halfWidth, m_mapWidth - halfWidth);
-		ImGui::Text("Cam Bounds Y: [%.2f, %.2f]", halfHeight, m_mapHeight - halfHeight);
-
-		// Player info
-		ImGui::Separator();
-		ImGui::Text("Player Valid: %s", m_playerEntity ? "YES" : "NO");
 		if (m_playerEntity)
 		{
-			auto& playerTransform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
-			ImGui::Text("Player Pos: (%.2f, %.2f)", playerTransform.Translation.x, playerTransform.Translation.y);
+			auto& pt = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
+			ImGui::Text("Player: (%.2f, %.2f)", pt.Translation.x, pt.Translation.y);
 		}
-
-		// Camera info
-		ImGui::Text("Camera Valid: %s", m_cameraEntity ? "YES" : "NO");
 		if (m_cameraEntity)
 		{
-			auto& transform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
-			ImGui::Text("Camera Pos: (%.2f, %.2f)", transform.Translation.x, transform.Translation.y);
-			ImGui::Text("Zoom Level: %.2f", m_zoomLevel);
-			
-			// Show visible area
-			ImGui::Text("Visible X: [%.2f, %.2f]", transform.Translation.x - halfWidth, transform.Translation.x + halfWidth);
-			ImGui::Text("Visible Y: [%.2f, %.2f]", transform.Translation.y - halfHeight, transform.Translation.y + halfHeight);
-
-			if (ImGui::SliderFloat("Zoom", &m_zoomLevel, m_minZoom, m_maxZoom))
-			{
-				auto& camera = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
-				camera.Camera.SetOrthographicSize(m_zoomLevel);
-			}
+			auto& ct = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
+			ImGui::Text("Camera: (%.2f, %.2f) | Zoom: %.1f", ct.Translation.x, ct.Translation.y, m_zoomLevel);
 		}
 
-		if (m_tileMap && m_tileMap->GetMapData())
+		// 雨滴颜色调整
+		if (m_weatherSystem.IsActive())
 		{
 			ImGui::Separator();
-			ImGui::Text("Map: %s", m_tileMap->GetMapData()->GetName().c_str());
-			ImGui::Text("Entities: %zu", m_tileMap->GetEntities().size());
+			ImGui::Text("Rain Particles:");
+			auto& weatherConfig = m_weatherSystem.getConfig();
+			ImGui::SliderFloat("Particle Alpha Start", &weatherConfig.particles.colorStart.a, 0.0f, 1.0f);
+			ImGui::SliderFloat("Particle Alpha End", &weatherConfig.particles.colorEnd.a, 0.0f, 1.0f);
+			ImGui::ColorEdit3("Particle Color", &weatherConfig.particles.colorStart.r);
 		}
 
 		ImGui::End();
@@ -143,7 +159,6 @@ namespace TinyDungeon {
 		Yuicy::EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<Yuicy::WindowResizeEvent>(std::bind(&GameLayer::OnWindowResize, this, std::placeholders::_1));
 		dispatcher.Dispatch<Yuicy::KeyPressedEvent>(std::bind(&GameLayer::OnKeyPressed, this, std::placeholders::_1));
-		dispatcher.Dispatch<Yuicy::MouseScrolledEvent>(std::bind(&GameLayer::OnMouseScrolled, this, std::placeholders::_1));
 	}
 
 	void GameLayer::SetupScene()
@@ -156,14 +171,15 @@ namespace TinyDungeon {
 		m_cameraEntity = m_scene->CreateEntity("MainCamera");
 		auto& camera = m_cameraEntity.AddComponent<Yuicy::CameraComponent>();
 		camera.Primary = true;
-
 		camera.Camera.SetOrthographicSize(m_zoomLevel);
 
-		// Initial position - will be immediately adjusted by camera follow in first OnUpdate
-		// Set to minimum camera bounds (bottom-left corner of map view)
+		// Use Lua script for camera follow
+		m_cameraEntity.AddComponent<Yuicy::LuaScriptComponent>("assets/scripts/camera_controller.lua");
+
+		// Initial position
 		auto& transform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
 		float aspectRatio = m_viewportSize.x / m_viewportSize.y;
-		float halfHeight = m_zoomLevel / 2.0f;  // OrthographicSize is full height
+		float halfHeight = m_zoomLevel / 2.0f;
 		float halfWidth = halfHeight * aspectRatio;
 		transform.Translation = { halfWidth, halfHeight, 0.0f };
 	}
@@ -172,17 +188,45 @@ namespace TinyDungeon {
 	{
 		m_playerEntity = m_scene->CreateEntity("Player");
 
-		// Spawn at bottom-left corner of the map (with 0.5 offset for center)
 		auto& transform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
-		transform.Translation = { 1.5f, 1.5f, 0.9f };
+		transform.Translation = { 2.5f, 11.5f, 0.9f };
 
-		// Yellow rectangle as player placeholder
 		auto& sprite = m_playerEntity.AddComponent<Yuicy::SpriteRendererComponent>();
-		sprite.Color = { 1.0f, 1.0f, 0.0f, 1.0f };  // Yellow
-		sprite.SortingOrder = 1000;  // Render on top of tiles
+		sprite.SortingOrder = 1000; 
 
 		// 使用Lua脚本控制玩家
 		m_playerEntity.AddComponent<Yuicy::LuaScriptComponent>("assets/scripts/player_controller.lua");
+
+		// 玩家动画组件
+		auto& playerAnimation = m_playerEntity.AddComponent<Yuicy::AnimationComponent>();
+
+		// 动画纹理
+		auto animTexture = Yuicy::Texture2D::Create("assets/textures/map/tilemap-characters_packed.png");
+
+		// 待机动画
+		Yuicy::AnimationClip idleClip("idle", 1.0f, true);
+		idleClip.AddFramesFromSheet(animTexture, { 0, 2 }, 1, { 24, 24 });
+		playerAnimation.AddClip(idleClip);
+
+		// 移动动画
+		Yuicy::AnimationClip jumpClipRight("walk_right", 0.1f, false);  // 不循环
+		jumpClipRight.AddFramesFromSheet(animTexture, { 0, 2 }, 2, { 24, 24 });
+		playerAnimation.AddClip(jumpClipRight);
+
+		Yuicy::AnimationClip jumpClipLeft("walk_left", 0.1f, false);  // 不循环
+		jumpClipLeft.AddFramesFromSheet(animTexture, { 0, 2 }, 2, { 24, 24 });
+		playerAnimation.AddClip(jumpClipLeft);
+
+		playerAnimation.Play("idle");
+
+		// 物理组件
+		auto& playerRb = m_playerEntity.AddComponent<Yuicy::Rigidbody2DComponent>();
+		playerRb.Type = Yuicy::Rigidbody2DComponent::BodyType::Dynamic;
+		playerRb.FixedRotation = true;
+
+		auto& playerCollider = m_playerEntity.AddComponent<Yuicy::CircleCollider2DComponent>();
+		playerCollider.Radius = 0.4f;
+		playerCollider.Friction = 0.0f;
 	}
 
 	// 注册地图解析器	
@@ -216,6 +260,7 @@ namespace TinyDungeon {
 
 		m_viewportSize = { (float)e.GetWidth(), (float)e.GetHeight() };
 		m_scene->OnViewportResize(e.GetWidth(), e.GetHeight());
+		m_framebuffer->Resize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
 
@@ -236,18 +281,4 @@ namespace TinyDungeon {
 		}
 		return false;
 	}
-
-	bool GameLayer::OnMouseScrolled(Yuicy::MouseScrolledEvent& e)
-	{
-		if (m_cameraEntity)
-		{
-			m_zoomLevel -= e.GetYOffset() * m_zoomSpeed;
-			m_zoomLevel = std::clamp(m_zoomLevel, m_minZoom, m_maxZoom);
-
-			auto& camera = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
-			camera.Camera.SetOrthographicSize(m_zoomLevel);
-		}
-		return false;
-	}
-
 }
