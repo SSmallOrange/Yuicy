@@ -39,6 +39,8 @@ namespace Yuicy {
 			m_Scene->m_Registry.remove<T>(m_EntityHandle);
 		}
 
+		Scene* GetScene() const { return m_Scene; }
+
 		operator bool() const { return m_Scene && m_Scene->m_Registry.valid(m_EntityHandle); }
 	private:
 		entt::entity m_EntityHandle{ entt::null };

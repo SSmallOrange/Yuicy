@@ -3,17 +3,17 @@
 #include "Yuicy.h"
 #include <box2d/b2_body.h>
 
-// Íæ¼Ò¿ØÖÆÆ÷½Å±¾Ê¾Àı
+// ç©å®¶æ§åˆ¶å™¨è„šæœ¬ç¤ºä¾‹
 class PlayerController : public Yuicy::ScriptableEntity
 {
 public:
-	// ¿ÉÅäÖÃ²ÎÊı
+	// å¯é…ç½®å‚æ•°
 	float MoveSpeed = 5.0f;
 	float JumpForce = 10.0f;
 
 private:
 	bool m_IsGrounded = false;
-	int m_GroundContactCount = 0;  // ½Ó´¥µØÃæµÄÅö×²ÌåÊıÁ¿
+	int m_GroundContactCount = 0;  // æ¥è§¦åœ°é¢çš„ç¢°æ’ä½“æ•°é‡
 
 public:
 	void OnCreate() override
@@ -28,7 +28,7 @@ public:
 
 	void OnUpdate(Yuicy::Timestep ts) override
 	{
-		// »ñÈ¡¸ÕÌå
+		// è·å–åˆšä½“
 		if (!HasComponent<Yuicy::Rigidbody2DComponent>())
 			return;
 
@@ -37,10 +37,10 @@ public:
 		if (!body)
 			return;
 
-		// »ñÈ¡µ±Ç°ËÙ¶È
+		// è·å–å½“å‰é€Ÿåº¦
 		b2Vec2 velocity = body->GetLinearVelocity();
 
-		// ==================== Ë®Æ½ÒÆ¶¯ ====================
+		// ==================== æ°´å¹³ç§»åŠ¨ ====================
 		float moveInput = 0.0f;
 
 		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::A) ||
@@ -55,10 +55,10 @@ public:
 			moveInput += 1.0f;
 		}
 
-		// ÉèÖÃË®Æ½ËÙ¶È
+		// è®¾ç½®æ°´å¹³é€Ÿåº¦
 		velocity.x = moveInput * MoveSpeed;
 
-		// ==================== ÌøÔ¾ ====================
+		// ==================== è·³è·ƒ ====================
 		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::Space) ||
 			Yuicy::Input::IsKeyPressed(Yuicy::Key::W) ||
 			Yuicy::Input::IsKeyPressed(Yuicy::Key::Up))
@@ -70,33 +70,33 @@ public:
 			}
 		}
 
-		// Ó¦ÓÃËÙ¶È
+		// åº”ç”¨é€Ÿåº¦
 		body->SetLinearVelocity(velocity);
 
-		// ==================== ¶¯»­ÇĞ»» ====================
+		// ==================== åŠ¨ç”»åˆ‡æ¢ ====================
 		if (HasComponent<Yuicy::AnimationComponent>())
 		{
 			auto& anim = GetComponent<Yuicy::AnimationComponent>();
 
-			// ¸ù¾İ×´Ì¬ÇĞ»»¶¯»­
+			// æ ¹æ®çŠ¶æ€åˆ‡æ¢åŠ¨ç”»
 			if (!m_IsGrounded)
 			{
-				// ¿ÕÖĞ×´Ì¬
+				// ç©ºä¸­çŠ¶æ€
 				anim.Play("Jump");
 			}
 			else if (moveInput != 0.0f)
 			{
-				// µØÃæÒÆ¶¯
+				// åœ°é¢ç§»åŠ¨
 				anim.Play("Walk");
 			}
 			else
 			{
-				// µØÃæ¾²Ö¹
+				// åœ°é¢é™æ­¢
 				anim.Play("Idle");
 			}
 		}
 
-		// ==================== ¾«Áé·­×ª ====================
+		// ==================== ç²¾çµç¿»è½¬ ====================
 		if (HasComponent<Yuicy::SpriteRendererComponent>() && moveInput != 0.0f)
 		{
 			auto& sprite = GetComponent<Yuicy::SpriteRendererComponent>();
@@ -106,7 +106,7 @@ public:
 
 	void OnCollisionEnter(Yuicy::Entity other) override
 	{
-		// ¼ì²âÊÇ·ñÂäµØ
+		// æ£€æµ‹æ˜¯å¦è½åœ°
 		if (other.HasComponent<Yuicy::TagComponent>())
 		{
 			auto& tag = other.GetComponent<Yuicy::TagComponent>();
@@ -143,11 +143,11 @@ public:
 			auto& tag = other.GetComponent<Yuicy::TagComponent>();
 			YUICY_INFO("Player entered trigger: {}", tag.Tag);
 
-			// Ê¾Àı£ºÊÕ¼¯½ğ±Ò
+			// ç¤ºä¾‹ï¼šæ”¶é›†é‡‘å¸
 			// if (tag.Tag == "Coin")
 			// {
-			//     // Ôö¼Ó·ÖÊı
-			//     // Ïú»Ù½ğ±Ò
+			//     // å¢åŠ åˆ†æ•°
+			//     // é”€æ¯é‡‘å¸
 			// }
 		}
 	}

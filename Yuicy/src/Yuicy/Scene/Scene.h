@@ -29,6 +29,8 @@ namespace Yuicy {
 		void OnUpdate(Timestep ts);
 		void OnViewportResize(uint32_t width, uint32_t height);
 
+		Entity FindEntityByName(const std::string& name);
+
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
 
 	private:
@@ -56,10 +58,6 @@ namespace Yuicy {
 		// 物理系统
 		b2World* m_PhysicsWorld = nullptr;
 		ContactListener* m_ContactListener = nullptr;
-
-		// 固定物理时间步长
-		float m_PhysicsTimeStep = 1.0f / 60.0f;  // 60Hz
-		float m_PhysicsAccumulator = 0.0f;
 
 		friend class Entity;
 	};
