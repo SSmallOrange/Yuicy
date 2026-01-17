@@ -42,6 +42,10 @@ uniform int u_RaindropsEnabled;
 uniform float u_RaindropsIntensity;
 uniform float u_RaindropsTime;
 
+// 2D Lighting
+uniform int u_LightingEnabled;
+uniform sampler2D u_LightMap;
+
 vec3 AdjustSaturation(vec3 color, float saturation)
 {
     float gray = dot(color, vec3(0.299, 0.587, 0.114));
@@ -160,6 +164,13 @@ void main()
     {
         float vignette = CalculateVignette(v_TexCoord, u_VignetteIntensity, u_VignetteRadius);
         color *= vignette;
+    }
+
+    // 添加2D光照
+    if (u_LightingEnabled != 0)
+    {
+        vec3 lightColor = texture(u_LightMap, v_TexCoord).rgb;
+        color *= lightColor;
     }
 
     if (u_FlashEnabled != 0 && u_FlashIntensity > 0.0)

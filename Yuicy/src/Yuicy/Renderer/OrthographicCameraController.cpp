@@ -87,7 +87,7 @@ namespace Yuicy {
 		if (e.GetHeight() == 0.0f)  // 窗口最小化时会触发高度为0的事件
 			return false;
 
-		m_AspectRatio = e.GetWidth() / e.GetHeight();
+		m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
 		CalculateView();
 		return false;
 	}

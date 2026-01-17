@@ -3,6 +3,7 @@
 
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/Application.h"
+#include "Yuicy/Core/WindowOverlay.h"
 
 // Layer
 #include "Yuicy/ImGui/ImGuiLayer.h"
@@ -39,6 +40,8 @@
 #include "Yuicy/Effects/WeatherSystem.h"
 #include "Yuicy/Effects/WeatherPresets.h"
 #include "Yuicy/Effects/PostProcessing.h"
+#include "Yuicy/Effects/Lighting2D.h"
+#include "Yuicy/Effects/LightTypes.h"
 
 // Scripting
 #include "Yuicy/Scripting/LuaScriptEngine.h"
