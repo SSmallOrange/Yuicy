@@ -368,6 +368,7 @@ namespace Yuicy {
 		UpdateLuaScripts(ts);
 
 		UpdateAnimations(ts);   // 动画更新
+		UpdateProjectiles(ts);  // Projectile update
 
 		if (m_PhysicsWorld)
 		{
@@ -519,6 +520,120 @@ namespace Yuicy {
 		}
 		return Entity{};
 	}
+
+	Entity Scene::CreateProjectile(const glm::vec2& position, const glm::vec2& direction, const ProjectileConfig& config)
+	{
+		Entity projectile = CreateEntity("Projectile");
+
+		// Transform
+		auto& transform = projectile.GetComponent<TransformComponent>();
+		transform.Translation = { position.x, position.y, config.zDepth };
+		transform.Scale = { config.size.x, config.size.y, 1.0f };
+
+		float angle = std::atan2(direction.y, direction.x);  // 返回弧度制
+		transform.Rotation.z = angle;
+
+		// Sprite
+		auto& sprite = projectile.AddComponent<SpriteRendererComponent>();
+		sprite.Color = config.color;
+		sprite.Texture = config.texture;
+		sprite.SubTexture = config.subTexture;
+		sprite.SortingOrder = config.sortingOrder;
+
+		// Projectile component
+		glm::vec2 normalizedDir = glm::length(direction) > 0.0f ? glm::normalize(direction) : glm::vec2(1.0f, 0.0f);
+		auto& proj = projectile.AddComponent<ProjectileComponent>(normalizedDir, config.speed, config.lifetime);
+		proj.damage = config.damage;
+		proj.destroyOnHit = config.destroyOnHit;
+
+		// Physics
+		if (config.enablePhysics && m_PhysicsWorld)
+		{
+			auto& rb = projectile.AddComponent<Rigidbody2DComponent>();
+			rb.Type = Rigidbody2DComponent::BodyType::Dynamic;
+			rb.FixedRotation = true;
+
+			auto& collider = projectile.AddComponent<BoxCollider2DComponent>();
+			collider.Size = config.size * 0.5f;  // BoxCollider.Size 是半尺寸
+			collider.CategoryBits = config.categoryBits;
+			collider.MaskBits = config.maskBits;
+			collider.IsTrigger = config.isTrigger;
+			collider.Density = 0.1f;
+
+			// Create Box2D body
+			b2BodyDef bodyDef;
+			bodyDef.type = b2_dynamicBody;
+			bodyDef.position.Set(position.x, position.y);
+			bodyDef.angle = angle;
+			bodyDef.bullet = true;
+			bodyDef.gravityScale = 0.0f;
+
+			b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
+			body->SetFixedRotation(true);
+			body->GetUserData().pointer = (uintptr_t)(entt::entity)projectile.GetEntityId();
+			rb.RuntimeBody = body;
+
+			body->SetLinearVelocity(b2Vec2(normalizedDir.x * config.speed, normalizedDir.y * config.speed));
+
+			// Create box fixture
+			b2PolygonShape boxShape;
+			boxShape.SetAsBox(config.size.x * 0.5f, config.size.y * 0.5f);
+
+			b2FixtureDef fixtureDef;
+			fixtureDef.shape = &boxShape;
+			fixtureDef.density = collider.Density;
+			fixtureDef.isSensor = config.isTrigger;
+			fixtureDef.filter.categoryBits = config.categoryBits;
+			fixtureDef.filter.maskBits = config.maskBits;
+
+			collider.RuntimeFixture = body->CreateFixture(&fixtureDef);
+			proj.usePhysics = true;
+		}
+
+		return projectile;
+	}
+
+	void Scene::UpdateProjectiles(Timestep ts)
+	{
+		std::vector<entt::entity> toDestroy;
+
+		auto view = m_Registry.view<ProjectileComponent, TransformComponent>();
+		for (auto e : view)
+		{
+			auto& proj = view.get<ProjectileComponent>(e);
+			auto& transform = view.get<TransformComponent>(e);
+
+			// 检查生存时间
+			proj.elapsedTime += ts;
+			if (proj.elapsedTime >= proj.lifetime)
+			{
+				toDestroy.push_back(e);
+				continue;
+			}
+
+			// 不使用物理
+			if (!proj.usePhysics)
+			{
+				transform.Translation.x += proj.direction.x * proj.speed * ts;
+				transform.Translation.y += proj.direction.y * proj.speed * ts;
+			}
+		}
+
+		for (auto e : toDestroy)
+		{
+			if (m_Registry.all_of<Rigidbody2DComponent>(e))
+			{
+				auto& rb = m_Registry.get<Rigidbody2DComponent>(e);
+				if (rb.RuntimeBody && m_PhysicsWorld)
+				{
+					m_PhysicsWorld->DestroyBody(static_cast<b2Body*>(rb.RuntimeBody));
+					rb.RuntimeBody = nullptr;
+				}
+			}
+			m_Registry.destroy(e);
+		}
+	}
+
 
 	// Lua Scripting
 	void Scene::InitializeLuaScripts()

@@ -40,6 +40,7 @@ namespace Yuicy {
 		}
 
 		Scene* GetScene() const { return m_Scene; }
+		entt::entity GetEntityId() { return m_EntityHandle; }
 
 		operator bool() const { return m_Scene && m_Scene->m_Registry.valid(m_EntityHandle); }
 	private:

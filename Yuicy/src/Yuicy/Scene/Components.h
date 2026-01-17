@@ -281,7 +281,6 @@ namespace Yuicy {
 		}
 	};
 
-	// ==================== 碰撞过滤层定义 ====================
 	namespace CollisionLayer
 	{
 		enum : uint16_t
@@ -319,7 +318,7 @@ namespace Yuicy {
 	struct BoxCollider2DComponent
 	{
 		glm::vec2 Offset = { 0.0f, 0.0f };  // 相对于实体中心的偏移
-		glm::vec2 Size = { 0.5f, 0.5f };    // 半尺寸（宽高的一半）
+		glm::vec2 Size = { 0.5f, 0.5f };    // 半尺寸
 
 		// 物理材质属性
 		float Density = 1.0f;       // 密度，影响质量
@@ -328,10 +327,10 @@ namespace Yuicy {
 		float RestitutionThreshold = 0.5f;  // 弹性速度阈值
 
 		// 碰撞过滤
-		uint16_t CategoryBits = CollisionLayer::Default;  // 自身所属层
-		uint16_t MaskBits = CollisionLayer::All;          // 可碰撞的层
+		uint16_t CategoryBits = CollisionLayer::Default;  // 自身属性
+		uint16_t MaskBits = CollisionLayer::All;          // 可碰撞属性
 
-		// 触发器（不产生物理响应，只检测碰撞）
+		// 触发器
 		bool IsTrigger = false;
 
 		// Box2D 运行时夹具指针
@@ -365,5 +364,49 @@ namespace Yuicy {
 
 		CircleCollider2DComponent() = default;
 		CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
+	};
+
+	// 投掷物组件
+	struct ProjectileComponent
+	{
+		glm::vec2 direction = { 1.0f, 0.0f };
+		float speed = 10.0f;
+		float lifetime = 3.0f;
+		float damage = 1.0f;                    // 携带伤害
+		bool destroyOnHit = true;               // 碰撞后销毁
+		bool usePhysics = false;                // 启用物理控制
+		float elapsedTime = 0.0f;               // 生存时间
+
+		ProjectileComponent() = default;
+		ProjectileComponent(const ProjectileComponent&) = default;
+		ProjectileComponent(const glm::vec2& dir, float spd, float life = 3.0f)
+			: direction(glm::normalize(dir)), speed(spd), lifetime(life) {}
+	};
+
+	// 投掷物配置
+	struct ProjectileConfig
+	{
+		Ref<Texture2D> texture = nullptr;
+		Ref<SubTexture2D> subTexture = nullptr;
+		glm::vec4 color = { 1.0f, 0.9f, 0.2f, 1.0f };
+
+		// Transform
+		glm::vec2 size = {0.2f, 0.2f};
+		float zDepth = 0.8f;		// 2D渲染采用画家算法，Z轴无效
+		int sortingOrder = 500;
+
+		float speed = 15.0f;
+		float lifetime = 3.0f;
+
+		float damage = 1.0f;
+		bool destroyOnHit = true;
+
+		// 物理
+		bool enablePhysics = true;
+		uint16_t categoryBits = CollisionLayer::Bullet;
+		uint16_t maskBits = CollisionLayer::Ground | CollisionLayer::Enemy;
+		bool isTrigger = true;
+
+		ProjectileConfig() = default;
 	};
 }
