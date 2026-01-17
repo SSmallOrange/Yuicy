@@ -7,6 +7,7 @@
 #include "Yuicy/Events/KeyEvent.h"
 
 #include <GLFW/glfw3.h>
+#include <stb_image.h>
 
 namespace Yuicy {
 	
@@ -51,6 +52,8 @@ namespace Yuicy {
 
 		{
 			YUICY_PROFILE_SCOPE("glfwCreateWindow");
+			// 无边框窗口
+			glfwWindowHint(GLFW_DECORATED, props.borderlessWindow ? GLFW_FALSE : GLFW_TRUE);
 			// 创建窗口(提供渲染目标)，创建一个OpenGL上下文
 			_Window = glfwCreateWindow((int)props.Width, (int)props.Height, _Data.Title.c_str(), nullptr, nullptr);
 			++s_GLFWWindowCount;
@@ -157,6 +160,12 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
+		if (m_customCursor)
+		{
+			glfwDestroyCursor(m_customCursor);
+			m_customCursor = nullptr;
+		}
+
 		glfwDestroyWindow(_Window);
 		--s_GLFWWindowCount;
 
@@ -189,6 +198,95 @@ namespace Yuicy {
 	bool WindowsWindow::IsVSync() const
 	{
 		return _Data.VSync;
+	}
+
+	void WindowsWindow::SetCursor(const std::string& imagePath, int hotspotX, int hotspotY)
+	{
+		YUICY_PROFILE_FUNCTION();
+
+		if (m_customCursor)
+		{
+			glfwDestroyCursor(m_customCursor);
+			m_customCursor = nullptr;
+		}
+
+		int width = 0, height = 0, channels = 0;
+		stbi_set_flip_vertically_on_load(0);
+		unsigned char* pixels = stbi_load(imagePath.c_str(), &width, &height, &channels, 4);
+		
+		if (!pixels)
+		{
+			YUICY_CORE_ERROR("Failed to load cursor image: {0}", imagePath);
+			return;
+		}
+
+		GLFWimage image;
+		image.width = width;
+		image.height = height;
+		image.pixels = pixels;
+
+		m_customCursor = glfwCreateCursor(&image, hotspotX, hotspotY);
+		stbi_image_free(pixels);
+
+		if (m_customCursor)
+		{
+			glfwSetCursor(_Window, m_customCursor);
+			YUICY_CORE_INFO("Custom cursor set: {0}", imagePath);
+		}
+		else
+		{
+			YUICY_CORE_ERROR("Failed to create cursor from image: {0}", imagePath);
+		}
+	}
+
+	void WindowsWindow::ResetCursor()
+	{
+		YUICY_PROFILE_FUNCTION();
+
+		if (m_customCursor)
+		{
+			glfwDestroyCursor(m_customCursor);
+			m_customCursor = nullptr;
+		}
+
+		glfwSetCursor(_Window, nullptr);
+	}
+
+	void WindowsWindow::SetCursorVisible(bool visible)
+	{
+		YUICY_PROFILE_FUNCTION();
+
+		if (visible)
+			glfwSetInputMode(_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		else
+			glfwSetInputMode(_Window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	}
+
+	void WindowsWindow::Close()
+	{
+		glfwSetWindowShouldClose(_Window, GLFW_TRUE);
+		WindowCloseEvent event;
+		_Data.EventCallback(event);
+	}
+
+	void WindowsWindow::Minimize()
+	{
+		glfwIconifyWindow(_Window);
+	}
+
+	void WindowsWindow::Maximize()
+	{
+		glfwMaximizeWindow(_Window);
+	}
+
+	void WindowsWindow::Restore()
+	{
+		glfwRestoreWindow(_Window);
+	}
+
+	bool WindowsWindow::IsMaximized() const
+	{
+		return glfwGetWindowAttrib(_Window, GLFW_MAXIMIZED) == GLFW_TRUE;
 	}
 
 }

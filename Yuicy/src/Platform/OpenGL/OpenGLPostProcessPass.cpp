@@ -113,5 +113,13 @@ namespace Yuicy {
 		m_shader->SetInt("u_RaindropsEnabled", config.raindropsEnabled ? 1 : 0);
 		m_shader->SetFloat("u_RaindropsIntensity", config.raindropsIntensity);
 		m_shader->SetFloat("u_RaindropsTime", config.raindropsTime);
+
+		// 2D光照
+		m_shader->SetInt("u_LightingEnabled", config.lightingEnabled ? 1 : 0);
+		if (config.lightingEnabled && config.lightMapTextureID != 0)
+		{
+			glBindTextureUnit(1, config.lightMapTextureID);
+			m_shader->SetInt("u_LightMap", 1);
+		}
 	}
 }

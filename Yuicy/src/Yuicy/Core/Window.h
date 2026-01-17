@@ -12,11 +12,13 @@ namespace Yuicy {
 		std::string Title;
 		uint32_t Width;
 		uint32_t Height;
+		bool borderlessWindow = true;
 
 		WindowProps(const std::string& title = "Yuicy Engine",
 			        uint32_t width = 1600,
-			        uint32_t height = 900)
-			: Title(title), Width(width), Height(height)
+			        uint32_t height = 900,
+			        bool isBorderlessWindow = true)
+			: Title(title), Width(width), Height(height), borderlessWindow(isBorderlessWindow)
 		{
 		}
 	};
@@ -40,6 +42,18 @@ namespace Yuicy {
 		virtual bool IsVSync() const = 0;
 
 		virtual void* GetNativeWindow() const = 0;
+
+		// Cursor
+		virtual void SetCursor(const std::string& imagePath, int hotspotX = 0, int hotspotY = 0) = 0;
+		virtual void ResetCursor() = 0;
+		virtual void SetCursorVisible(bool visible) = 0;
+
+		// Window control
+		virtual void Close() = 0;
+		virtual void Minimize() = 0;
+		virtual void Maximize() = 0;
+		virtual void Restore() = 0;
+		virtual bool IsMaximized() const = 0;
 
 		static Scope<Window> Create(const WindowProps& props = WindowProps());
 	};

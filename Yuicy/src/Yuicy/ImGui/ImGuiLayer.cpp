@@ -31,6 +31,7 @@ namespace Yuicy {
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
+		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;     // 禁止ImGui修改光标
 
 		float fontSize = 18.0f;// *2.0f;
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);

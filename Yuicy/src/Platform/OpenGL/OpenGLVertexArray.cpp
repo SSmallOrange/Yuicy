@@ -83,7 +83,7 @@ namespace Yuicy {
 					ShaderDataTypeToOpenGLBaseType(element.Type),
 					element.Normalized ? GL_TRUE : GL_FALSE,
 					layout.GetStride(),
-					(const void*)(uint32_t)element.Offset);
+					reinterpret_cast<const void*>(static_cast<std::uintptr_t>(element.Offset)));
 				m_VertexBufferIndex++;
 				break;
 			}

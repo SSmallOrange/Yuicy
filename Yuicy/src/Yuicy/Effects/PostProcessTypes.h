@@ -28,6 +28,10 @@ namespace Yuicy {
 		float raindropsIntensity = 0.5f;		// 雨滴强度 0~1
 		float raindropsTime = 0.0f;				// 时间
 
+		// 2D Lighting
+		bool lightingEnabled = false;			// 开启2D灯光
+		uint32_t lightMapTextureID = 0;
+
 		std::string sourceName = "Default";
 		int priority = 0;                     // 优先级
 	};
