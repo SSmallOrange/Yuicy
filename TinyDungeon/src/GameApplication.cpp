@@ -2,6 +2,7 @@
 #include <Yuicy/Core/EntryPoint.h>
 
 #include "Layer/GameLayer.h"
+#include "Layer/UILayer.h"
 
 class TinyDungeonApp : public Yuicy::Application
 {
@@ -10,6 +11,7 @@ public:
 		: Yuicy::Application(Yuicy::WindowProps("TinyDungeon", 960, 576, true))
 	{
 		PushLayer(new TinyDungeon::GameLayer());
+		PushLayer(new TinyDungeon::UILayer());
 
 		// Cursor
 		GetWindow().SetCursor("assets/textures/cursor.png", 11, 9);

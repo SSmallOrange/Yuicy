@@ -27,6 +27,9 @@ namespace TinyDungeon {
 		bool OnKeyPressed(Yuicy::KeyPressedEvent& e);
 
 	private:
+		glm::vec2 ScreenPosToWorldPos(float screenX, float screenY);
+
+	private:
 		Yuicy::Ref<Yuicy::Scene> m_scene;
 		Yuicy::Ref<Yuicy::TileMap> m_tileMap;
 		Yuicy::Entity m_cameraEntity;

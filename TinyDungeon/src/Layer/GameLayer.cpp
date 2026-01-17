@@ -41,15 +41,6 @@ namespace TinyDungeon {
 		// Post-processing
 		m_postProcessing.Init();
 
- 		Yuicy::PostProcessConfig nightConfig;
- 		nightConfig.brightness = 0.6f;
- 		nightConfig.saturation = 0.7f;
- 		nightConfig.ambientTint = { 0.6f, 0.65f, 0.85f, 1.0f };
- 		nightConfig.vignetteEnabled = true;
- 		nightConfig.vignetteIntensity = 0.25f;  // Reduced from 0.5
- 		nightConfig.vignetteRadius = 0.9f;      // Larger radius = less dark area
- 		m_postProcessing.FadeTo(nightConfig, 1.5f);
-
 		m_postProcessing.SetRaindropsEnabled(true);
 		m_postProcessing.SetRaindropsIntensity(1.0f);
 
@@ -130,7 +121,7 @@ namespace TinyDungeon {
 		m_postProcessing.OnUpdate(ts);
 		m_lighting->OnUpdate(ts);
 
-		// Update flashlight position and direction
+		// Update flashlight
  		if (m_playerEntity && m_flashlightId != 0)
  		{
  			auto& playerTransform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
@@ -140,27 +131,11 @@ namespace TinyDungeon {
  			
  			if (m_cameraEntity)
  			{
- 				auto& camTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
- 				auto& camComp = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
- 				float orthoSize = camComp.Camera.GetOrthographicSize();
- 				float aspectRatio = m_viewportSize.x / m_viewportSize.y;
- 
- 				// Screen to NDC [-1, 1]
- 				float ndcX = (mouseX / m_viewportSize.x) * 2.0f - 1.0f;
- 				float ndcY = 1.0f - (mouseY / m_viewportSize.y) * 2.0f;  // Flip Y
- 
- 				// NDC to world
- 				float halfHeight = orthoSize / 2.0f;
- 				float halfWidth = halfHeight * aspectRatio;
- 				float worldX = camTransform.Translation.x + ndcX * halfWidth;
- 				float worldY = camTransform.Translation.y + ndcY * halfHeight;
- 
- 				// Calculate direction from player to mouse
- 				glm::vec2 mouseWorld = { worldX, worldY };
+				const auto& worldPos = ScreenPosToWorldPos(mouseX, mouseY);
+ 				glm::vec2 mouseWorld = { worldPos.x, worldPos.y };
  				glm::vec2 dir = mouseWorld - playerPos;
  				float angle = std::atan2(dir.y, dir.x);
- 
- 				// Update flashlight
+
  				if (auto* light = m_lighting->GetLight(m_flashlightId))
  				{
  					light->position = playerPos;
@@ -389,5 +364,31 @@ namespace TinyDungeon {
 			}
 		}
 		return false;
+	}
+
+	glm::vec2 GameLayer::ScreenPosToWorldPos(float screenX, float screenY)
+	{
+		if (!m_playerEntity || !m_cameraEntity || !m_scene)
+			return {};
+
+		auto& playerTransform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
+		glm::vec2 playerPos = { playerTransform.Translation.x, playerTransform.Translation.y };
+
+		// Convert screen to world coordinates
+		auto& camTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
+		auto& camComp = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
+		float orthoSize = camComp.Camera.GetOrthographicSize();
+		float aspectRatio = m_viewportSize.x / m_viewportSize.y;
+
+		// Screen to NDC [-1, 1]
+		float ndcX = (screenX / m_viewportSize.x) * 2.0f - 1.0f;
+		float ndcY = 1.0f - (screenY / m_viewportSize.y) * 2.0f;
+
+		// NDC to world
+		float halfHeight = orthoSize / 2.0f;
+		float halfWidth = halfHeight * aspectRatio;
+		float worldX = camTransform.Translation.x + ndcX * halfWidth;   // 相机中点 + NDC * 半轴
+		float worldY = camTransform.Translation.y + ndcY * halfHeight;
+		return { worldX, worldY };
 	}
 }
