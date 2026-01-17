@@ -41,14 +41,14 @@ namespace TinyDungeon {
 		// Post-processing
 		m_postProcessing.Init();
 
-// 		Yuicy::PostProcessConfig nightConfig;
-// 		nightConfig.brightness = 0.6f;
-// 		nightConfig.saturation = 0.7f;
-// 		nightConfig.ambientTint = { 0.6f, 0.65f, 0.85f, 1.0f };
-// 		nightConfig.vignetteEnabled = true;
-// 		nightConfig.vignetteIntensity = 0.25f;  // Reduced from 0.5
-// 		nightConfig.vignetteRadius = 0.9f;      // Larger radius = less dark area
-// 		m_postProcessing.FadeTo(nightConfig, 1.5f);
+ 		Yuicy::PostProcessConfig nightConfig;
+ 		nightConfig.brightness = 0.6f;
+ 		nightConfig.saturation = 0.7f;
+ 		nightConfig.ambientTint = { 0.6f, 0.65f, 0.85f, 1.0f };
+ 		nightConfig.vignetteEnabled = true;
+ 		nightConfig.vignetteIntensity = 0.25f;  // Reduced from 0.5
+ 		nightConfig.vignetteRadius = 0.9f;      // Larger radius = less dark area
+ 		m_postProcessing.FadeTo(nightConfig, 1.5f);
 
 		m_postProcessing.SetRaindropsEnabled(true);
 		m_postProcessing.SetRaindropsIntensity(1.0f);
@@ -73,6 +73,50 @@ namespace TinyDungeon {
 
 		m_weatherSystem.SetWeather(rainConfig);
 		m_weatherSystem.SetPhysicsWorld(m_scene->GetPhysicsWorld());
+
+		// 2D Lighting system
+		m_lighting = Yuicy::CreateRef<Yuicy::Lighting2D>();
+		m_lighting->Init((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+		m_lighting->SetEnabled(true);
+
+		// Ambient lighting config (dark atmosphere)
+		Yuicy::LightingConfig lightConfig;
+		lightConfig.enabled = true;
+		lightConfig.ambientColor = { 0.2f, 0.2f, 0.25f };  // Very dark ambient
+		lightConfig.ambientIntensity = 0.7f;
+		m_lighting->SetConfig(lightConfig);
+
+		// Flashlight (spot light)
+		Yuicy::Light2D flashlight;
+		flashlight.type = Yuicy::Light2DType::Spot;
+		flashlight.color = { 1.0f, 0.95f, 0.85f };  // Warm white
+		flashlight.intensity = 1.0f;
+		flashlight.radius = 10.0f;  // 10 world units range
+		flashlight.falloff = 1.5f;
+		flashlight.innerAngle = 0.2f;  // ~23 degrees inner
+		flashlight.outerAngle = 0.4f;  // ~45 degrees outer
+		flashlight.direction = 0.0f;   // Will be updated by mouse
+		flashlight.castShadows = false;  // Start without shadows for performance
+		m_flashlightId = m_lighting->AddLight(flashlight);
+
+		// Yellow point light (e.g., torch/lamp)
+		Yuicy::Light2D pointLight;
+		pointLight.type = Yuicy::Light2DType::Point;
+		pointLight.position = { 5.0f, 12.0f };
+		pointLight.color = { 1.0f, 0.8f, 0.3f };
+		pointLight.intensity = 1.2f;
+		pointLight.radius = 1.0f;
+		pointLight.falloff = 3.0f;
+		m_lighting->AddLight(pointLight);
+
+		// Window Overlay
+		m_windowOverlay = Yuicy::WindowOverlay::Create();
+		Yuicy::WindowOverlayConfig overlayConfig;
+		overlayConfig.closeButtonTexture = "assets/textures/closeWindow.png";
+		overlayConfig.minimizeButtonTexture = "assets/textures/minimize.png";
+		overlayConfig.showMaximizeButton = false;
+		m_windowOverlay->SetConfig(overlayConfig);
+		m_windowOverlay->Init();
 	}
 
 	void GameLayer::OnDetach()
@@ -84,6 +128,46 @@ namespace TinyDungeon {
 	{
 		m_weatherSystem.OnUpdate(ts);
 		m_postProcessing.OnUpdate(ts);
+		m_lighting->OnUpdate(ts);
+
+		// Update flashlight position and direction
+ 		if (m_playerEntity && m_flashlightId != 0)
+ 		{
+ 			auto& playerTransform = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
+ 			glm::vec2 playerPos = { playerTransform.Translation.x, playerTransform.Translation.y };
+ 
+ 			auto [mouseX, mouseY] = Yuicy::Input::GetMousePosition();
+ 			
+ 			if (m_cameraEntity)
+ 			{
+ 				auto& camTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
+ 				auto& camComp = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
+ 				float orthoSize = camComp.Camera.GetOrthographicSize();
+ 				float aspectRatio = m_viewportSize.x / m_viewportSize.y;
+ 
+ 				// Screen to NDC [-1, 1]
+ 				float ndcX = (mouseX / m_viewportSize.x) * 2.0f - 1.0f;
+ 				float ndcY = 1.0f - (mouseY / m_viewportSize.y) * 2.0f;  // Flip Y
+ 
+ 				// NDC to world
+ 				float halfHeight = orthoSize / 2.0f;
+ 				float halfWidth = halfHeight * aspectRatio;
+ 				float worldX = camTransform.Translation.x + ndcX * halfWidth;
+ 				float worldY = camTransform.Translation.y + ndcY * halfHeight;
+ 
+ 				// Calculate direction from player to mouse
+ 				glm::vec2 mouseWorld = { worldX, worldY };
+ 				glm::vec2 dir = mouseWorld - playerPos;
+ 				float angle = std::atan2(dir.y, dir.x);
+ 
+ 				// Update flashlight
+ 				if (auto* light = m_lighting->GetLight(m_flashlightId))
+ 				{
+ 					light->position = playerPos;
+ 					light->direction = angle;
+ 				}
+ 			}
+ 		}
 
 		m_framebuffer->Bind();
 
@@ -114,14 +198,38 @@ namespace TinyDungeon {
 
 		m_framebuffer->Unbind();
 
-		// 后处理
+		// Render lighting
+		if (m_cameraEntity && m_lighting->IsEnabled())
+		{
+			auto& cameraComp = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
+			auto& camTransform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
+
+			float orthoSize = cameraComp.Camera.GetOrthographicSize();
+			float aspectRatio = m_viewportSize.x / m_viewportSize.y;
+			glm::vec2 viewportWorldSize = { orthoSize * aspectRatio, orthoSize };
+
+			m_lighting->RenderLightMap(
+				{ camTransform.Translation.x, camTransform.Translation.y },
+				viewportWorldSize
+			);
+		}
+
+		// Post-processing (with lighting)
 		Yuicy::RenderCommand::SetClearColor({ 0, 0, 0, 1 });
 		Yuicy::RenderCommand::Clear();
+
+		auto& ppconfig = m_postProcessing.GetConfig();
+		ppconfig.lightingEnabled = m_lighting->IsEnabled();
+		ppconfig.lightMapTextureID = m_lighting->GetLightMapTextureID();
+
 		m_postProcessing.Render(m_framebuffer);
 	}
 
 	void GameLayer::OnImGuiRender()
 	{
+		if (m_windowOverlay)
+			m_windowOverlay->OnImGuiRender();
+
 		ImGui::Begin("TinyDungeon Debug");
 
 		auto stats = Yuicy::Renderer2D::GetStats();
@@ -261,6 +369,7 @@ namespace TinyDungeon {
 		m_viewportSize = { (float)e.GetWidth(), (float)e.GetHeight() };
 		m_scene->OnViewportResize(e.GetWidth(), e.GetHeight());
 		m_framebuffer->Resize(e.GetWidth(), e.GetHeight());
+		m_lighting->Resize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
 

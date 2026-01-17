@@ -44,6 +44,13 @@ namespace TinyDungeon {
 		Yuicy::WeatherSystem m_weatherSystem{ 3000 };
 		Yuicy::PostProcessing m_postProcessing;
 		Yuicy::Ref<Yuicy::Framebuffer> m_framebuffer;
+
+		// 2D Lighting
+		Yuicy::Ref<Yuicy::Lighting2D> m_lighting;
+		uint32_t m_flashlightId = 0;
+
+		// Window Overlay (engine provided)
+		Yuicy::Scope<Yuicy::WindowOverlay> m_windowOverlay;
 	};
 
 }
