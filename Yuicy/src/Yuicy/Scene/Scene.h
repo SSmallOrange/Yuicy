@@ -3,6 +3,7 @@
 #include <entt.hpp>
 
 #include "Yuicy/Core/Timestep.h"
+#include "Yuicy/Scene/Components.h"
 
 class b2World;
 
@@ -31,6 +32,8 @@ namespace Yuicy {
 
 		Entity FindEntityByName(const std::string& name);
 
+		Entity CreateProjectile(const glm::vec2& position, const glm::vec2& direction, const ProjectileConfig& config = ProjectileConfig());
+
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
 
 	private:
@@ -48,6 +51,9 @@ namespace Yuicy {
 		void ProcessCollisionCallbacks();
 		// 动画
 		void UpdateAnimations(Timestep ts);
+
+		// 投掷物
+		void UpdateProjectiles(Timestep ts);
 
 		void RenderScene();
 
