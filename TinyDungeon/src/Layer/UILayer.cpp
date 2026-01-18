@@ -1,5 +1,6 @@
 #include <Yuicy.h>
 #include <imgui/imgui.h>
+#include <Yuicy/Scripting/LuaScriptEngine.h>
 
 #include "UILayer.h"
 
@@ -39,6 +40,12 @@ namespace TinyDungeon {
 
 	void UILayer::OnUpdate(Yuicy::Timestep ts)
 	{
+		auto& lua = Yuicy::LuaScriptEngine::GetState();
+		sol::optional<int> score = lua["__GAME_SCORE__"];
+		if (score)
+		{
+			SetScore(score.value());
+		}
 	}
 
 	void UILayer::OnImGuiRender()

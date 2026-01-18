@@ -55,6 +55,7 @@ namespace TinyDungeon {
 
 					auto& collider = entity.AddComponent<Yuicy::BoxCollider2DComponent>();
 					collider.Size = { 0.5f, 0.5f };
+					collider.CategoryBits = Yuicy::CollisionLayer::Ground;
 				}
 
 				outEntities.push_back(entity);

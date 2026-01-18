@@ -3,11 +3,10 @@
 #include "Yuicy/Core/Timestep.h"
 #include "Yuicy/Renderer/Camera.h"
 #include "Yuicy/Effects/WeatherTypes.h"
+#include "Yuicy/Physics/Physics2D.h"
 
 #include <vector>
 #include <glm/glm.hpp>
-
-class b2World;
 
 namespace Yuicy {
 
@@ -39,8 +38,8 @@ namespace Yuicy {
 		// Render particles
 		void OnRender(const glm::vec2& cameraPos, const glm::vec2& viewportSize);
 
-		// 设置物理世界（用于雨滴碰撞检测）
-		void SetPhysicsWorld(b2World* world) { m_physicsWorld = world; }
+		// 设置物理系统
+		void SetPhysics2D(Physics2D* physics) { m_physics2D = physics; }
 
 	public:
 		WeatherType GetCurrentWeather() const { return m_currentConfig.type; }
@@ -114,7 +113,7 @@ namespace Yuicy {
 		std::vector<PhysicsRaindrop> m_physicsRaindrops;
 		uint32_t m_physicsRaindropIndex = 0;
 		float m_physicsSpawnAccumulator = 0.0f;
-		b2World* m_physicsWorld = nullptr;
+		Physics2D* m_physics2D = nullptr;
 	};
 
 }

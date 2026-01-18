@@ -1,0 +1,160 @@
+{
+    "version": "1.0",
+    "spriteSheet": "assets/textures/map/tilemap-characters_packed.png",
+    "cellSize": [
+        24,
+        24
+    ],
+    "enemies": [
+        {
+            "name": "Slime",
+            "tag": "Enemy",
+            "script": "assets/scripts/enemy_slime.lua",
+            "spawn": {
+                "position": [
+                    8.0,
+                    10.0
+                ],
+                "zDepth": 0.85
+            },
+            "sprite": {
+                "sortingOrder": 900,
+                "flipX": false
+            },
+            "animations": {
+                "default": "idle",
+                "clips": [
+                    {
+                        "name": "idle",
+                        "startCoord": [
+                            3,
+                            2
+                        ],
+                        "frameCount": 1,
+                        "frameDuration": 1.0,
+                        "loop": true
+                    },
+                    {
+                        "name": "walk_right",
+                        "startCoord": [
+                            2,
+                            2
+                        ],
+                        "frameCount": 2,
+                        "frameDuration": 0.1,
+                        "loop": true
+                    },
+                    {
+                        "name": "walk_left",
+                        "startCoord": [
+                            2,
+                            2
+                        ],
+                        "frameCount": 2,
+                        "frameDuration": 0.1,
+                        "loop": true
+                    }
+                ]
+            },
+            "physics": {
+                "bodyType": "dynamic",
+                "fixedRotation": true,
+                "gravityScale": 1.0
+            },
+            "collider": {
+                "type": "circle",
+                "radius": 0.35,
+                "friction": 0.0,
+                "categoryBits": "Enemy",
+                "maskBits": [
+                    "Default",
+                    "Player",
+                    "Ground",
+                    "Bullet"
+                ]
+            },
+            "stats": {
+                "health": 3,
+                "damage": 1,
+                "speed": 1.5,
+                "detectRange": 5.0,
+                "attackRange": 0.8
+            }
+        },
+        {
+            "name": "Bat",
+            "tag": "Enemy",
+            "script": "assets/scripts/enemy_bat.lua",
+            "spawn": {
+                "position": [
+                    12.0,
+                    10.0
+                ],
+                "zDepth": 0.85
+            },
+            "sprite": {
+                "sortingOrder": 900,
+                "flipX": false
+            },
+            "animations": {
+                "default": "idle",
+                "clips": [
+                    {
+                        "name": "idle",
+                        "startCoord": [
+                            6,
+                            0
+                        ],
+                        "frameCount": 3,
+                        "frameDuration": 0.33,
+                        "loop": true
+                    },
+                    {
+                        "name": "walk_right",
+                        "startCoord": [
+                            6,
+                            0
+                        ],
+                        "frameCount": 3,
+                        "frameDuration": 0.33,
+                        "loop": true
+                    },
+                    {
+                        "name": "walk_left",
+                        "startCoord": [
+                            6,
+                            0
+                        ],
+                        "frameCount": 3,
+                        "frameDuration": 0.33,
+                        "loop": true
+                    }
+                ]
+            },
+            "physics": {
+                "bodyType": "dynamic",
+                "fixedRotation": true,
+                "gravityScale": 0.0
+            },
+            "collider": {
+                "type": "circle",
+                "radius": 0.4,
+                "friction": 0.0,
+                "categoryBits": "Enemy",
+                "maskBits": [
+                    "Default",
+                    "Player",
+                    "Ground",
+                    "Bullet"
+                ]
+            },
+            "stats": {
+                "health": 5,
+                "damage": 2,
+                "speed": 2.0,
+                "detectRange": 8.0,
+                "attackRange": 2.0
+            }
+        }
+    ]
+}

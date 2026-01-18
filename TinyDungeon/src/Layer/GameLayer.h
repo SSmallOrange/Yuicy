@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Yuicy.h>
+#include "../Enemy/EnemyLoader.h"
 
 namespace TinyDungeon {
 
@@ -20,6 +21,7 @@ namespace TinyDungeon {
 		void SetupScene();
 		void SetupCamera();
 		void SetupPlayer();
+		void SetupEnemies();
 		void SetupTileMap();
 		void RegisterParsers();
 
@@ -54,6 +56,10 @@ namespace TinyDungeon {
 
 		// Window Overlay (engine provided)
 		Yuicy::Scope<Yuicy::WindowOverlay> m_windowOverlay;
+
+		// Enemy system
+		EnemyLoader m_enemyLoader;
+		std::vector<Yuicy::Entity> m_enemies;
 	};
 
 }

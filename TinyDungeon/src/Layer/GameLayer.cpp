@@ -24,6 +24,7 @@ namespace TinyDungeon {
 		SetupCamera();
 		SetupTileMap();
 		SetupPlayer();
+		SetupEnemies();
 
 		m_scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		m_scene->OnRuntimeStart();
@@ -63,7 +64,7 @@ namespace TinyDungeon {
 		rainConfig.particles.physicsRatio = 0.3f;
 
 		m_weatherSystem.SetWeather(rainConfig);
-		m_weatherSystem.SetPhysicsWorld(m_scene->GetPhysicsWorld());
+		m_weatherSystem.SetPhysics2D(&m_scene->GetPhysics2D());
 
 		// 2D Lighting system
 		m_lighting = Yuicy::CreateRef<Yuicy::Lighting2D>();
@@ -333,6 +334,18 @@ namespace TinyDungeon {
 			auto testQuad = m_scene->CreateEntity("TestQuad");
 			testQuad.GetComponent<Yuicy::TransformComponent>().Translation = { 0.0f, 0.0f, 0.0f };
 			testQuad.AddComponent<Yuicy::SpriteRendererComponent>(glm::vec4{ 0.8f, 0.2f, 0.3f, 1.0f });
+		}
+	}
+
+	void GameLayer::SetupEnemies()
+	{
+		if (m_enemyLoader.LoadConfig("assets/configs/enemies.json"))
+		{
+			m_enemies = m_enemyLoader.SpawnAllEnemies(m_scene.get());
+		}
+		else
+		{
+			YUICY_CORE_WARN("GameLayer: Failed to load enemy config");
 		}
 	}
 

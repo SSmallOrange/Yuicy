@@ -4,6 +4,7 @@
 
 #include "Yuicy/Core/Timestep.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Physics/Physics2D.h"
 
 class b2World;
 
@@ -34,7 +35,9 @@ namespace Yuicy {
 
 		Entity CreateProjectile(const glm::vec2& position, const glm::vec2& direction, const ProjectileConfig& config = ProjectileConfig());
 
+		// 物理系统
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
+		Physics2D& GetPhysics2D() { return m_Physics2D; }
 
 	private:
 		// 脚本
@@ -64,6 +67,7 @@ namespace Yuicy {
 		// 物理系统
 		b2World* m_PhysicsWorld = nullptr;
 		ContactListener* m_ContactListener = nullptr;
+		Physics2D m_Physics2D;
 
 		friend class Entity;
 	};

@@ -7,11 +7,11 @@ function PlayerController:OnCreate()
     self.speed = 3.0
     self.jumpForce = 6.0
     self.spawnPoint = { x = 2.5, y = 11.5 }
-    
+
     -- Projectile config
     self.projectileSpeed = 30.0
-    self.projectileSize = { x = 0.3, y = 0.1 }
-    self.projectileColor = { r = 1.0, g = 0.8, b = 0.2 }
+    self.projectileSize = { x = 0.5, y = 0.2 }
+    self.projectileColor = { r = 0.86, g = 0.156, b = 0.019 }
     self.shootCooldown = 0.0
     self.shootCooldownTime = 0.15  -- Seconds between shots
     
@@ -137,7 +137,8 @@ function PlayerController:Shoot()
         local dirX = self.facingRight and 1.0 or -1.0
         Scene.CreateProjectile(self.entity, px, py, dirX, 0, 
             self.projectileSpeed, 3.0, self.projectileSize.x, self.projectileSize.y,
-            self.projectileColor.r, self.projectileColor.g, self.projectileColor.b)
+            self.projectileColor.r, self.projectileColor.g, self.projectileColor.b,
+            "assets/scripts/projectile_bullet.lua")
         return
     end
     
@@ -171,7 +172,8 @@ function PlayerController:Shoot()
         dirY = dirY / len
         Scene.CreateProjectile(self.entity, px, py, dirX, dirY,
             self.projectileSpeed, 3.0, self.projectileSize.x, self.projectileSize.y,
-            self.projectileColor.r, self.projectileColor.g, self.projectileColor.b)
+            self.projectileColor.r, self.projectileColor.g, self.projectileColor.b,
+            "assets/scripts/projectile_bullet.lua")
     end
 end
 

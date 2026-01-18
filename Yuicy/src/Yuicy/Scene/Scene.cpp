@@ -243,6 +243,9 @@ namespace Yuicy {
 		m_ContactListener = new ContactListener();
 		m_PhysicsWorld->SetContactListener(m_ContactListener);
 
+		// 设置 Physics2D 系统的 world
+		m_Physics2D.SetWorld(m_PhysicsWorld);
+
 		// 为所有拥有 Rigidbody2DComponent 的实体创建 Box2D 刚体
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
@@ -590,6 +593,12 @@ namespace Yuicy {
 			proj.usePhysics = true;
 		}
 
+		// Lua 脚本
+		if (!config.scriptPath.empty())
+		{
+			projectile.AddComponent<LuaScriptComponent>(config.scriptPath);
+		}
+
 		return projectile;
 	}
 
@@ -633,7 +642,6 @@ namespace Yuicy {
 			m_Registry.destroy(e);
 		}
 	}
-
 
 	// Lua Scripting
 	void Scene::InitializeLuaScripts()
@@ -680,6 +688,34 @@ namespace Yuicy {
 		for (auto e : view)
 		{
 			auto& lsc = view.get<LuaScriptComponent>(e);
+			
+			// 运行时初始化：处理新添加的脚本组件
+			if (!lsc.ScriptPath.empty() && !lsc.IsLoaded)
+			{
+				lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(lsc.ScriptPath);
+				if (lsc.ScriptInstance.valid())
+				{
+					lsc.IsLoaded = true;
+					lsc.ScriptInstance["entity"] = Entity{ e, this };
+					
+					lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
+					lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
+					lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
+					lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
+					lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
+					lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
+					lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
+					
+					if (lsc.OnCreateFunc.valid())
+						lsc.OnCreateFunc(lsc.ScriptInstance);
+				}
+				else
+				{
+					YUICY_CORE_ERROR("[Scene] Failed to load runtime Lua script: {}", lsc.ScriptPath);
+				}
+			}
+			
+			// 调用 OnUpdate
 			if (lsc.IsLoaded && lsc.OnUpdateFunc.valid())
 			{
 				try {

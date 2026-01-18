@@ -3,36 +3,12 @@
 #include "WeatherPresets.h"
 #include "SplashEffect.h"
 #include "Yuicy/Renderer/Renderer2D.h"
-
-#include <box2d/b2_world.h>
-#include <box2d/b2_body.h>
-#include <box2d/b2_fixture.h>
+#include "Yuicy/Physics/Physics2D.h"
 
 #include <cstdlib>
 #include <ctime>
 
 namespace Yuicy {
-
-	class RaindropRaycastCallback : public b2RayCastCallback
-	{
-	public:
-		bool hit = false;
-		b2Vec2 hitPoint;
-		b2Vec2 hitNormal;
-
-		float ReportFixture(b2Fixture* fixture, const b2Vec2& point,
-			const b2Vec2& normal, float fraction) override
-		{
-			// 忽略 sensor
-			if (fixture->IsSensor())
-				return -1.0f;
-
-			hit = true;
-			hitPoint = point;
-			hitNormal = normal;
-			return fraction;
-		}
-	};
 
 	WeatherSystem::WeatherSystem(uint32_t maxParticles)
 	{
@@ -151,7 +127,7 @@ namespace Yuicy {
 		}
 
 		// 更新物理雨滴
-		if (m_currentConfig.particles.enablePhysics && m_physicsWorld)
+		if (m_currentConfig.particles.enablePhysics && m_physics2D)
 		{
 			UpdatePhysicsRaindrops(dt);
 		}
@@ -462,20 +438,14 @@ namespace Yuicy {
 				continue;
 			}
 
-			// Box2D Raycast 检测碰撞
-			if (m_physicsWorld)
+			if (m_physics2D)
 			{
-				b2Vec2 p1(oldPos.x, oldPos.y);
-				b2Vec2 p2(drop.position.x, drop.position.y);
+				auto result = m_physics2D->Raycast(oldPos, drop.position);
 
-				RaindropRaycastCallback callback;
-				m_physicsWorld->RayCast(&callback, p1, p2);
-
-				if (callback.hit)
+				if (result.hit)
 				{
 					// 触发溅射效果
-					glm::vec2 hitPos(callback.hitPoint.x, callback.hitPoint.y);
-					SplashEffect::Emit(hitPos, m_currentConfig.particles.splashConfig);
+					SplashEffect::Emit(result.point, m_currentConfig.particles.splashConfig);
 
 					// 禁用该雨滴
 					drop.active = false;
