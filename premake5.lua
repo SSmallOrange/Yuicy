@@ -1,6 +1,6 @@
 workspace "Yuicy"
     architecture "x64"
-    startproject "Sandbox"
+    startproject "TinyDungeon"
     configurations { "Debug", "Release" }
 
 outputdir = "%{cfg.buildcfg}-x64"
@@ -105,13 +105,6 @@ project "Sandbox"
         systemversion "latest"
         buildoptions { "/utf-8" }
         postbuildcommands {
-			-- 'cmd /c if not exist "%{cfg.targetdir}" mkdir "%{cfg.targetdir}"',
-			-- library
-			-- 'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.dll" "%{cfg.targetdir}"',
-			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.lib" "%{cfg.targetdir}"',
-			-- pdb
-			-- 'cmd /c if exist "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" copy /Y "%{wks.location}bin\\%{cfg.buildcfg}-x64\\Yuicy\\*.pdb" "%{cfg.targetdir}"',
-			-- 'cmd /c if exist "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" copy /Y "%{wks.location}Yuicy\\thirdparty\\GLFW\\bin\\%{cfg.buildcfg}-x64\\GLFW\\*.pdb" "%{cfg.targetdir}"'
         }
     filter "configurations:Debug"
         debugdir "%{cfg.targetdir}"
@@ -122,3 +115,6 @@ project "Sandbox"
         runtime "Release"
         optimize "On"
     filter {}
+
+group "Examples"
+    include "TinyDungeon"

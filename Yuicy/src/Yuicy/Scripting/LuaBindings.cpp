@@ -7,6 +7,8 @@
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Scene/Scene.h"
 
+#include "Yuicy/Scripting/LuaScriptEngine.h"
+
 #include <box2d/b2_body.h>
 #include <glm/glm.hpp>
 
@@ -83,6 +85,13 @@ namespace Yuicy {
 				"z", &glm::vec4::z,
 				"w", &glm::vec4::w
 			);
+
+			lua.set_function("Vec2", [](float x, float y) { return glm::vec2(x, y); });
+			lua.set_function("Vec3", [](float x, float y, float z) { return glm::vec3(x, y, z); });
+			lua.set_function("Vec4", sol::overload(
+				[](float x, float y, float z, float w) { return glm::vec4(x, y, z, w); },
+				[](float v) { return glm::vec4(v); }
+			));
 		}
 
 		void RegisterInput(sol::state& lua)
@@ -229,6 +238,13 @@ namespace Yuicy {
 						b2Body* body = static_cast<b2Body*>(rb.RuntimeBody);
 						body->SetGravityScale(scale);
 					}
+				},
+				"ApplyLinearImpulse", [](Rigidbody2DComponent& rb, float ix, float iy) {
+					if (rb.RuntimeBody)
+					{
+						b2Body* body = static_cast<b2Body*>(rb.RuntimeBody);
+						body->ApplyLinearImpulseToCenter(b2Vec2(ix, iy), true);
+					}
 				}
 			);
 
@@ -320,6 +336,12 @@ namespace Yuicy {
 				},
 				"IsValid", [](Entity& e) -> bool {
 					return (bool)e;
+				},
+				// 添加组件
+				"AddSprite", [](Entity& e) -> SpriteRendererComponent& {
+					if (!e.HasComponent<SpriteRendererComponent>())
+						e.AddComponent<SpriteRendererComponent>();
+					return e.GetComponent<SpriteRendererComponent>();
 				}
 			);
 		}
@@ -346,10 +368,29 @@ namespace Yuicy {
 				return Entity{};
 			});
 
+			// 创建新实体
+			sceneTable.set_function("CreateEntity", [](Entity& self, const std::string& name) -> Entity {
+				if (!self)
+					return Entity{};
+				Scene* scene = self.GetScene();
+				if (scene)
+					return scene->CreateEntity(name);
+				return Entity{};
+			});
+
+			// 销毁实体
+			sceneTable.set_function("DestroyEntity", [](Entity& self, Entity& target) {
+				if (!self || !target)
+					return;
+				Scene* scene = self.GetScene();
+				if (scene)
+					scene->DestroyEntity(target);
+			});
+
 			// CreateProjectile from Lua (with optional config parameters)
 			sceneTable.set_function("CreateProjectile", [](Entity& self, float x, float y, float dirX, float dirY, 
 				sol::optional<float> speed, sol::optional<float> lifetime, sol::optional<float> sizeX, sol::optional<float> sizeY,
-				sol::optional<float> r, sol::optional<float> g, sol::optional<float> b) -> Entity {
+				sol::optional<float> r, sol::optional<float> g, sol::optional<float> b, sol::optional<std::string> scriptPath) -> Entity {
 				if (!self)
 					return Entity{};
 				Scene* scene = self.GetScene();
@@ -361,9 +402,53 @@ namespace Yuicy {
 					config.size = { sizeX.value_or(0.2f), sizeY.value_or(0.2f) };
 					if (r && g && b)
 						config.color = { r.value(), g.value(), b.value(), 1.0f };
+					if (scriptPath)
+						config.scriptPath = scriptPath.value();
 					return scene->CreateProjectile({ x, y }, { dirX, dirY }, config);
 				}
 				return Entity{};
+			});
+
+			// 检查是否存在遮挡
+			sceneTable.set_function("HasLineOfSight", [](Entity& self, float fromX, float fromY, float toX, float toY) -> bool {
+				if (!self)
+					return false;
+				Scene* scene = self.GetScene();
+				if (scene)
+				{
+					return scene->GetPhysics2D().HasLineOfSight({ fromX, fromY }, { toX, toY }, CollisionLayer::Ground);
+				}
+				return false;
+			});
+
+			// 获取碰撞信息
+			sceneTable.set_function("Raycast", [](Entity& self, float startX, float startY, float endX, float endY) -> sol::table {
+				sol::state_view lua(LuaScriptEngine::GetState());
+				sol::table result = lua.create_table();
+				
+				if (!self)
+				{
+					result["hit"] = false;
+					return result;
+				}
+				Scene* scene = self.GetScene();
+				if (scene)
+				{
+					auto rayResult = scene->GetPhysics2D().Raycast({ startX, startY }, { endX, endY });
+					result["hit"] = rayResult.hit;
+					result["pointX"] = rayResult.point.x;
+					result["pointY"] = rayResult.point.y;
+					result["normalX"] = rayResult.normal.x;
+					result["normalY"] = rayResult.normal.y;
+					result["fraction"] = rayResult.fraction;
+					if (rayResult.hitEntity != entt::null)
+						result["hitEntity"] = Entity{ rayResult.hitEntity, scene };
+				}
+				else
+				{
+					result["hit"] = false;
+				}
+				return result;
 			});
 		}
 	}

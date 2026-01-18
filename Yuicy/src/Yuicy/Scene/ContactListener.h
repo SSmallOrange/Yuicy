@@ -4,30 +4,30 @@
 
 namespace Yuicy {
 
-	// Åö×²ĞÅÏ¢½á¹¹Ìå
+	// ç¢°æ’ä¿¡æ¯ç»“æ„ä½“
 	struct CollisionInfo
 	{
-		void* EntityA = nullptr;  // Åö×²µÄÊµÌåA
-		void* EntityB = nullptr;  // Åö×²µÄÊµÌåB
-		bool IsSensorA = false;   // A ÊÇ·ñÊÇ´¥·¢Æ÷
-		bool IsSensorB = false;   // B ÊÇ·ñÊÇ´¥·¢Æ÷
+		void* EntityA = nullptr;  // ç¢°æ’çš„å®ä½“A
+		void* EntityB = nullptr;  // ç¢°æ’çš„å®ä½“B
+		bool IsSensorA = false;   // A æ˜¯å¦æ˜¯è§¦å‘å™¨
+		bool IsSensorB = false;   // B æ˜¯å¦æ˜¯è§¦å‘å™¨
 	};
 
-	// Box2D Åö×²¼àÌıÆ÷
+	// Box2D ç¢°æ’ç›‘å¬å™¨
 	class ContactListener : public b2ContactListener
 	{
 	public:
-		// Åö×²¿ªÊ¼ ±£´æÅö×²Entity
+		// ç¢°æ’å¼€å§‹ ä¿å­˜ç¢°æ’Entity
 		void BeginContact(b2Contact* contact) override;
 
-		// Åö×²½áÊø ±£´æ·ÖÀëEntity
+		// ç¢°æ’ç»“æŸ ä¿å­˜åˆ†ç¦»Entity
 		void EndContact(b2Contact* contact) override;
 
-		// »ñÈ¡±¾Ö¡µÄÅö×²ÊÂ¼ş
+		// è·å–æœ¬å¸§çš„ç¢°æ’äº‹ä»¶
 		const std::vector<CollisionInfo>& GetBeginContacts() const { return m_BeginContacts; }
 		const std::vector<CollisionInfo>& GetEndContacts() const { return m_EndContacts; }
 
-		// Ã¿Ö¡¿ªÊ¼Ê±Çå¿ÕÅö×²ÁĞ±í
+		// æ¯å¸§å¼€å§‹æ—¶æ¸…ç©ºç¢°æ’åˆ—è¡¨
 		void ClearContacts();
 
 	private:

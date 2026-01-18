@@ -31,7 +31,8 @@ namespace Yuicy {
 			sol::lib::string,
 			sol::lib::table,
 			sol::lib::os,
-			sol::lib::io
+			sol::lib::io,
+			sol::lib::package
 		);
 
 		RegisterBindings();

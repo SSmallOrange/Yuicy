@@ -407,6 +407,9 @@ namespace Yuicy {
 		uint16_t maskBits = CollisionLayer::Ground | CollisionLayer::Enemy;
 		bool isTrigger = true;
 
-		ProjectileConfig() = default;
+		// 脚本
+		std::string scriptPath;  // 可选的 Lua 脚本路径
+
+	ProjectileConfig() = default;
 	};
 }
