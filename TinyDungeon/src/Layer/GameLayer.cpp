@@ -71,24 +71,24 @@ namespace TinyDungeon {
 		m_lighting->Init((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		m_lighting->SetEnabled(true);
 
-		// Ambient lighting config (dark atmosphere)
+		// Ambient lighting config
 		Yuicy::LightingConfig lightConfig;
 		lightConfig.enabled = true;
-		lightConfig.ambientColor = { 0.2f, 0.2f, 0.25f };  // Very dark ambient
+		lightConfig.ambientColor = { 0.2f, 0.2f, 0.25f };
 		lightConfig.ambientIntensity = 0.7f;
 		m_lighting->SetConfig(lightConfig);
 
 		// Flashlight (spot light)
 		Yuicy::Light2D flashlight;
 		flashlight.type = Yuicy::Light2DType::Spot;
-		flashlight.color = { 1.0f, 0.95f, 0.85f };  // Warm white
+		flashlight.color = { 1.0f, 0.95f, 0.85f };
 		flashlight.intensity = 1.0f;
-		flashlight.radius = 10.0f;  // 10 world units range
+		flashlight.radius = 10.0f;
 		flashlight.falloff = 1.5f;
-		flashlight.innerAngle = 0.2f;  // ~23 degrees inner
-		flashlight.outerAngle = 0.4f;  // ~45 degrees outer
-		flashlight.direction = 0.0f;   // Will be updated by mouse
-		flashlight.castShadows = false;  // Start without shadows for performance
+		flashlight.innerAngle = 0.2f;
+		flashlight.outerAngle = 0.4f;
+		flashlight.direction = 0.0f;
+		flashlight.castShadows = false;
 		m_flashlightId = m_lighting->AddLight(flashlight);
 
 		// Yellow point light (e.g., torch/lamp)
@@ -325,16 +325,6 @@ namespace TinyDungeon {
 		auto builder = Yuicy::CreateRef<DungeonMapBuilder>();
 
 		m_tileMap = Yuicy::TileMapSystem::LoadMap("assets/maps/SampleB.json", m_scene.get(), builder);
-
-		if (!m_tileMap)
-		{
-			YUICY_CORE_WARN("GameLayer: Failed to load SampleB, using test entities");
-
-			// 测试实体
-			auto testQuad = m_scene->CreateEntity("TestQuad");
-			testQuad.GetComponent<Yuicy::TransformComponent>().Translation = { 0.0f, 0.0f, 0.0f };
-			testQuad.AddComponent<Yuicy::SpriteRendererComponent>(glm::vec4{ 0.8f, 0.2f, 0.3f, 1.0f });
-		}
 	}
 
 	void GameLayer::SetupEnemies()
@@ -363,19 +353,6 @@ namespace TinyDungeon {
 
 	bool GameLayer::OnKeyPressed(Yuicy::KeyPressedEvent& e)
 	{
-		// 按 R 键重置相机位置和缩放
-		if (e.GetKeyCode() == Yuicy::Key::R)
-		{
-			if (m_cameraEntity)
-			{
-				auto& transform = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
-				transform.Translation = { 15.0f, 15.0f, 0.0f };
-				m_zoomLevel = 10.0f;
-
-				auto& camera = m_cameraEntity.GetComponent<Yuicy::CameraComponent>();
-				camera.Camera.SetOrthographicSize(m_zoomLevel);
-			}
-		}
 		return false;
 	}
 
