@@ -1,71 +1,72 @@
 # Yuicy Framework
 
-> ×¢£º±¾ÏîÄ¿Ñ§Ï°×Ô£º``HazelÒıÇæ``µÄ¿ªÔ´²¿·Ö£¬ÉáÆúÔ­±¾ÒıÇæµÄ±à¼­½çÃæ£¬²¢´ÓFBO²¿·Ö¿ªÊ¼ÍÑÀë£¬×¨×¢ÓÚOpenGLÏà¹ØÄÚÈİ£¬ÒÔÏÂÊÇHazelÒıÇæÏà¹ØÁ´½Ó£º
+> æ³¨ï¼šæœ¬é¡¹ç›®å­¦ä¹ è‡ªï¼š``Hazelå¼•æ“``çš„å¼€æºéƒ¨åˆ†ï¼Œèˆå¼ƒåŸæœ¬å¼•æ“çš„ç¼–è¾‘ç•Œé¢ï¼Œå¹¶ä»FBOéƒ¨åˆ†å¼€å§‹è„±ç¦»ï¼Œä¸“æ³¨äºOpenGLç›¸å…³å†…å®¹ï¼Œä»¥ä¸‹æ˜¯Hazelå¼•æ“ç›¸å…³é“¾æ¥ï¼š
 >
-> Github£º[TheCherno/Hazel: Hazel Engine](https://github.com/TheCherno/Hazel)
+> Githubï¼š[TheCherno/Hazel: Hazel Engine](https://github.com/TheCherno/Hazel)
 >
-> Youtube£º[Introducing the GAME ENGINE series! - YouTube](https://www.youtube.com/watch?v=JxIZbV_XjAs&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT)
+> Youtubeï¼š[Introducing the GAME ENGINE series! - YouTube](https://www.youtube.com/watch?v=JxIZbV_XjAs&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT)
 >
-> Bilibili·­Òë°æ£ºBV1wtLazEEmC
+> Bilibiliç¿»è¯‘ç‰ˆï¼šBV1wtLazEEmC
 
-Yuicy ÊÇÒ»¸ö **C++20 + OpenGL** µÄÇáÁ¿¼¶**äÖÈ¾Ñ§Ï°¿ò¼Ü£¨Framework£©**¡£Ö÷ÒªÓÃÀ´Ñ§Ï°ÍêÕûµÄGPUäÖÈ¾Á÷³Ì£¬²¢¼ÌĞøÏòÍâÍØÕ¹¡£
+Yuicy æ˜¯ä¸€ä¸ª **C++20 + OpenGL** çš„è½»é‡çº§**æ¸²æŸ“å­¦ä¹ æ¡†æ¶ï¼ˆFrameworkï¼‰**ã€‚ä¸»è¦ç”¨æ¥å­¦ä¹ å®Œæ•´çš„GPUæ¸²æŸ“æµç¨‹ï¼Œå¹¶ç»§ç»­å‘å¤–æ‹“å±•ã€‚
 
-> ºËĞÄÄ¿±ê£ºÍ¨¹ıÊµÏÖ¼òµ¥DemoÀ´ÕûºÏÏÖ´ú OpenGL äÖÈ¾Á÷³Ì£¬°üÀ¨äÖÈ¾³éÏó¡¢2D ÅúäÖÈ¾¡¢FBO¡¢¹âÕÕ¡¢ºó´¦Àí¡¢Á£×ÓÌØĞ§¡¢½Å±¾µÈ¡£
+> æ ¸å¿ƒç›®æ ‡ï¼šé€šè¿‡å®ç°ç®€å•Demoæ¥æ•´åˆç°ä»£ OpenGL æ¸²æŸ“æµç¨‹ï¼ŒåŒ…æ‹¬æ¸²æŸ“æŠ½è±¡ã€2D æ‰¹æ¸²æŸ“ã€FBOã€å…‰ç…§ã€åå¤„ç†ã€ç²’å­ç‰¹æ•ˆã€è„šæœ¬ç­‰ã€‚
 
 ---
 
-### ÄÚÈİÑİÊ¾
+## å†…å®¹æ¼”ç¤º
 
 
+
+https://github.com/user-attachments/assets/2473dd1a-5b34-441e-bd5e-eb17a5bc7249
+
+
+
+
+###  å½“å‰æ”¯æŒæ•ˆæœ
+
+- 2D æ¸²æŸ“ï¼šç²¾çµç»˜åˆ¶ä¸æ‰¹æ¸²æŸ“ï¼Œçº¹ç†ä¸ç²¾çµè¡¨åˆ‡åˆ†
+- ç¦»å±æ¸²æŸ“ä¸åå¤„ç†ï¼šåŸºäº FBO çš„æ•ˆæœé“¾ï¼Œæ”¯æŒåŸºç¡€è‰²å½©è°ƒèŠ‚ã€é›¾ã€æš—è§’ã€é›¨æ»´å åŠ 
+- 2D å…‰ç…§ï¼šç‚¹å…‰æºä¸èšå…‰ç¯
+- å¤©æ°”ç³»ç»Ÿï¼šç²’å­é›¨ä¸æº…å°„ï¼Œæ”¯æŒé¢„è®¾é…ç½®
+- ç®€å•çš„2D ç‰©ç†ä¸äº¤äº’
+
+### æ¡†æ¶å±‚èƒ½åŠ›
+
+- åº”ç”¨æ¡†æ¶ï¼š`Application / Layer / LayerStack`
+- çª—å£ä¸è¾“å…¥ï¼šç›®å‰åªæ”¯æŒWindows å¹³å°çš„çª—å£ã€é”®é¼ è¾“å…¥ã€äº‹ä»¶ç³»ç»Ÿ
+- ECS/åœºæ™¯ï¼šåŸºäº`entt`å°è£…ECSï¼Œé»˜è®¤æ”¯æŒç»„ä»¶ï¼šTag/Transform/Sprite/Camera/Animation/LuaScript
+- 2D ç‰©ç†ï¼šåŸºäº`Box2D`å°è£…ï¼Œæ”¯æŒç‰©ç†æ•ˆæœ
+- TileMapï¼šé¢„è®¾åŸºç¡€çš„åœ°å›¾è§£ææ¡†æ¶ï¼Œæ”¯æŒæŒ‰ç…§æ ¼å¼åŒºåˆ†ä¸åŒçš„è§£ææ–¹å¼
+- Lua è„šæœ¬ï¼šé€šè¿‡ `sol2`æ”¯æŒLuaè„šæœ¬åŠŸèƒ½ï¼Œè„šæœ¬é€šè¿‡ï¼ˆ`OnCreate`ã€`OnUpdate`ã€`OnDestroy`ã€`OnCollisionEnter`ç­‰æ–¹æ³•ï¼Œæ¶µç›–å®ä½“çš„ç”Ÿå‘½å‘¨æœŸå’Œç¢°æ’
 
 ---
 
-
-
-###  µ±Ç°Ö§³ÖĞ§¹û
-
-- 2D äÖÈ¾£º¾«Áé»æÖÆÓëÅúäÖÈ¾£¬ÎÆÀíÓë¾«Áé±íÇĞ·Ö
-- ÀëÆÁäÖÈ¾Óëºó´¦Àí£º»ùÓÚ FBO µÄĞ§¹ûÁ´£¬Ö§³Ö»ù´¡É«²Êµ÷½Ú¡¢Îí¡¢°µ½Ç¡¢ÓêµÎµş¼Ó
-- 2D ¹âÕÕ£ºµã¹âÔ´Óë¾Û¹âµÆ
-- ÌìÆøÏµÍ³£ºÁ£×ÓÓêÓë½¦Éä£¬Ö§³ÖÔ¤ÉèÅäÖÃ
-- ¼òµ¥µÄ2D ÎïÀíÓë½»»¥
-
-### ¿ò¼Ü²ãÄÜÁ¦
-
-- Ó¦ÓÃ¿ò¼Ü£º`Application / Layer / LayerStack`
-- ´°¿ÚÓëÊäÈë£ºÄ¿Ç°Ö»Ö§³ÖWindows Æ½Ì¨µÄ´°¿Ú¡¢¼üÊóÊäÈë¡¢ÊÂ¼şÏµÍ³
-- ECS/³¡¾°£º»ùÓÚ`entt`·â×°ECS£¬Ä¬ÈÏÖ§³Ö×é¼ş£ºTag/Transform/Sprite/Camera/Animation/LuaScript
-- 2D ÎïÀí£º»ùÓÚ`Box2D`·â×°£¬Ö§³ÖÎïÀíĞ§¹û
-- TileMap£ºÔ¤Éè»ù´¡µÄµØÍ¼½âÎö¿ò¼Ü£¬Ö§³Ö°´ÕÕ¸ñÊ½Çø·Ö²»Í¬µÄ½âÎö·½Ê½
-- Lua ½Å±¾£ºÍ¨¹ı `sol2`Ö§³ÖLua½Å±¾¹¦ÄÜ£¬½Å±¾Í¨¹ı£¨`OnCreate`¡¢`OnUpdate`¡¢`OnDestroy`¡¢`OnCollisionEnter`µÈ·½·¨£¬º­¸ÇÊµÌåµÄÉúÃüÖÜÆÚºÍÅö×²
-
----
-
-### Ä¿Â¼½á¹¹
+### ç›®å½•ç»“æ„
 
 ```
 Yuicy/
-  Yuicy/                 # ¾²Ì¬¿â
+  Yuicy/                 # é™æ€åº“
     src/
       Yuicy/Core/        # Application/Layer/Log/Assert
       Yuicy/Renderer/    # Renderer2D/Shader/Texture/Framebuffer
       Yuicy/Scene/       # Scene/Entity/Components
-      Yuicy/Scripting/   # Lua ÒıÇæÓë°ó¶¨
-      Yuicy/Physics/     # Box2D ·â×°
-      Yuicy/TileMap/     # TileMap½âÎö
-      Yuicy/Effects/     # Weather/Lighting2D/PostProcessingµÈ¶îÍâĞ§¹û
-      Platform/          # OpenGL + Windows Æ½Ì¨¸ôÀë
+      Yuicy/Scripting/   # Lua å¼•æ“ä¸ç»‘å®š
+      Yuicy/Physics/     # Box2D å°è£…
+      Yuicy/TileMap/     # TileMapè§£æ
+      Yuicy/Effects/     # Weather/Lighting2D/PostProcessingç­‰é¢å¤–æ•ˆæœ
+      Platform/          # OpenGL + Windows å¹³å°éš”ç¦»
       
-    thirdparty/          # µÚÈı·½ÒÀÀµ
+    thirdparty/          # ç¬¬ä¸‰æ–¹ä¾èµ–
 
-  TinyDungeon/           # DemoÕ¹Ê¾£¨ÄÚÈİÇı¶¯£ºµØÍ¼/½Å±¾/µĞÈË/Ğ§¹û£©
+  TinyDungeon/           # Demoå±•ç¤ºï¼ˆå†…å®¹é©±åŠ¨ï¼šåœ°å›¾/è„šæœ¬/æ•Œäºº/æ•ˆæœï¼‰
     src/
-    assets/				# µØÍ¼¡¢ÈËÎï¡¢½Å±¾×ÊÔ´
+    assets/				# åœ°å›¾ã€äººç‰©ã€è„šæœ¬èµ„æº
 
-  Sandbox/                # ¹¦ÄÜÁÙÊ±ÑéÖ¤
+  Sandbox/                # åŠŸèƒ½ä¸´æ—¶éªŒè¯
   
-  premake5.lua            # ×Ü¹¤³ÌÉú³É½Å±¾
-  GenerateProject.bat     # Ò»¼üÉú³É VS2022 ¹¤³Ì
+  premake5.lua            # æ€»å·¥ç¨‹ç”Ÿæˆè„šæœ¬
+  GenerateProject.bat     # ä¸€é”®ç”Ÿæˆ VS2022 å·¥ç¨‹
   premake5.exe
 ```
 
@@ -73,62 +74,70 @@ Yuicy/
 
 ---
 
-## ¹¹½¨ÓëÔËĞĞ£¨Windows£©
+## æ„å»ºä¸è¿è¡Œï¼ˆWindowsï¼‰
 
-### »·¾³ÒªÇó
+### ç¯å¢ƒè¦æ±‚
 
 - Windows
-- Visual Studio 2022£¨`GenerateProject.bat` Ä¬ÈÏÉú³É vs2022 ¹¤³Ì£©
-- C++20 ¹¤¾ßÁ´ + Windows SDK
+- Visual Studio 2022ï¼ˆ`GenerateProject.bat` é»˜è®¤ç”Ÿæˆ vs2022 å·¥ç¨‹ï¼‰
+- C++20 å·¥å…·é“¾ + Windows SDK
 
-### À­È¡´úÂë£¨ÖØÒª£º°üº¬×ÓÄ£¿é£©
+### æ‹‰å–ä»£ç ï¼ˆé‡è¦ï¼šåŒ…å«å­æ¨¡å—ï¼‰
 
 ```bash
 git clone --recursive https://github.com/SSmallOrange/Yuicy
 ```
 
-Èç¹ûÒÑ clone Î´´ø×ÓÄ£¿é£º
+å¦‚æœå·² clone æœªå¸¦å­æ¨¡å—ï¼š
 
 ```bash
 git submodule update --init --recursive
 ```
 
-### Éú³É VS ¹¤³Ì
+### ç”Ÿæˆ VS å·¥ç¨‹
 
-Ë«»÷ÔËĞĞ£º
+åŒå‡»è¿è¡Œï¼š
 
 ```bat
 GenerateProject.bat
 ```
 
-»òÊÖ¶¯Ö´ĞĞ£º
+æˆ–æ‰‹åŠ¨æ‰§è¡Œï¼š
 
 ```bat
 premake5.exe vs2022
 ```
 
-### ÔËĞĞ
+### è¿è¡Œ
 
-1. ´ò¿ªÉú³ÉµÄ `.sln`
-2. Ä¬ÈÏÒÔ `TinyDungeon` ×÷ÎªÆô¶¯ÏîÄ¿
-3. ±àÒë²¢ÔËĞĞ
+1. æ‰“å¼€ç”Ÿæˆçš„ `.sln`
+2. é»˜è®¤ä»¥ `TinyDungeon` ä½œä¸ºå¯åŠ¨é¡¹ç›®
+3. ç¼–è¯‘å¹¶è¿è¡Œ
 
 ---
 
-## ÒÀÀµÓëµÚÈı·½
+## ä¾èµ–ä¸ç¬¬ä¸‰æ–¹
 
-ÒÀÀµÓÉ¸ùÄ¿Â¼ `premake5.lua` Í³Ò»¹ÜÀí£¬¼¯ÖĞÔÚ `Yuicy/thirdparty/`¡£
+ä¾èµ–ç”±æ ¹ç›®å½• `premake5.lua` ç»Ÿä¸€ç®¡ç†ï¼Œé›†ä¸­åœ¨ `Yuicy/thirdparty/`ã€‚
 
-- GLFW£¨×ÓÄ£¿é£©
-- GLAD£¨²Ö¿âÄÚ´øÔ´Âë£©
-- ImGui£¨²Ö¿âÄÚ´øÔ´Âë£©
-- Box2D£¨×ÓÄ£¿é£©
-- Lua£¨²Ö¿âÄÚ´øÔ´Âë£©
-- sol2£¨×ÓÄ£¿é£¬Lua °ó¶¨£©
-- glm£¨×ÓÄ£¿é£©
-- stb_image£¨²Ö¿âÄÚ´øÔ´Âë£©
-- EnTT£¨²Ö¿âÄÚ´øÔ´Âë£¬ECS£©
-- spdlog£¨×ÓÄ£¿é£¬ÈÕÖ¾£©
+- GLFWï¼ˆå­æ¨¡å—ï¼‰
+- GLADï¼ˆä»“åº“å†…å¸¦æºç ï¼‰
+- ImGuiï¼ˆä»“åº“å†…å¸¦æºç ï¼‰
+- Box2Dï¼ˆå­æ¨¡å—ï¼‰
+- Luaï¼ˆä»“åº“å†…å¸¦æºç ï¼‰
+- sol2ï¼ˆå­æ¨¡å—ï¼ŒLua ç»‘å®šï¼‰
+- glmï¼ˆå­æ¨¡å—ï¼‰
+- stb_imageï¼ˆä»“åº“å†…å¸¦æºç ï¼‰
+- EnTTï¼ˆä»“åº“å†…å¸¦æºç ï¼ŒECSï¼‰
+- spdlogï¼ˆå­æ¨¡å—ï¼Œæ—¥å¿—ï¼‰
+
+---
+## TODO
+
+- å¯¹ä¸‰æ–¹åº“çš„äºŒæ¬¡å°è£…ï¼Œé¿å…æ¥å£æš´æ¼
+- æ”¯æŒæ›´å¤šçš„2DåŠŸèƒ½
+- æ‹“å±•3DåŠŸèƒ½
+- æ”¯æŒVulkan
 
 ---
 
