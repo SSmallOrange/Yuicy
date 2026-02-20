@@ -10,34 +10,23 @@ namespace Yuicy {
 
 	enum class WeatherType : uint8_t
 	{
-		None = 0,		// 无天气
-		Rain,			// 雨天
-		Snow,			// 雪天
-		Storm,			// 暴风雨
-		Fog,			// 雾天
-		Drizzle,        // 毛毛雨
-		Blizzard,       // 暴风雪
-		Sandstorm,      // 沙尘暴
-		Leaves,         // 落叶
-		Fireflies,      // 萤火虫
-		Custom			// 自定义
+		None = 0,
+		Rain,
+		Custom
 	};
 
 	enum class WeatherIntensity : uint8_t
 	{
-		Light = 0,      // 轻微
-		Normal,         // 正常
-		Heavy,          // 强烈
-		Extreme         // 极端
+		Light = 0,
+		Normal,
+		Heavy,
+		Extreme
 	};
 
 	enum class ParticleMotion : uint8_t
 	{
-		Linear = 0,     // 直线下落
-		Swaying,        // 左右飘动
-		Spiral,         // 螺旋运动
-		Random,         // 随机飘动
-		Rising          // 向上飘动
+		Linear = 0,
+		Swaying
 	};
 
 	struct WeatherParticleConfig

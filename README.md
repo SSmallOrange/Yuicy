@@ -81,7 +81,7 @@ Yuicy/
 - Visual Studio 2022（`GenerateProject.bat` 默认生成 vs2022 工程）
 - C++20 工具链 + Windows SDK
 
-### 拉取代码（重要：包含子模块）
+### 构建
 
 ```bash
 git clone --recursive https://github.com/SSmallOrange/Yuicy
@@ -93,7 +93,7 @@ git clone --recursive https://github.com/SSmallOrange/Yuicy
 git submodule update --init --recursive
 ```
 
-### 生成 VS 工程
+### 生成解决方案
 
 双击运行：
 
@@ -119,16 +119,16 @@ premake5.exe vs2022
 
 依赖由根目录 `premake5.lua` 统一管理，集中在 `Yuicy/thirdparty/`。
 
-- GLFW（子模块）
-- GLAD（仓库内带源码）
-- ImGui（仓库内带源码）
-- Box2D（子模块）
-- Lua（仓库内带源码）
-- sol2（子模块，Lua 绑定）
-- glm（子模块）
-- stb_image（仓库内带源码）
-- EnTT（仓库内带源码，ECS）
-- spdlog（子模块，日志）
+- GLFW
+- GLAD
+- ImGui
+- Box2D
+- Lua
+- sol2
+- glm
+- stb_image
+- EnTT
+- spdlog
 
 ---
 

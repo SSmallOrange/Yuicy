@@ -46,4 +46,15 @@ namespace Yuicy {
 		glBindTexture(GL_TEXTURE_2D, 0);  // 解绑当前使用的2D纹理（即绑定到默认的纹理slot）
 	}
 
+	void OpenGLRendererAPI::DrawArrays(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
+	{
+		vertexArray->Bind();
+		glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+	}
+
+	void OpenGLRendererAPI::BindDefaultFramebuffer()
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
 }

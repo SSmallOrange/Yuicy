@@ -24,23 +24,10 @@ namespace Yuicy {
 		// 获取所有已注册预设的名称
 		static std::vector<std::string> GetAllPresetNames();
 
-		// 雨天系列
 		static WeatherConfig LightRain();
 		static WeatherConfig Rain();
 		static WeatherConfig HeavyRain();
 		static WeatherConfig Storm();
-
-		// 雪天系列
-		static WeatherConfig LightSnow();
-		static WeatherConfig Snow();
-		static WeatherConfig HeavySnow();
-		static WeatherConfig Blizzard();
-
-		// 特殊效果
-		static WeatherConfig Drizzle();
-		static WeatherConfig Sandstorm();
-		static WeatherConfig FallingLeaves();
-		static WeatherConfig Fireflies();
 
 	private:
 		// 内置预设初始化

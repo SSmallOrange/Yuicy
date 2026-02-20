@@ -3,10 +3,11 @@
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Timestep.h"
 #include "Yuicy/Effects/PostProcessTypes.h"
-#include "Yuicy/Renderer/Shader.h"
-#include "Yuicy/Renderer/VertexArray.h"
+#include "Yuicy/Effects/PostProcessPipeline.h"
 #include "Yuicy/Renderer/Framebuffer.h"
-#include "Yuicy/Renderer/PostProcessPass.h"
+#include "Yuicy/Renderer/IRaindropsPass.h"
+#include "Yuicy/Renderer/IVignettePass.h"
+#include "Yuicy/Renderer/ILightingComposePass.h"
 
 #include <string>
 #include <unordered_map>
@@ -27,8 +28,9 @@ namespace Yuicy {
 		void OnUpdate(Timestep ts);
 		void Render(const Ref<Framebuffer>& framebuffer);
 
+		void Resize(uint32_t width, uint32_t height);
+
 	public:
-		// Config
 		void SetConfig(const PostProcessConfig& config);
 		PostProcessConfig& GetConfig() { return m_finalConfig; }
 		const PostProcessConfig& GetConfig() const { return m_finalConfig; }
@@ -42,20 +44,7 @@ namespace Yuicy {
 		void ClearAllEffects();
 
 	public:
-		void TriggerFlash(float intensity = 0.8f, const glm::vec3& color = { 1.0f, 1.0f, 1.0f }, float duration = 0.1f);
-
-		// 渐变到目标配置
 		void FadeTo(const PostProcessConfig& target, float duration = 1.0f);
-
-	public:
-		void SetAmbientTint(const glm::vec4& tint);
-		void SetBrightness(float brightness);
-		void SetContrast(float contrast);
-		void SetSaturation(float saturation);
-
-		void SetFogEnabled(bool enabled);
-		void SetFogColor(const glm::vec4& color);
-		void SetFogDensity(float density);
 
 		void SetVignetteEnabled(bool enabled);
 		void SetVignetteIntensity(float intensity);
@@ -64,13 +53,21 @@ namespace Yuicy {
 		void SetRaindropsEnabled(bool enabled);
 		void SetRaindropsIntensity(float intensity);
 
-	private:
-		void MergeEffects();  // 合并所有效果层到 m_finalConfig
+		void SetLightingEnabled(bool enabled);
+		void SetLightMapTextureID(uint32_t textureID);
 
 	private:
-		Ref<PostProcessPass> m_renderPass;
+		void MergeEffects();
+		void SyncConfigToPasses();
 
-		PostProcessConfig m_finalConfig;		// 最终后期配置
+	private:
+		Ref<PostProcessPipeline> m_pipeline;
+
+		IRaindropsPass* m_raindropsPass = nullptr;
+		IVignettePass* m_vignettePass = nullptr;
+		ILightingComposePass* m_lightingComposePass = nullptr;
+
+		PostProcessConfig m_finalConfig;
 		struct EffectLayer
 		{
 			PostProcessConfig config;
@@ -78,14 +75,6 @@ namespace Yuicy {
 		};
 		std::unordered_map<std::string, EffectLayer> m_effectLayers;
 
-		// 闪光效果状态
-		bool m_flashActive = false;
-		float m_flashTimer = 0.0f;
-		float m_flashDuration = 0.1f;
-		float m_flashStartIntensity = 0.0f;
-		glm::vec3 m_flashColor = { 1.0f, 1.0f, 1.0f };
-
-		// 渐变效果状态o
 		bool m_fadeActive = false;
 		float m_fadeTimer = 0.0f;
 		float m_fadeDuration = 1.0f;

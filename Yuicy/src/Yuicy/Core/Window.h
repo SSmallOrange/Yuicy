@@ -12,7 +12,7 @@ namespace Yuicy {
 		std::string Title;
 		uint32_t Width;
 		uint32_t Height;
-		bool borderlessWindow = true;
+		bool borderlessWindow = false;
 
 		WindowProps(const std::string& title = "Yuicy Engine",
 			        uint32_t width = 1600,

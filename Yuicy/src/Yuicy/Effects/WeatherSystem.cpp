@@ -206,47 +206,14 @@ namespace Yuicy {
 		switch (config.motionType)
 		{
 		case ParticleMotion::Swaying:
-			// 左右飘动（用于雪花、落叶）
 		{
 			float sway = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
 			particle.position.x += sway;
 		}
 		break;
 
-		case ParticleMotion::Spiral:
-			// 螺旋运动
-		{
-			float spiralX = std::cos(time * config.motionFrequency) * config.motionAmplitude * dt;
-			float spiralY = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt * 0.5f;
-			particle.position.x += spiralX;
-			particle.position.y += spiralY;
-		}
-		break;
-
-		case ParticleMotion::Random:
-			// 随机飘动（用于萤火虫、沙尘）
-		{
-			// 使用柏林噪声的简化版本
-			float noiseX = std::sin(time * config.motionFrequency + particle.phaseOffset * 10.0f);
-			float noiseY = std::cos(time * config.motionFrequency * 0.7f + particle.phaseOffset * 7.0f);
-			particle.position.x += noiseX * config.motionAmplitude * dt;
-			particle.position.y += noiseY * config.motionAmplitude * dt * 0.5f;
-		}
-		break;
-
-		case ParticleMotion::Rising:
-			// 向上飘动（用于火花、萤火虫）
-		{
-			float rise = std::sin(time * config.motionFrequency) * config.motionAmplitude * dt;
-			particle.position.x += rise;
-			// 减弱下落速度
-			particle.velocity.y *= 0.995f;
-		}
-		break;
-
 		case ParticleMotion::Linear:
 		default:
-			// 直线运动，无额外处理
 			break;
 		}
 	}
@@ -323,14 +290,6 @@ namespace Yuicy {
 		float spawnY = cameraPos.y + viewportSize.y * m_currentConfig.particles.spawnHeightOffset;
 		float spawnXMin = cameraPos.x - spawnWidth * 0.5f;
 		float spawnXMax = cameraPos.x + spawnWidth * 0.5f;
-
-		float spawnYMin = spawnY;
-		float spawnYMax = spawnY;
-		if (m_currentConfig.type == WeatherType::Fireflies)
-		{
-			spawnYMin = cameraPos.y - viewportSize.y * 0.3f;
-			spawnYMax = cameraPos.y + viewportSize.y * 0.3f;
-		}
 
 		// 生成累积的粒子
 		while (m_spawnAccumulator >= 1.0f)

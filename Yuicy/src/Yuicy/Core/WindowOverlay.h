@@ -17,7 +17,7 @@ namespace Yuicy {
 		float buttonSize = 20.0f;
 		float buttonPadding = 8.0f;
 
-		// 按钮纹理（可选，如果为null则回退到文本）
+		// 按钮纹理
 		std::string closeButtonTexture = "";
 		std::string minimizeButtonTexture = "";
 		std::string maximizeButtonTexture = "";

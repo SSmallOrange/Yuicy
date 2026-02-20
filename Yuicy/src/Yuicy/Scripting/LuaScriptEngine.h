@@ -20,7 +20,9 @@ namespace Yuicy {
 
 		static sol::state& GetState() { return *s_luaState; }
 
+		// 加载 Lua 脚本，不创建实例
 		static bool LoadScript(const std::string& filepath);
+		// 复制Lua脚本实例
 		static sol::table CreateScriptInstance(const std::string& filepath);
 		static void ClearScriptCache();
 

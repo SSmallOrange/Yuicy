@@ -97,7 +97,9 @@ project "Sandbox"
         "Yuicy/thirdparty/GLAD/include",
         "Yuicy/thirdparty/glm",
         "Yuicy/thirdparty/entt/include",
-        "Yuicy/thirdparty/Box2D/box2d/include"
+        "Yuicy/thirdparty/Box2D/box2d/include",
+        "Yuicy/thirdparty/lua/src",
+        "Yuicy/thirdparty/sol2/include"
     }
     links { "Yuicy" }
     defines { "PLATFORM_WINDOWS" }

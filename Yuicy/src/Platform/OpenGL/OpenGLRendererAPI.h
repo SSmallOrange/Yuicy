@@ -15,6 +15,8 @@ namespace Yuicy {
 		virtual void SetDepthTest(bool enable) override;
 
 		virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount = 0) override;
+		virtual void DrawArrays(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;
+		virtual void BindDefaultFramebuffer() override;
 	};
 
 

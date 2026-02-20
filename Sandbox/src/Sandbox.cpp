@@ -1,7 +1,7 @@
 #include <Yuicy.h>
 
 #include "imgui/imgui.h"
-#include "Sandbox2D.h"
+#include "RaindropsTestLayer.h"
 
 #include <Yuicy/Core/EntryPoint.h>
 #include "Platform/OpenGL/OpenGLShader.h"
@@ -212,17 +212,15 @@ private:
 
 class Sandbox : public Yuicy::Application {
 public:
-	Sandbox() {
+	Sandbox() : Yuicy::Application(Yuicy::WindowProps("TinyDungeon", 960, 576, false)) {
 		// PushLayer(new ExampleLayer());
-		PushLayer(new Sandbox2D());
+		// PushLayer(new Sandbox2D());
+		PushLayer(new RaindropsTestLayer());
 	}
 	~Sandbox() = default;
 };
 
 Yuicy::Application* Yuicy::CreateApplication() {
-
-// 	YUICY_CORE_INFO("Hello World!!{}", 2);
-// 	YUICY_CORE_ERROR("Bad !!{}", "World");
 
 	return new Sandbox();
 }

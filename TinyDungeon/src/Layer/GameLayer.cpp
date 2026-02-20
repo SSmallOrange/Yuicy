@@ -194,9 +194,8 @@ namespace TinyDungeon {
 		Yuicy::RenderCommand::SetClearColor({ 0, 0, 0, 1 });
 		Yuicy::RenderCommand::Clear();
 
-		auto& ppconfig = m_postProcessing.GetConfig();
-		ppconfig.lightingEnabled = m_lighting->IsEnabled();
-		ppconfig.lightMapTextureID = m_lighting->GetLightMapTextureID();
+		m_postProcessing.SetLightingEnabled(m_lighting->IsEnabled());
+		m_postProcessing.SetLightMapTextureID(m_lighting->GetLightMapTextureID());
 
 		m_postProcessing.Render(m_framebuffer);
 	}
@@ -205,37 +204,6 @@ namespace TinyDungeon {
 	{
 		if (m_windowOverlay)
 			m_windowOverlay->OnImGuiRender();
-
-// 		ImGui::Begin("TinyDungeon Debug");
-// 
-// 		auto stats = Yuicy::Renderer2D::GetStats();
-// 		ImGui::Text("Draw Calls: %d | Quads: %d | FPS: %.1f", stats.DrawCalls, stats.QuadCount, ImGui::GetIO().Framerate);
-// 
-// 		// 相机、玩家位置
-// 		ImGui::Separator();
-// 		if (m_playerEntity)
-// 		{
-// 			auto& pt = m_playerEntity.GetComponent<Yuicy::TransformComponent>();
-// 			ImGui::Text("Player: (%.2f, %.2f)", pt.Translation.x, pt.Translation.y);
-// 		}
-// 		if (m_cameraEntity)
-// 		{
-// 			auto& ct = m_cameraEntity.GetComponent<Yuicy::TransformComponent>();
-// 			ImGui::Text("Camera: (%.2f, %.2f) | Zoom: %.1f", ct.Translation.x, ct.Translation.y, m_zoomLevel);
-// 		}
-// 
-// 		// 雨滴颜色调整
-// 		if (m_weatherSystem.IsActive())
-// 		{
-// 			ImGui::Separator();
-// 			ImGui::Text("Rain Particles:");
-// 			auto& weatherConfig = m_weatherSystem.getConfig();
-// 			ImGui::SliderFloat("Particle Alpha Start", &weatherConfig.particles.colorStart.a, 0.0f, 1.0f);
-// 			ImGui::SliderFloat("Particle Alpha End", &weatherConfig.particles.colorEnd.a, 0.0f, 1.0f);
-// 			ImGui::ColorEdit3("Particle Color", &weatherConfig.particles.colorStart.r);
-// 		}
-// 
-// 		ImGui::End();
 	}
 
 	void GameLayer::OnEvent(Yuicy::Event& e)
@@ -348,6 +316,7 @@ namespace TinyDungeon {
 		m_scene->OnViewportResize(e.GetWidth(), e.GetHeight());
 		m_framebuffer->Resize(e.GetWidth(), e.GetHeight());
 		m_lighting->Resize(e.GetWidth(), e.GetHeight());
+		m_postProcessing.Resize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
 

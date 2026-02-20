@@ -7,33 +7,19 @@ namespace Yuicy {
 
 	struct PostProcessConfig
 	{
-		glm::vec4 ambientTint = { 1.0f, 1.0f, 1.0f, 1.0f };  // 环境色
-		float brightness = 1.0f;		// 亮度
-		float contrast = 1.0f;			// 对比度
-		float saturation = 1.0f;		// 饱和度
+		bool vignetteEnabled = false;
+		float vignetteIntensity = 0.0f;
+		float vignetteRadius = 0.8f;
 
-		bool fogEnabled = false;
-		glm::vec4 fogColor = { 0.7f, 0.75f, 0.8f, 1.0f };	// 雾气颜色
-		float fogDensity = 0.0f;							// 雾气密度
+		bool raindropsEnabled = false;
+		float raindropsIntensity = 0.5f;
+		float raindropsTime = 0.0f;
 
-		bool vignetteEnabled = false;		// 四周变暗
-		float vignetteIntensity = 0.0f;		// 强度
-		float vignetteRadius = 0.8f;		// 半径
-
-		bool flashEnabled = false;						// 闪光
-		float flashIntensity = 0.0f;					// 强度
-		glm::vec3 flashColor = { 1.0f, 1.0f, 1.0f };	// 颜色
-
-		bool raindropsEnabled = false;			// 屏幕雨滴
-		float raindropsIntensity = 0.5f;		// 雨滴强度 0~1
-		float raindropsTime = 0.0f;				// 时间
-
-		// 2D Lighting
-		bool lightingEnabled = false;			// 开启2D灯光
+		bool lightingEnabled = false;
 		uint32_t lightMapTextureID = 0;
 
 		std::string sourceName = "Default";
-		int priority = 0;                     // 优先级
+		int priority = 0;
 	};
 
 	enum class PostProcessBlendMode

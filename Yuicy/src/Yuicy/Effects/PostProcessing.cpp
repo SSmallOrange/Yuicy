@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "PostProcessing.h"
+#include "Yuicy/Core/Application.h"
+#include "Yuicy/Effects/PostProcessing.h"
 
 #include <algorithm>
 
@@ -14,20 +15,45 @@ namespace Yuicy {
 		if (m_initialized)
 			return;
 
-		m_renderPass = PostProcessPass::Create();
-		m_renderPass->Init();
+		auto& window = Application::Get().GetWindow();
+		m_pipeline = CreateRef<PostProcessPipeline>();
+		m_pipeline->Init(window.GetWidth(), window.GetHeight());
+
+		auto raindrops = IRaindropsPass::Create();
+		auto raindropsAsPass = std::dynamic_pointer_cast<IPostProcessPass>(raindrops);
+		m_pipeline->AddPass(raindropsAsPass);
+		raindropsAsPass->Init();
+		m_raindropsPass = raindrops.get();
+
+		auto vignette = IVignettePass::Create();
+		auto vignetteAsPass = std::dynamic_pointer_cast<IPostProcessPass>(vignette);
+		m_pipeline->AddPass(vignetteAsPass);
+		vignetteAsPass->Init();
+		m_vignettePass = vignette.get();
+
+		auto lightingCompose = ILightingComposePass::Create();
+		auto lightingComposeAsPass = std::dynamic_pointer_cast<IPostProcessPass>(lightingCompose);
+		m_pipeline->AddPass(lightingComposeAsPass);
+		lightingComposeAsPass->Init();
+		m_lightingComposePass = lightingCompose.get();
+
 		m_initialized = true;
 
-		YUICY_CORE_INFO("PostProcessing: Initialized");
+		YUICY_CORE_INFO("PostProcessing: Initialized (Multi-Pass Pipeline)");
 	}
 
 	void PostProcessing::Shutdown()
 	{
-		if (m_renderPass)
+		if (m_pipeline)
 		{
-			m_renderPass->Shutdown();
-			m_renderPass = nullptr;
+			m_pipeline->Shutdown();
+			m_pipeline = nullptr;
 		}
+
+		m_raindropsPass = nullptr;
+		m_vignettePass = nullptr;
+		m_lightingComposePass = nullptr;
+
 		m_effectLayers.clear();
 		m_initialized = false;
 	}
@@ -41,8 +67,13 @@ namespace Yuicy {
 	{
 		m_finalConfig = PostProcessConfig();
 		m_effectLayers.clear();
-		m_flashActive = false;
 		m_fadeActive = false;
+	}
+
+	void PostProcessing::Resize(uint32_t width, uint32_t height)
+	{
+		if (m_pipeline)
+			m_pipeline->Resize(width, height);
 	}
 
 	void PostProcessing::PushEffect(const std::string& name, const PostProcessConfig& config, int priority)
@@ -95,7 +126,6 @@ namespace Yuicy {
 			sortedLayers.push_back(&layer);
 		}
 
-		// 优先级排序
 		std::sort(sortedLayers.begin(), sortedLayers.end(),
 			[](const EffectLayer* a, const EffectLayer* b) {
 				return a->priority < b->priority;
@@ -105,21 +135,6 @@ namespace Yuicy {
 		{
 			const auto& cfg = layer->config;
 
-			// 颜色效果
-			merged.ambientTint *= cfg.ambientTint;
-			merged.brightness *= cfg.brightness;
-			merged.contrast *= cfg.contrast;
-			merged.saturation *= cfg.saturation;
-
-			// 雾效（覆盖处理）
-			if (cfg.fogEnabled)
-			{
-				merged.fogEnabled = true;
-				merged.fogColor = cfg.fogColor;
-				merged.fogDensity = glm::max(merged.fogDensity, cfg.fogDensity);
-			}
-
-			// 暗角：取最大值
 			if (cfg.vignetteEnabled)
 			{
 				merged.vignetteEnabled = true;
@@ -127,15 +142,6 @@ namespace Yuicy {
 				merged.vignetteRadius = glm::min(merged.vignetteRadius, cfg.vignetteRadius);
 			}
 
-			// 闪光：取最大值
-			if (cfg.flashEnabled)
-			{
-				merged.flashEnabled = true;
-				merged.flashIntensity = glm::max(merged.flashIntensity, cfg.flashIntensity);
-				merged.flashColor = cfg.flashColor;
-			}
-
-			// 雨滴：取最大强度
 			if (cfg.raindropsEnabled)
 			{
 				merged.raindropsEnabled = true;
@@ -144,15 +150,6 @@ namespace Yuicy {
 		}
 
 		m_finalConfig = merged;
-	}
-
-	void PostProcessing::TriggerFlash(float intensity, const glm::vec3& color, float duration)
-	{
-		m_flashActive = true;
-		m_flashTimer = 0.0f;
-		m_flashDuration = duration;
-		m_flashStartIntensity = intensity;
-		m_flashColor = color;
 	}
 
 	void PostProcessing::FadeTo(const PostProcessConfig& target, float duration)
@@ -164,66 +161,31 @@ namespace Yuicy {
 		m_fadeTargetConfig = target;
 	}
 
-	void PostProcessing::SetAmbientTint(const glm::vec4& tint) { m_finalConfig.ambientTint = tint; }
-	void PostProcessing::SetBrightness(float brightness) { m_finalConfig.brightness = glm::clamp(brightness, 0.0f, 2.0f); }
-	void PostProcessing::SetContrast(float contrast) { m_finalConfig.contrast = glm::clamp(contrast, 0.5f, 1.5f); }
-	void PostProcessing::SetSaturation(float saturation) { m_finalConfig.saturation = glm::clamp(saturation, 0.0f, 2.0f); }
-	void PostProcessing::SetFogEnabled(bool enabled) { m_finalConfig.fogEnabled = enabled; }
-	void PostProcessing::SetFogColor(const glm::vec4& color) { m_finalConfig.fogColor = color; }
-	void PostProcessing::SetFogDensity(float density) { m_finalConfig.fogDensity = glm::clamp(density, 0.0f, 1.0f); }
 	void PostProcessing::SetVignetteEnabled(bool enabled) { m_finalConfig.vignetteEnabled = enabled; }
 	void PostProcessing::SetVignetteIntensity(float intensity) { m_finalConfig.vignetteIntensity = glm::clamp(intensity, 0.0f, 1.0f); }
 	void PostProcessing::SetVignetteRadius(float radius) { m_finalConfig.vignetteRadius = glm::clamp(radius, 0.0f, 1.0f); }
 	void PostProcessing::SetRaindropsEnabled(bool enabled) { m_finalConfig.raindropsEnabled = enabled; }
 	void PostProcessing::SetRaindropsIntensity(float intensity) { m_finalConfig.raindropsIntensity = glm::clamp(intensity, 0.0f, 1.0f); }
 
+	void PostProcessing::SetLightingEnabled(bool enabled) { m_finalConfig.lightingEnabled = enabled; }
+	void PostProcessing::SetLightMapTextureID(uint32_t textureID) { m_finalConfig.lightMapTextureID = textureID; }
+
 	void PostProcessing::OnUpdate(Timestep ts)
 	{
 		float dt = static_cast<float>(ts);
 
-		// 处理闪光衰减
-		if (m_flashActive)
-		{
-			m_flashTimer += dt;
-			float progress = m_flashTimer / m_flashDuration;
-
-			if (progress >= 1.0f)
-			{
-				m_flashActive = false;
-				m_finalConfig.flashEnabled = false;
-				m_finalConfig.flashIntensity = 0.0f;
-			}
-			else
-			{
-				// 快速衰减
-				float fadeOut = 1.0f - progress * progress;
-				m_finalConfig.flashEnabled = true;
-				m_finalConfig.flashIntensity = m_flashStartIntensity * fadeOut;
-				m_finalConfig.flashColor = m_flashColor;
-			}
-		}
-
-		// 累加雨滴时间
 		if (m_finalConfig.raindropsEnabled)
 		{
 			m_finalConfig.raindropsTime += dt;
 		}
 
-		// 处理渐变效果
 		if (m_fadeActive)
 		{
 			m_fadeTimer += dt;
 			float t = glm::clamp(m_fadeTimer / m_fadeDuration, 0.0f, 1.0f);
 
-			// 平滑插值
 			float smoothT = t * t * (3.0f - 2.0f * t);
 
-			// 插值所有参数
-			m_finalConfig.ambientTint = glm::mix(m_fadeStartConfig.ambientTint, m_fadeTargetConfig.ambientTint, smoothT);
-			m_finalConfig.brightness = glm::mix(m_fadeStartConfig.brightness, m_fadeTargetConfig.brightness, smoothT);
-			m_finalConfig.contrast = glm::mix(m_fadeStartConfig.contrast, m_fadeTargetConfig.contrast, smoothT);
-			m_finalConfig.saturation = glm::mix(m_fadeStartConfig.saturation, m_fadeTargetConfig.saturation, smoothT);
-			m_finalConfig.fogDensity = glm::mix(m_fadeStartConfig.fogDensity, m_fadeTargetConfig.fogDensity, smoothT);
 			m_finalConfig.vignetteIntensity = glm::mix(m_fadeStartConfig.vignetteIntensity, m_fadeTargetConfig.vignetteIntensity, smoothT);
 
 			if (t >= 1.0f)
@@ -234,14 +196,42 @@ namespace Yuicy {
 		}
 	}
 
+	void PostProcessing::SyncConfigToPasses()
+	{
+		if (!m_initialized)
+			return;
+
+		if (m_raindropsPass)
+		{
+			m_raindropsPass->SetEnabled(m_finalConfig.raindropsEnabled && m_finalConfig.raindropsIntensity > 0.0f);
+			m_raindropsPass->SetIntensity(m_finalConfig.raindropsIntensity);
+			m_raindropsPass->SetTime(m_finalConfig.raindropsTime);
+		}
+
+		if (m_vignettePass)
+		{
+			m_vignettePass->SetEnabled(m_finalConfig.vignetteEnabled && m_finalConfig.vignetteIntensity > 0.0f);
+			m_vignettePass->SetIntensity(m_finalConfig.vignetteIntensity);
+			m_vignettePass->SetRadius(m_finalConfig.vignetteRadius);
+		}
+
+		if (m_lightingComposePass)
+		{
+			m_lightingComposePass->SetEnabled(m_finalConfig.lightingEnabled && m_finalConfig.lightMapTextureID != 0);
+			m_lightingComposePass->SetLightMapTextureID(m_finalConfig.lightMapTextureID);
+		}
+	}
+
 	void PostProcessing::Render(const Ref<Framebuffer>& framebuffer)
 	{
-		if (!m_initialized || !m_renderPass)
+		if (!m_initialized || !m_pipeline)
 		{
 			YUICY_CORE_ERROR("PostProcessing: Not initialized!");
 			return;
 		}
 
-		m_renderPass->Execute(framebuffer, m_finalConfig);
+		SyncConfigToPasses();
+
+		m_pipeline->Execute(framebuffer->GetColorAttachmentRendererID(0));
 	}
 }

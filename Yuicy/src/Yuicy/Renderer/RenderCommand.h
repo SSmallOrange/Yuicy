@@ -37,6 +37,16 @@ namespace Yuicy {
 		{
 			s_RendererAPI->DrawIndexed(vertexArray, count);
 		}
+
+		inline static void DrawArrays(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
+		{
+			s_RendererAPI->DrawArrays(vertexArray, vertexCount);
+		}
+
+		inline static void BindDefaultFramebuffer()
+		{
+			s_RendererAPI->BindDefaultFramebuffer();
+		}
 	private:
 		static RendererAPI* s_RendererAPI;
 	};
