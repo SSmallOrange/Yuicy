@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/2473dd1a-5b34-441e-bd5e-eb17a5bc7249
 ###  当前支持效果
 
 - 2D 渲染：精灵绘制与批渲染，纹理与精灵表切分
-- 离屏渲染与后处理：基于 FBO 的效果链，支持基础色彩调节、雾、暗角、雨滴叠加
+- 离屏渲染与后处理：基于 FBO 的效果链，支持基础色彩调节、暗角、雨滴叠加
 - 2D 光照：点光源与聚光灯
 - 天气系统：粒子雨与溅射，支持预设配置
 - 简单的2D 物理与交互
@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/2473dd1a-5b34-441e-bd5e-eb17a5bc7249
 - 2D 物理：基于`Box2D`封装，支持物理效果
 - TileMap：预设基础的地图解析框架，支持按照格式区分不同的解析方式
 - Lua 脚本：通过 `sol2`支持Lua脚本功能，脚本通过（`OnCreate`、`OnUpdate`、`OnDestroy`、`OnCollisionEnter`等方法，涵盖实体的生命周期和碰撞
-
+- ...
 ---
 
 ### 目录结构
@@ -48,18 +48,18 @@ https://github.com/user-attachments/assets/2473dd1a-5b34-441e-bd5e-eb17a5bc7249
 Yuicy/
   Yuicy/                 # 静态库
     src/
-      Yuicy/Core/        # Application/Layer/Log/Assert
+      Yuicy/Core/        # Application/Layer/Log
       Yuicy/Renderer/    # Renderer2D/Shader/Texture/Framebuffer
       Yuicy/Scene/       # Scene/Entity/Components
       Yuicy/Scripting/   # Lua 引擎与绑定
       Yuicy/Physics/     # Box2D 封装
       Yuicy/TileMap/     # TileMap解析
-      Yuicy/Effects/     # Weather/Lighting2D/PostProcessing等额外效果
-      Platform/          # OpenGL + Windows 平台隔离
+      Yuicy/Effects/     # 后处理效果
+      Platform/          # OpenGL + Windows
       
     thirdparty/          # 第三方依赖
 
-  TinyDungeon/           # Demo展示（内容驱动：地图/脚本/敌人/效果）
+  TinyDungeon/           # Demo展示
     src/
     assets/				# 地图、人物、脚本资源
 
@@ -82,7 +82,7 @@ Yuicy/
 - Visual Studio 2022（`GenerateProject.bat` 默认生成 vs2022 工程）
 - C++20 工具链 + Windows SDK
 
-### 拉取代码（重要：包含子模块）
+### 代码拉取
 
 ```bash
 git clone --recursive https://github.com/SSmallOrange/Yuicy
@@ -120,16 +120,16 @@ premake5.exe vs2022
 
 依赖由根目录 `premake5.lua` 统一管理，集中在 `Yuicy/thirdparty/`。
 
-- GLFW（子模块）
-- GLAD（仓库内带源码）
-- ImGui（仓库内带源码）
-- Box2D（子模块）
-- Lua（仓库内带源码）
-- sol2（子模块，Lua 绑定）
-- glm（子模块）
-- stb_image（仓库内带源码）
-- EnTT（仓库内带源码，ECS）
-- spdlog（子模块，日志）
+- GLFW
+- GLAD
+- ImGui
+- Box2D
+- Lua
+- sol2
+- glm
+- stb_image
+- EnTT
+- spdlog
 
 ---
 ## TODO
