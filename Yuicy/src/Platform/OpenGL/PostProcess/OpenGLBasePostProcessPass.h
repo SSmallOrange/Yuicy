@@ -60,6 +60,7 @@ namespace Yuicy {
 		// 子类调用: 绘制全屏四边形
 		void DrawQuad()
 		{
+			// TODO 这里是否需要根据当前深度测试的开启状态来判断如何调整 DepthTest
 			RenderCommand::SetDepthTest(false);
 			RenderCommand::DrawArrays(m_sharedQuadVAO, 6);
 			RenderCommand::SetDepthTest(true);

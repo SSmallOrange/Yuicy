@@ -108,6 +108,7 @@ namespace Yuicy {
 			else
 			{
 				// 中间 Pass 渲染到 Ping-Pong FBO
+				// TODO 开启MSAA时，需要针对 MSAA 纹理做 Reslove 处理，否则后续流程无法正常采样
 				auto& targetFBO = usePing ? m_pingFBO : m_pongFBO;
 				activePasses[i]->Execute(currentInputTexture, targetFBO);
 

@@ -8,10 +8,6 @@
 
 namespace Yuicy {
 
-	TileMapLoader::TileMapLoader()
-	{
-	}
-
 	TileMapLoader& TileMapLoader::Get()
 	{
 		static TileMapLoader instance;

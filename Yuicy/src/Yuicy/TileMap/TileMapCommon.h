@@ -27,5 +27,12 @@ namespace Yuicy {
 	public:
 		virtual ~ITileMapBuilder() = default;
 		virtual void Build(ITileMapData* mapData, Scene* scene, std::vector<Entity>& outEntities) = 0;
+
+		// 是否合并相邻碰撞体
+		void SetColliderMerging(bool enabled) { m_MergeColliders = enabled; }
+		bool IsColliderMergingEnabled() const { return m_MergeColliders; }
+
+	protected:
+		bool m_MergeColliders = true;
 	};
 }

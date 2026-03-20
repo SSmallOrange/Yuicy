@@ -16,7 +16,6 @@ namespace Yuicy {
 	class TileMapLoader
 	{
 	public:
-		TileMapLoader();
 		~TileMapLoader() = default;
 
 		Ref<ITileMapData> Load(const std::filesystem::path& filePath);
@@ -30,6 +29,9 @@ namespace Yuicy {
 		}
 
 		static TileMapLoader& Get();
+
+	private:
+		TileMapLoader() = default;
 
 	private:
 		std::unordered_map<std::string, Ref<ITileMapParser>> m_parsers;  // 以拓展名区分解析器

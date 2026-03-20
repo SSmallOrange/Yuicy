@@ -56,7 +56,7 @@ namespace Yuicy {
 			{ ShaderDataType::Float2, "a_TexCoord" },
 			{ ShaderDataType::Float, "a_TexIndex" },
 			{ ShaderDataType::Float, "a_TilingFactor" }
-			});
+		});
 		s_Data.QuadVertexArray->AddVertexBuffer(s_Data.QuadVertexBuffer);
 
 		s_Data.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
@@ -283,8 +283,7 @@ namespace Yuicy {
 				FlushAndReset();
 
 			textureIndex = (float)s_Data.TextureSlotIndex;
-			s_Data.TextureSlots[s_Data.TextureSlotIndex] = texture;
-			s_Data.TextureSlotIndex++;
+			s_Data.TextureSlots[s_Data.TextureSlotIndex++] = texture;
 		}
 
 		// 计算纹理坐标（支持翻转）
