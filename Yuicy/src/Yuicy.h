@@ -2,6 +2,7 @@
 // Api For Other Application
 
 #include "Yuicy/Core/Log.h"
+#include "Yuicy/Core/UUID.h"
 #include "Yuicy/Core/Application.h"
 
 // Layer

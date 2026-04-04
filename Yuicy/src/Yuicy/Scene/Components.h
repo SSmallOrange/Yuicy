@@ -5,6 +5,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "Yuicy/Core/UUID.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/SubTexture.h"
 #include "Yuicy/Scene/SceneCamera.h"
@@ -15,6 +16,14 @@
 namespace Yuicy {
 
 	class ScriptableEntity;
+
+	struct IDComponent
+	{
+		UUID ID = 0;
+
+		IDComponent() = default;
+		IDComponent(const IDComponent&) = default;
+	};
 
 	struct TagComponent
 	{

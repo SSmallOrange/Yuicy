@@ -46,15 +46,26 @@ namespace Yuicy {
 
 	Entity Scene::CreateEntity(const std::string& name)
 	{
+		return CreateEntityWithUUID(UUID(), name);
+	}
+
+	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
+	{
 		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<IDComponent>().ID = uuid;
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Entity" : name;
+
+		m_EntityIDMap[uuid] = entity.m_EntityHandle;
 		return entity;
 	}
 
 	void Scene::DestroyEntity(Entity entity)
 	{
+		if (entity.HasComponent<IDComponent>())
+			m_EntityIDMap.erase(entity.GetComponent<IDComponent>().ID);
+
 		m_Registry.destroy(entity.m_EntityHandle);
 	}
 
@@ -520,6 +531,14 @@ namespace Yuicy {
 			if (tag.Tag == name)
 				return Entity{ entity, this };
 		}
+		return Entity{};
+	}
+
+	Entity Scene::FindEntityByUUID(UUID uuid)
+	{
+		auto it = m_EntityIDMap.find(uuid);
+		if (it != m_EntityIDMap.end())
+			return Entity{ it->second, this };
 		return Entity{};
 	}
 

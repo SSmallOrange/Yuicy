@@ -328,6 +328,9 @@ namespace Yuicy {
 				"IsValid", [](Entity& e) -> bool {
 					return (bool)e;
 				},
+				"GetUUID", [](Entity& e) -> uint64_t {
+					return (uint64_t)e.GetUUID();
+				},
 				// 添加组件
 				"AddSprite", [](Entity& e) -> SpriteRendererComponent& {
 					if (!e.HasComponent<SpriteRendererComponent>())
@@ -342,7 +345,8 @@ namespace Yuicy {
 			// Scene usertype
 			lua.new_usertype<Scene>("Scene",
 				sol::no_constructor,
-				"FindEntityByName", &Scene::FindEntityByName
+				"FindEntityByName", &Scene::FindEntityByName,
+				"FindEntityByUUID", &Scene::FindEntityByUUID
 			);
 
 			// Global Scene table with static-like functions
