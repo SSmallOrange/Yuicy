@@ -36,6 +36,17 @@ namespace Yuicy {
 		}
 	};
 
+	struct RelationshipComponent
+	{
+		UUID ParentHandle = 0;
+		std::vector<UUID> Children;
+
+		RelationshipComponent() = default;
+		RelationshipComponent(const RelationshipComponent&) = default;
+		RelationshipComponent(UUID parent)
+			: ParentHandle(parent) {}
+	};
+
 	struct TransformComponent
 	{
 		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
@@ -53,6 +64,25 @@ namespace Yuicy {
 			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
 
 			return glm::translate(glm::mat4(1.0f), Translation) * rotation * glm::scale(glm::mat4(1.0f), Scale);
+		}
+
+		void SetTransform(const glm::mat4& transform)
+		{
+			// 从矩阵中分解出平移、旋转、缩放
+			Translation = glm::vec3(transform[3]);
+
+			// 提取缩放（列向量长度）
+			Scale.x = glm::length(glm::vec3(transform[0]));
+			Scale.y = glm::length(glm::vec3(transform[1]));
+			Scale.z = glm::length(glm::vec3(transform[2]));
+
+			// 提取旋转矩阵（去掉缩放）
+			glm::mat3 rotMat(
+				glm::vec3(transform[0]) / Scale.x,
+				glm::vec3(transform[1]) / Scale.y,
+				glm::vec3(transform[2]) / Scale.z
+			);
+			Rotation = glm::eulerAngles(glm::quat_cast(rotMat));
 		}
 	};
 

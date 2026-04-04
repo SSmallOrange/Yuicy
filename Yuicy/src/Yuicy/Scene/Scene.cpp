@@ -46,7 +46,7 @@ namespace Yuicy {
 
 	Entity Scene::CreateEntity(const std::string& name)
 	{
-		return CreateEntityWithUUID(UUID(), name);
+		return CreateChildEntity({}, name);
 	}
 
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
@@ -56,17 +56,132 @@ namespace Yuicy {
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Entity" : name;
+		entity.AddComponent<RelationshipComponent>();
 
 		m_EntityIDMap[uuid] = entity.m_EntityHandle;
 		return entity;
 	}
 
+	Entity Scene::CreateChildEntity(Entity parent, const std::string& name)
+	{
+		Entity entity = CreateEntityWithUUID(UUID(), name);
+
+		if (parent)
+			entity.SetParent(parent);
+
+		return entity;
+	}
+
 	void Scene::DestroyEntity(Entity entity)
 	{
+		if (!entity)
+			return;
+
+		// 递归销毁子实体
+		if (entity.HasComponent<RelationshipComponent>())
+		{
+			auto children = entity.Children();
+			for (auto childId : children)
+			{
+				Entity child = FindEntityByUUID(childId);
+				if (child)
+					DestroyEntity(child);
+			}
+
+			// 移除自己
+			Entity parent = entity.GetParent();
+			if (parent)
+				parent.RemoveChild(entity);
+		}
+
+		// 从 UUID 映射中移除
 		if (entity.HasComponent<IDComponent>())
 			m_EntityIDMap.erase(entity.GetComponent<IDComponent>().ID);
 
 		m_Registry.destroy(entity.m_EntityHandle);
+	}
+
+	void Scene::ParentEntity(Entity entity, Entity parent)
+	{
+		if (parent.IsDescendantOf(entity))
+		{
+			UnparentEntity(parent);
+
+			Entity newParent = FindEntityByUUID(entity.GetParentUUID());
+			if (newParent)
+			{
+				UnparentEntity(entity);
+				ParentEntity(parent, newParent);
+			}
+		}
+		else
+		{
+			Entity previousParent = FindEntityByUUID(entity.GetParentUUID());
+			if (previousParent)
+				UnparentEntity(entity);
+		}
+
+		entity.SetParentUUID(parent.GetUUID());
+		parent.Children().push_back(entity.GetUUID());
+
+		ConvertToLocalSpace(entity);
+	}
+
+	void Scene::UnparentEntity(Entity entity, bool convertToWorldSpace)
+	{
+		Entity parent = FindEntityByUUID(entity.GetParentUUID());
+		if (!parent)
+			return;
+
+		auto& parentChildren = parent.Children();
+		parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), entity.GetUUID()), parentChildren.end());
+
+		if (convertToWorldSpace)
+			ConvertToWorldSpace(entity);
+
+		entity.SetParentUUID(0);
+	}
+
+	void Scene::ConvertToLocalSpace(Entity entity)
+	{
+		Entity parent = FindEntityByUUID(entity.GetParentUUID());
+		if (!parent)
+			return;
+
+		auto& transform = entity.Transform();
+		glm::mat4 parentTransform = GetWorldSpaceTransformMatrix(parent);
+		glm::mat4 localTransform = glm::inverse(parentTransform) * transform.GetTransform();
+		transform.SetTransform(localTransform);
+	}
+
+	void Scene::ConvertToWorldSpace(Entity entity)
+	{
+		Entity parent = FindEntityByUUID(entity.GetParentUUID());
+		if (!parent)
+			return;
+
+		glm::mat4 worldTransform = GetWorldSpaceTransformMatrix(entity);
+		auto& entityTransform = entity.Transform();
+		entityTransform.SetTransform(worldTransform);
+	}
+
+	glm::mat4 Scene::GetWorldSpaceTransformMatrix(Entity entity)
+	{
+		glm::mat4 transform(1.0f);
+
+		Entity parent = FindEntityByUUID(entity.GetParentUUID());
+		if (parent)
+			transform = GetWorldSpaceTransformMatrix(parent);
+
+		return transform * entity.Transform().GetTransform();
+	}
+
+	TransformComponent Scene::GetWorldSpaceTransform(Entity entity)
+	{
+		glm::mat4 transform = GetWorldSpaceTransformMatrix(entity);
+		TransformComponent transformComponent;
+		transformComponent.SetTransform(transform);
+		return transformComponent;
 	}
 
 	void Scene::InitializeScripts()
@@ -449,7 +564,7 @@ namespace Yuicy {
 				if (camera.Primary)
 				{
 					mainCamera = &camera.Camera;
-					cameraTransform = transform.GetTransform();
+					cameraTransform = GetWorldSpaceTransformMatrix({ entity, this });
 					break;
 				}
 			}
@@ -475,7 +590,7 @@ namespace Yuicy {
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-				renderQueue.push_back({ transform.GetTransform(), &sprite });
+				renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite });
 			}
 
 			std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {

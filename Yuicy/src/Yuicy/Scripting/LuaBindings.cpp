@@ -331,6 +331,22 @@ namespace Yuicy {
 				"GetUUID", [](Entity& e) -> uint64_t {
 					return (uint64_t)e.GetUUID();
 				},
+				// 父子关系
+				"GetParent", [](Entity& e) -> Entity {
+					return e.GetParent();
+				},
+				"SetParent", [](Entity& e, Entity parent) {
+					e.SetParent(parent);
+				},
+				"GetChildren", [](Entity& e) -> std::vector<UUID> {
+					return e.Children();
+				},
+				"IsAncestorOf", [](Entity& e, Entity other) -> bool {
+					return e.IsAncestorOf(other);
+				},
+				"IsDescendantOf", [](Entity& e, Entity other) -> bool {
+					return e.IsDescendantOf(other);
+				},
 				// 添加组件
 				"AddSprite", [](Entity& e) -> SpriteRendererComponent& {
 					if (!e.HasComponent<SpriteRendererComponent>())

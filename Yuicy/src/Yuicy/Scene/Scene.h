@@ -23,6 +23,7 @@ namespace Yuicy {
 
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
+		Entity CreateChildEntity(Entity parent, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
 		void OnRuntimeStart();
@@ -37,6 +38,15 @@ namespace Yuicy {
 		Entity FindEntityByName(const std::string& name);
 		Entity FindEntityByUUID(UUID uuid);
 
+		// 父子关系
+		void ParentEntity(Entity entity, Entity parent);
+		void UnparentEntity(Entity entity, bool convertToWorldSpace = true);
+
+		// 空间坐标转换
+		void ConvertToLocalSpace(Entity entity);
+		void ConvertToWorldSpace(Entity entity);
+		glm::mat4 GetWorldSpaceTransformMatrix(Entity entity);
+		TransformComponent GetWorldSpaceTransform(Entity entity);
 
 		// 物理系统
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
@@ -58,8 +68,6 @@ namespace Yuicy {
 		// 动画
 		void UpdateAnimations(Timestep ts);
 
-
-
 		void RenderScene();
 
 	private:
@@ -75,5 +83,6 @@ namespace Yuicy {
 		Physics2D m_Physics2D;
 
 		friend class Entity;
+		friend class SceneSerializer;
 	};
 }
