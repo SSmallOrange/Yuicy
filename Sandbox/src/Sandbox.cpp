@@ -1,7 +1,7 @@
 #include <Yuicy.h>
 
 #include "imgui/imgui.h"
-#include "RaindropsTestLayer.h"
+#include "Sandbox2D.h"
 
 #include <Yuicy/Core/EntryPoint.h>
 #include "Platform/OpenGL/OpenGLShader.h"
@@ -159,9 +159,8 @@ public:
 		{
 			for (int x = 0; x < 20; x++)
 			{
-				// glm::vec3 pos(x * 1.1f, y * 1.1f, 0.0f);
 				glm::vec3 pos(x * 0.11f, y * 0.11f, 0.0f);
-				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;  // 右乘
+				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
 				Yuicy::Renderer::Submit(m_FlatColorShader, m_SquareVA, transform);
 			}
 		}
@@ -176,8 +175,6 @@ public:
 		m_chernoLogoTexture->Bind(1);
 		std::dynamic_pointer_cast<Yuicy::OpenGLShader>(textureShader)->UploadUniformInt("u_Texture", 1);
 		Yuicy::Renderer::Submit(textureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
-		// Yuicy::Renderer::Submit(m_TextureShader, m_SquareVA, glm::translate(glm::mat4(1.0f), glm::vec3(0.25f, 0.25f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
-		// Yuicy::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Yuicy::Renderer::EndScene();
 	}
@@ -212,10 +209,9 @@ private:
 
 class Sandbox : public Yuicy::Application {
 public:
-	Sandbox() : Yuicy::Application(Yuicy::WindowProps("TinyDungeon", 960, 576, false)) {
+	Sandbox() : Yuicy::Application(Yuicy::WindowProps("Sandbox", 960, 576, false)) {
 		// PushLayer(new ExampleLayer());
-		// PushLayer(new Sandbox2D());
-		PushLayer(new RaindropsTestLayer());
+		PushLayer(new Sandbox2D());
 	}
 	~Sandbox() = default;
 };

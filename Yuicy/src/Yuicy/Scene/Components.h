@@ -285,22 +285,18 @@ namespace Yuicy {
 	{
 		enum : uint16_t
 		{
-			None = 0,
+			None    = 0,
 			Default = 1 << 0,   // 0x0001
-			Player  = 1 << 1,   // 0x0002
-			Enemy   = 1 << 2,   // 0x0004
-			Ground  = 1 << 3,   // 0x0008
-			Trigger = 1 << 4,   // 0x0010
-			Bullet  = 1 << 5,   // 0x0020
 			All     = 0xFFFF
 		};
 	}
+
 	// ==================== 物理组件 ====================
 
 	// 刚体组件 - 定义物理实体的类型和属性
 	struct Rigidbody2DComponent
 	{
-		// 刚体类型 静态（地面、墙壁）/动态（玩家、NPC）/运动学（电梯、传送带）
+		// 刚体类型 静态 动态 运动学
 		enum class BodyType { Static = 0, Dynamic, Kinematic };
 		BodyType Type = BodyType::Static;
 
@@ -366,50 +362,4 @@ namespace Yuicy {
 		CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
 	};
 
-	// 投掷物组件
-	struct ProjectileComponent
-	{
-		glm::vec2 direction = { 1.0f, 0.0f };
-		float speed = 10.0f;
-		float lifetime = 3.0f;
-		float damage = 1.0f;                    // 携带伤害
-		bool destroyOnHit = true;               // 碰撞后销毁
-		bool usePhysics = false;                // 启用物理控制
-		float elapsedTime = 0.0f;               // 生存时间
-
-		ProjectileComponent() = default;
-		ProjectileComponent(const ProjectileComponent&) = default;
-		ProjectileComponent(const glm::vec2& dir, float spd, float life = 3.0f)
-			: direction(glm::normalize(dir)), speed(spd), lifetime(life) {}
-	};
-
-	// 投掷物配置
-	struct ProjectileConfig
-	{
-		Ref<Texture2D> texture = nullptr;
-		Ref<SubTexture2D> subTexture = nullptr;
-		glm::vec4 color = { 1.0f, 0.9f, 0.2f, 1.0f };
-
-		// Transform
-		glm::vec2 size = {0.2f, 0.2f};
-		float zDepth = 0.8f;		// 2D渲染采用画家算法，Z轴无效
-		int sortingOrder = 500;
-
-		float speed = 15.0f;
-		float lifetime = 3.0f;
-
-		float damage = 1.0f;
-		bool destroyOnHit = true;
-
-		// 物理
-		bool enablePhysics = true;
-		uint16_t categoryBits = CollisionLayer::Bullet;
-		uint16_t maskBits = CollisionLayer::Ground | CollisionLayer::Enemy;
-		bool isTrigger = true;
-
-		// 脚本
-		std::string scriptPath;  // 可选的 Lua 脚本路径
-
-	ProjectileConfig() = default;
-	};
 }

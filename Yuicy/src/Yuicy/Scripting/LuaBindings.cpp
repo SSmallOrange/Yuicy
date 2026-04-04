@@ -16,6 +16,14 @@ namespace Yuicy {
 
 	namespace LuaBindings
 	{
+		// Individual binding functions
+		void RegisterMath(sol::state& lua);        // glm::vec2, vec3, vec4
+		void RegisterInput(sol::state& lua);       // Input::IsKeyPressed, Key codes
+		void RegisterEntity(sol::state& lua);      // Entity class
+		void RegisterComponents(sol::state& lua);  // TransformComponent, SpriteRendererComponent, etc.
+		void RegisterScene(sol::state& lua);       // Scene access
+		void RegisterLog(sol::state& lua);         // Logging functions
+
 		void RegisterAll(sol::state& lua)
 		{
 			RegisterLog(lua);
@@ -278,17 +286,6 @@ namespace Yuicy {
 					cc.Camera.SetOrthographicSize(size);
 				}
 			);
-
-			// ProjectileComponent
-			lua.new_usertype<ProjectileComponent>("ProjectileComponent",
-				sol::no_constructor,
-				"direction", &ProjectileComponent::direction,
-				"speed", &ProjectileComponent::speed,
-				"lifetime", &ProjectileComponent::lifetime,
-				"damage", &ProjectileComponent::damage,
-				"destroyOnHit", &ProjectileComponent::destroyOnHit,
-				"elapsedTime", &ProjectileComponent::elapsedTime
-			);
 		}
 
 		void RegisterEntity(sol::state& lua)
@@ -328,12 +325,6 @@ namespace Yuicy {
 				"HasCamera", [](Entity& e) -> bool {
 					return e.HasComponent<CameraComponent>();
 				},
-				"GetProjectile", [](Entity& e) -> ProjectileComponent& {
-					return e.GetComponent<ProjectileComponent>();
-				},
-				"HasProjectile", [](Entity& e) -> bool {
-					return e.HasComponent<ProjectileComponent>();
-				},
 				"IsValid", [](Entity& e) -> bool {
 					return (bool)e;
 				},
@@ -351,8 +342,7 @@ namespace Yuicy {
 			// Scene usertype
 			lua.new_usertype<Scene>("Scene",
 				sol::no_constructor,
-				"FindEntityByName", &Scene::FindEntityByName,
-				"CreateProjectile", &Scene::CreateProjectile
+				"FindEntityByName", &Scene::FindEntityByName
 			);
 
 			// Global Scene table with static-like functions
@@ -387,27 +377,7 @@ namespace Yuicy {
 					scene->DestroyEntity(target);
 			});
 
-			// CreateProjectile from Lua (with optional config parameters)
-			sceneTable.set_function("CreateProjectile", [](Entity& self, float x, float y, float dirX, float dirY, 
-				sol::optional<float> speed, sol::optional<float> lifetime, sol::optional<float> sizeX, sol::optional<float> sizeY,
-				sol::optional<float> r, sol::optional<float> g, sol::optional<float> b, sol::optional<std::string> scriptPath) -> Entity {
-				if (!self)
-					return Entity{};
-				Scene* scene = self.GetScene();
-				if (scene)
-				{
-					ProjectileConfig config;
-					config.speed = speed.value_or(15.0f);
-					config.lifetime = lifetime.value_or(3.0f);
-					config.size = { sizeX.value_or(0.2f), sizeY.value_or(0.2f) };
-					if (r && g && b)
-						config.color = { r.value(), g.value(), b.value(), 1.0f };
-					if (scriptPath)
-						config.scriptPath = scriptPath.value();
-					return scene->CreateProjectile({ x, y }, { dirX, dirY }, config);
-				}
-				return Entity{};
-			});
+
 
 			// 检查是否存在遮挡
 			sceneTable.set_function("HasLineOfSight", [](Entity& self, float fromX, float fromY, float toX, float toY) -> bool {
@@ -416,7 +386,7 @@ namespace Yuicy {
 				Scene* scene = self.GetScene();
 				if (scene)
 				{
-					return scene->GetPhysics2D().HasLineOfSight({ fromX, fromY }, { toX, toY }, CollisionLayer::Ground);
+					return scene->GetPhysics2D().HasLineOfSight({ fromX, fromY }, { toX, toY }, CollisionLayer::Default);
 				}
 				return false;
 			});

@@ -19,7 +19,7 @@ namespace Yuicy {
 	private:
 		void RecalculateProjection();
 	private:
-		float m_OrthographicSize = 10.0f;
+		float m_OrthographicSize = 10.0f;  // 纵向可视范围
 		float m_OrthographicNear = -1.0f, m_OrthographicFar = 1.0f;
 
 		float m_AspectRatio = 0.0f;

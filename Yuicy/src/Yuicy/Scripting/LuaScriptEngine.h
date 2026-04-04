@@ -24,6 +24,7 @@ namespace Yuicy {
 		static bool LoadScript(const std::string& filepath);
 		// 复制Lua脚本实例
 		static sol::table CreateScriptInstance(const std::string& filepath);
+		// 清理 Lua 脚本缓存
 		static void ClearScriptCache();
 
 	private:

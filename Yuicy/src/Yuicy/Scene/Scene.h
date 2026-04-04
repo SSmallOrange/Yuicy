@@ -33,7 +33,7 @@ namespace Yuicy {
 
 		Entity FindEntityByName(const std::string& name);
 
-		Entity CreateProjectile(const glm::vec2& position, const glm::vec2& direction, const ProjectileConfig& config = ProjectileConfig());
+
 
 		// 物理系统
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
@@ -55,8 +55,7 @@ namespace Yuicy {
 		// 动画
 		void UpdateAnimations(Timestep ts);
 
-		// 投掷物
-		void UpdateProjectiles(Timestep ts);
+
 
 		void RenderScene();
 

@@ -7,7 +7,7 @@ namespace Yuicy {
 	// 碰撞信息结构体
 	struct CollisionInfo
 	{
-		void* EntityA = nullptr;  // 碰撞的实体A
+		void* EntityA = nullptr;  // 碰撞的实体A  TODO： 考虑换成 std::any 或直接换成 Yuicy::Entity
 		void* EntityB = nullptr;  // 碰撞的实体B
 		bool IsSensorA = false;   // A 是否是触发器
 		bool IsSensorB = false;   // B 是否是触发器

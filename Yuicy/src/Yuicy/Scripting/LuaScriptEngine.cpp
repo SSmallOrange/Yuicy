@@ -119,7 +119,7 @@ namespace Yuicy {
 			instance[pair.first] = pair.second;
 		}
 
-		return instance;
+		return instance;  // 返回脚本的浅拷贝实例
 	}
 
 	void LuaScriptEngine::ClearScriptCache()

@@ -1,6 +1,6 @@
 workspace "Yuicy"
     architecture "x64"
-    startproject "TinyDungeon"
+    startproject "Sandbox"
     configurations { "Debug", "Release" }
 
 outputdir = "%{cfg.buildcfg}-x64"
@@ -50,7 +50,7 @@ project "Yuicy"
         "PLATFORM_WINDOWS",
         "YUICY_EXPORT_DLL", 
         "YUICY_ENABLE_ASSERTS",
-        "GLFW_INCLUDE_NONE",         -- GLFW≤ª∞¸∫¨OpenGLÕ∑Œƒº˛
+        "GLFW_INCLUDE_NONE",         -- GLFW‰∏çÂåÖÂê´OpenGLÂ§¥Êñá‰ª∂
         "_CRT_SECURE_NO_WARNINGS"
     }
 	links { 
@@ -118,5 +118,3 @@ project "Sandbox"
         optimize "On"
     filter {}
 
-group "Examples"
-    include "TinyDungeon"
