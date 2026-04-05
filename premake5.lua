@@ -1,6 +1,6 @@
 workspace "Yuicy"
     architecture "x64"
-    startproject "Sandbox"
+    startproject "YuiStudio"
     configurations { "Debug", "Release" }
 
 outputdir = "%{cfg.buildcfg}-x64"
@@ -123,3 +123,45 @@ project "Sandbox"
         optimize "On"
     filter {}
 
+project "YuiStudio"
+    location "YuiStudio"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++20"
+    staticruntime "On"
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
+    files { 
+        "YuiStudio/src/**.h", 
+        "YuiStudio/src/**.hpp", 
+        "YuiStudio/src/**.cpp"
+    }
+    includedirs { 
+        "Yuicy/src", 
+        "Yuicy/thirdparty/spdlog/include", 
+        "Yuicy/thirdparty/GLFW/include",
+        "Yuicy/thirdparty/tinyrefl",
+        "Yuicy/thirdparty",
+        "Yuicy/thirdparty/GLAD/include",
+        "Yuicy/thirdparty/imgui",
+        "Yuicy/thirdparty/glm",
+        "Yuicy/thirdparty/entt/include",
+        "Yuicy/thirdparty/Box2D/box2d/include",
+        "Yuicy/thirdparty/lua/src",
+        "Yuicy/thirdparty/sol2/include",
+        "Yuicy/thirdparty/yaml-cpp/include"
+    }
+    links { "Yuicy" }
+    defines { "PLATFORM_WINDOWS", "YAML_CPP_STATIC_DEFINE" }
+    filter "system:windows"
+        systemversion "latest"
+        buildoptions { "/utf-8" }
+    filter "configurations:Debug"
+        debugdir "%{cfg.targetdir}"
+        runtime "Debug"
+        symbols "On"
+        defines { "YUICY_PROFILE_DEBUG" }
+    filter "configurations:Release"
+        runtime "Release"
+        optimize "On"
+    filter {}

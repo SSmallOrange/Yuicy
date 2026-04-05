@@ -1,9 +1,21 @@
 #Directories
 .vs/
 bin/Debug-x64/
+bin/
 bin/int/
+Yuicy/thirdparty/*/bin
+Yuicy/thirdparty/*/bin-int
+YuiStudio/assert/
 
 # Files
 *.user
+*.tlog
+*.obj
+*.pdb
+*.lib
+*.vcxproj
+*.sln
+*.log
+*.filters
 /assets
 /.vscode
