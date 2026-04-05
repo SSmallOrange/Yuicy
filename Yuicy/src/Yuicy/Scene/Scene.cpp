@@ -52,11 +52,10 @@ namespace Yuicy {
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };
-		entity.AddComponent<IDComponent>().ID = uuid;
-		entity.AddComponent<TransformComponent>();
-		auto& tag = entity.AddComponent<TagComponent>();
-		tag.Tag = name.empty() ? "Entity" : name;
-		entity.AddComponent<RelationshipComponent>();
+		entity.AddComponent<IDComponent>().ID = uuid;						// UUID
+		entity.AddComponent<TransformComponent>();							// Transform
+		entity.AddComponent<TagComponent>(name.empty() ? "Entity" : name);  // Tag
+		entity.AddComponent<RelationshipComponent>();						// Relationship
 
 		m_EntityIDMap[uuid] = entity.m_EntityHandle;
 		return entity;
@@ -133,8 +132,7 @@ namespace Yuicy {
 		if (!parent)
 			return;
 
-		auto& parentChildren = parent.Children();
-		parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), entity.GetUUID()), parentChildren.end());
+		std::erase(parent.Children(), entity.GetUUID());
 
 		if (convertToWorldSpace)
 			ConvertToWorldSpace(entity);
@@ -651,8 +649,7 @@ namespace Yuicy {
 
 	Entity Scene::FindEntityByUUID(UUID uuid)
 	{
-		auto it = m_EntityIDMap.find(uuid);
-		if (it != m_EntityIDMap.end())
+		if (auto it = m_EntityIDMap.find(uuid); it != m_EntityIDMap.end())
 			return Entity{ it->second, this };
 		return Entity{};
 	}

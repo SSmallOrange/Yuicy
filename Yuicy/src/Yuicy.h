@@ -32,6 +32,7 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
+#include "Yuicy/Scene/SceneSerializer.h"
 
 // Scripting
 #include "Yuicy/Scripting/LuaScriptEngine.h"

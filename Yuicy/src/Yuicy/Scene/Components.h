@@ -94,6 +94,7 @@ namespace Yuicy {
 		// 纹理
 		Ref<Texture2D> Texture = nullptr;
 		Ref<SubTexture2D> SubTexture = nullptr;
+		std::string TexturePath;  				// 纹理路径
 
 		// 纹理属性
 		float TilingFactor = 1.0f;              // 纹理平铺系数

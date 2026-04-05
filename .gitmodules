@@ -16,3 +16,6 @@
 [submodule "Yuicy/thirdparty/sol2"]
 	path = Yuicy/thirdparty/sol2
 	url = https://github.com/ThePhD/sol2.git
+[submodule "Yuicy/thirdparty/yaml-cpp"]
+	path = Yuicy/thirdparty/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

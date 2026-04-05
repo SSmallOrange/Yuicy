@@ -16,6 +16,11 @@ namespace Yuicy {
 
 		float GetOrthographicSize() const { return m_OrthographicSize; }
 		void SetOrthographicSize(float size) { m_OrthographicSize = size; RecalculateProjection(); }
+
+		float GetOrthographicNearClip() const { return m_OrthographicNear; }
+		void SetOrthographicNearClip(float nearClip) { m_OrthographicNear = nearClip; RecalculateProjection(); }
+		float GetOrthographicFarClip() const { return m_OrthographicFar; }
+		void SetOrthographicFarClip(float farClip) { m_OrthographicFar = farClip; RecalculateProjection(); }
 	private:
 		void RecalculateProjection();
 	private:

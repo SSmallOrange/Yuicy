@@ -12,6 +12,7 @@ group "Dependencies"
     include "Yuicy/thirdparty/imgui"
     include "Yuicy/thirdparty/Box2D/box2d"
     include "Yuicy/thirdparty/lua"
+    include "Yuicy/thirdparty/yaml-cpp"
 
 group ""
 project "Yuicy"
@@ -44,21 +45,24 @@ project "Yuicy"
         "Yuicy/thirdparty/entt/include",
         "Yuicy/thirdparty/Box2D/box2d/include",
         "Yuicy/thirdparty/lua/src",
-        "Yuicy/thirdparty/sol2/include"
+        "Yuicy/thirdparty/sol2/include",
+        "Yuicy/thirdparty/yaml-cpp/include"
     }
     defines { 
         "PLATFORM_WINDOWS",
         "YUICY_EXPORT_DLL", 
         "YUICY_ENABLE_ASSERTS",
         "GLFW_INCLUDE_NONE",         -- GLFW不包含OpenGL头文件
-        "_CRT_SECURE_NO_WARNINGS"
+        "_CRT_SECURE_NO_WARNINGS",
+        "YAML_CPP_STATIC_DEFINE"
     }
 	links { 
         "GLFW", 
         "Glad",
         "imgui",
         "Box2D",
-        "lua"
+        "lua",
+        "yaml-cpp"
     }
     filter "system:windows"
         systemversion "latest"
@@ -99,10 +103,11 @@ project "Sandbox"
         "Yuicy/thirdparty/entt/include",
         "Yuicy/thirdparty/Box2D/box2d/include",
         "Yuicy/thirdparty/lua/src",
-        "Yuicy/thirdparty/sol2/include"
+        "Yuicy/thirdparty/sol2/include",
+        "Yuicy/thirdparty/yaml-cpp/include"
     }
     links { "Yuicy" }
-    defines { "PLATFORM_WINDOWS" }
+    defines { "PLATFORM_WINDOWS", "YAML_CPP_STATIC_DEFINE" }
     filter "system:windows"
         systemversion "latest"
         buildoptions { "/utf-8" }
