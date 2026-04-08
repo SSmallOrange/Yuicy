@@ -42,6 +42,9 @@ namespace Yuicy {
 		// 测试实体
 		auto testEntity = m_editorScene->CreateEntity("TestSprite");
 		testEntity.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.2f, 0.6f, 0.9f, 1.0f });
+
+		// 初始化面板
+		m_sceneHierarchyPanel.SetContext(m_activeScene);
 	}
 
 	void EditorLayer::OnDetach()
@@ -84,13 +87,7 @@ namespace Yuicy {
 
 	void EditorLayer::OnImGuiRender()
 	{
-		// ========================================================================
 		// Dockspace 设置
-		// ========================================================================
-		// Dockspace 是 ImGui 的"停靠空间"，相当于一个容器窗口。
-		// 所有子窗口（Viewport、Stats 等）都可以拖拽停靠在它内部。
-		// 我们要把它设置成全屏、不可移动的背景窗口。
-
 		static bool dockspaceOpen = true;
 		static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
 
@@ -98,13 +95,12 @@ namespace Yuicy {
 
 		// GetMainViewport() 返回操作系统窗口的可用区域信息
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(viewport->WorkPos);      // 窗口位置 = 屏幕左上角
-		ImGui::SetNextWindowSize(viewport->WorkSize);    // 窗口大小 = 整个屏幕
-		ImGui::SetNextWindowViewport(viewport->ID);      // 绑定到主视口
+		ImGui::SetNextWindowPos(viewport->WorkPos);					// 窗口位置 = 屏幕左上角
+		ImGui::SetNextWindowSize(viewport->WorkSize);				// 窗口大小 = 整个屏幕
+		ImGui::SetNextWindowViewport(viewport->ID);					// 绑定到主视口
 
-		// PushStyleVar / PopStyleVar 是临时修改 ImGui 样式的方式
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);    // 窗口圆角 = 0（方角）
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);  // 窗口边框 = 0（无边框）
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);	// 无边框
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
 		// 设置窗口背景：不能移动、不能缩放、无标题栏
 		windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
@@ -128,61 +124,63 @@ namespace Yuicy {
 		{
 			// GetID("名称") → 生成一个唯一的哈希值作为 Dockspace 的标识
 			ImGuiID dockspaceId = ImGui::GetID("YuiStudioDockspace");
-			// DockSpace() 在当前窗口内创建一个可停靠区域
-			// 之后所有 Begin/End 的子窗口都可以拖拽停靠到这个区域内
 			ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
 		}
 
 		style.WindowMinSize.x = minWinSizeX; // 恢复原始最小宽度
 
-		// 菜单栏（因为 DockSpace 窗口设置了 MenuBar 标志，所以菜单栏会出现在它的顶部）
+		// 菜单栏
 		UIMenuBar();
 
 		// Viewport 面板
+		OnImGuiViewportRender();
+		// State 面板
+		OnImGuiDrawStateRender();
 
+		// Scene Hierarchy + Properties
+		m_sceneHierarchyPanel.OnImGuiRender();
+
+		ImGui::End(); // 结束 DockSpace
+	}
+
+	void EditorLayer::OnImGuiViewportRender()
+	{
 		// WindowPadding = 0 → Viewport 内容（图片）完全贴边，没有留白
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
 
-		// 检查当前窗口的焦点/悬停状态（用于决定是否响应快捷键和鼠标事件）
-		m_viewportFocused = ImGui::IsWindowFocused(); // 此窗口是否获得键盘焦点
+		// 检查当前窗口的焦点/悬停状态
+		m_viewportFocused = ImGui::IsWindowFocused();  // 此窗口是否获得键盘焦点
 		m_viewportHovered = ImGui::IsWindowHovered();  // 鼠标是否悬停在此窗口内
 
-		// GetContentRegionAvail() → 当前窗口内"可用区域"的尺寸（减去标题栏、边距等）
-		// 当用户拖拽调整 Viewport 面板大小时，这个值会变化
-		// 我们用它来决定 Framebuffer 的分辨率（下一帧在 OnUpdate 中 Resize）
+		// GetContentRegionAvail() → 当前窗口内"可用区域"的尺寸 更新绘制时的视口大小
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		m_viewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
-		// 获取 Framebuffer 颜色附件的 OpenGL 纹理 ID
+		// 获取 Framebuffer 颜色附件的 纹理 ID
 		uint64_t textureID = m_framebuffer->GetColorAttachmentRendererID();
 
-		// ImGui::Image() → 在窗口内绘制一张纹理
-		// 参数1: 纹理ID（void* 类型，OpenGL纹理ID强转过来）
-		// 参数2: 显示尺寸（填满整个可用区域）
-		// 参数3: UV 左上角 = (0,1) ← 注意 Y 翻转！
-		// 参数4: UV 右下角 = (1,0)
-		// OpenGL 纹理的原点在左下角，而 ImGui 的原点在左上角，所以 UV 的 Y 要翻转
+		// ImGui::Image() → 绘制渲染结果
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_viewportSize.x, m_viewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		ImGui::End(); // 结束 Viewport 窗口
-		ImGui::PopStyleVar(); // 恢复 WindowPadding
+		ImGui::End(); // Viewport
+		ImGui::PopStyleVar();
+	}
 
-		// Stats 面板 — 渲染统计信息
+	void EditorLayer::OnImGuiDrawStateRender()
+	{
 		ImGui::Begin("Stats");
 
 		auto stats = Renderer2D::GetStats();
-		ImGui::Text("Renderer2D Stats:");            // Text() → 显示一行纯文本
-		ImGui::Text("Draw Calls: %d", stats.DrawCalls);  // 支持 printf 风格格式化
+		ImGui::Text("Renderer2D Stats:");
+		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 		ImGui::Text("Quads: %d", stats.QuadCount);
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
-		ImGui::Separator();                          // Separator() → 画一条水平分割线
+		ImGui::Separator();
 		ImGui::Text("Scene: %s", m_activeScene->GetName().c_str());
 
-		ImGui::End(); // 结束 Stats 窗口
-
-		ImGui::End(); // 结束 DockSpace
+		ImGui::End();
 	}
 
 	void EditorLayer::UIMenuBar()
@@ -252,6 +250,8 @@ namespace Yuicy {
 		m_editorScene->SetName("UntitledScene");
 		m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		m_activeScene = m_editorScene;
+		m_currentScenePath = std::filesystem::path{};
+		m_sceneHierarchyPanel.SetContext(m_activeScene);
 	}
 
 	void EditorLayer::OpenScene()
@@ -267,6 +267,7 @@ namespace Yuicy {
 			{
 				m_activeScene = m_editorScene;
 				m_currentScenePath = filepath;
+				m_sceneHierarchyPanel.SetContext(m_activeScene);
 				YUICY_CORE_INFO("Opened scene: {}", filepath);
 			}
 		}
@@ -301,7 +302,6 @@ namespace Yuicy {
 	}
 
 	// Win32 文件对话框
-
 	std::string EditorLayer::OpenFileDialog(const char* filter)
 	{
 		OPENFILENAMEA ofn;

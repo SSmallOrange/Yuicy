@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy.h"
+#include "Panels/SceneHierarchyPanel.h"
 
 namespace Yuicy {
 
@@ -31,6 +32,10 @@ namespace Yuicy {
 		std::string SaveFileDialog(const char* filter);
 
 	private:
+		void OnImGuiViewportRender();	// 视口渲染
+		void OnImGuiDrawStateRender();  // 渲染信息统计
+
+	private:
 		enum class SceneState { Edit = 0, Play = 1 };
 
 		// 场景
@@ -44,6 +49,9 @@ namespace Yuicy {
 		glm::vec2 m_viewportSize = { 0.0f, 0.0f };
 		bool m_viewportFocused = false;
 		bool m_viewportHovered = false;
+
+		// 面板
+		SceneHierarchyPanel m_sceneHierarchyPanel;
 	};
 
 }

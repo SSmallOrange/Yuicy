@@ -56,6 +56,13 @@ namespace Yuicy {
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
 		Physics2D& GetPhysics2D() { return m_Physics2D; }
 
+		// 实体遍历
+		template<typename... Components>
+		auto GetAllEntitiesWith()
+		{
+			return m_Registry.view<Components...>();
+		}
+
 	private:
 		// 脚本
 		void InitializeScripts();
@@ -89,5 +96,6 @@ namespace Yuicy {
 
 		friend class Entity;
 		friend class SceneSerializer;
+		friend class SceneHierarchyPanel;
 	};
 }
