@@ -91,13 +91,13 @@ namespace Yuicy {
 		static bool dockspaceOpen = true;
 		static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
 
-		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;  // 设置顶层窗口为带菜单、且没有Dock属性的窗口
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
 
 		// GetMainViewport() 返回操作系统窗口的可用区域信息
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(viewport->WorkPos);					// 窗口位置 = 屏幕左上角
-		ImGui::SetNextWindowSize(viewport->WorkSize);				// 窗口大小 = 整个屏幕
-		ImGui::SetNextWindowViewport(viewport->ID);					// 绑定到主视口
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);	// 无边框
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -112,25 +112,26 @@ namespace Yuicy {
 
 		// 初始化 "DockSpace" 背景
 		ImGui::Begin("DockSpace", &dockspaceOpen, windowFlags);
-		ImGui::PopStyleVar(3); // 弹出前面 Push 的 3 个 StyleVar
+		ImGui::PopStyleVar(3);
 
-		// --- 在 DockSpace 窗口内部创建停靠区域 ---
+		// 标题栏
+		float titlebarHeight = UIDrawTitlebar();
+
+		// DockSpace 从标题栏下方开始
+		ImGui::SetCursorPosY(titlebarHeight);
+
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuiStyle& style = ImGui::GetStyle();
 		float minWinSizeX = style.WindowMinSize.x;
-		style.WindowMinSize.x = 370.0f;  // 防止子窗口被拖拽得太小
+		style.WindowMinSize.x = 370.0f;
 
 		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
 		{
-			// GetID("名称") → 生成一个唯一的哈希值作为 Dockspace 的标识
 			ImGuiID dockspaceId = ImGui::GetID("YuiStudioDockspace");
 			ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
 		}
 
-		style.WindowMinSize.x = minWinSizeX; // 恢复原始最小宽度
-
-		// 菜单栏
-		UIMenuBar();
+		style.WindowMinSize.x = minWinSizeX;
 
 		// Viewport 面板
 		OnImGuiViewportRender();
@@ -140,12 +141,12 @@ namespace Yuicy {
 		// Scene Hierarchy + Properties
 		m_sceneHierarchyPanel.OnImGuiRender();
 
-		ImGui::End(); // 结束 DockSpace
+		ImGui::End(); // DockSpace
 	}
 
 	void EditorLayer::OnImGuiViewportRender()
 	{
-		// WindowPadding = 0 → Viewport 内容（图片）完全贴边，没有留白
+		// 无边框
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
 
@@ -183,8 +184,33 @@ namespace Yuicy {
 		ImGui::End();
 	}
 
-	void EditorLayer::UIMenuBar()
+	// 标题栏
+	float EditorLayer::UIDrawTitlebar()
 	{
+		const float titlebarHeight = 40.0f;
+		const float buttonWidth = 46.0f;
+		const float totalButtonsWidth = buttonWidth * 3;
+		const ImVec2 windowPadding = ImGui::GetCurrentWindow()->WindowPadding;
+
+		const ImVec2 titlebarMin = ImGui::GetCursorScreenPos();
+		const float windowWidth = ImGui::GetWindowWidth();
+		const ImVec2 titlebarMax = {
+			titlebarMin.x + windowWidth,
+			titlebarMin.y + titlebarHeight };
+
+		// 绘制标题栏背景
+		auto* drawList = ImGui::GetWindowDrawList();
+		drawList->AddRectFilled(titlebarMin, titlebarMax, IM_COL32(25, 25, 25, 255));
+
+		// 菜单栏
+		float dragZoneWidth = windowWidth - totalButtonsWidth;
+
+		ImGui::SetCursorPos(ImVec2(windowPadding.x + 6.0f, 2.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+		ImGui::BeginChild("##menuBarChild", ImVec2(dragZoneWidth * 0.5f, titlebarHeight - 4.0f),
+			false, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBackground
+			     | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNavFocus);
+
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -208,14 +234,100 @@ namespace Yuicy {
 
 				ImGui::EndMenu();
 			}
-
 			ImGui::EndMenuBar();
 		}
+		bool menuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+		ImGui::EndChild();
+		ImGui::PopStyleVar();
+
+		// 标题栏悬停判断
+		{
+			ImVec2 mousePos = ImGui::GetMousePos();
+			bool inTitlebar = mousePos.x >= titlebarMin.x && mousePos.x < titlebarMin.x + dragZoneWidth
+				           && mousePos.y >= titlebarMin.y && mousePos.y < titlebarMax.y;
+			m_titleBarHovered = inTitlebar && !menuHovered;
+		}
+
+		// 居中标题文字
+		{
+			const char* title = "YuiStudio";
+			ImVec2 textSize = ImGui::CalcTextSize(title);
+			float textX = titlebarMin.x + (windowWidth - textSize.x) * 0.5f;
+			float textY = titlebarMin.y + (titlebarHeight - textSize.y) * 0.5f;
+			drawList->AddText(ImVec2(textX, textY), IM_COL32(140, 140, 140, 255), title);
+		}
+
+		// 窗口控制按钮
+		auto& appWindow = Application::Get().GetWindow();
+		bool isMaximized = appWindow.IsMaximized();
+		float buttonsStartX = windowWidth - totalButtonsWidth;
+
+		auto drawWindowButton = [&](const char* id, float posX, auto onClickFn, auto drawIconFn, ImU32 hoverColor)
+		{
+			ImGui::SetCursorPos(ImVec2(posX, 0));
+			ImGui::PushID(id);
+
+			if (ImGui::InvisibleButton(id, ImVec2(buttonWidth, titlebarHeight)))
+				onClickFn();
+
+			ImVec2 btnMin = ImGui::GetItemRectMin();
+			ImVec2 btnMax = ImGui::GetItemRectMax();
+			bool hovered = ImGui::IsItemHovered();
+
+			if (hovered)
+				drawList->AddRectFilled(btnMin, btnMax, hoverColor);
+
+			float cx = (btnMin.x + btnMax.x) * 0.5f;
+			float cy = (btnMin.y + btnMax.y) * 0.5f;
+			ImU32 iconCol = hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(180, 180, 180, 255);
+			drawIconFn(cx, cy, iconCol);
+
+			ImGui::PopID();
+		};
+
+		// 最小化
+		drawWindowButton("##minimize", buttonsStartX,
+			[&]() { appWindow.Minimize(); },
+			[&](float cx, float cy, ImU32 col) {
+				drawList->AddLine(ImVec2(cx - 6, cy), ImVec2(cx + 6, cy), col, 1.5f);
+			},
+			IM_COL32(60, 60, 60, 255));
+
+		// 最大化/还原
+		drawWindowButton("##maximize", buttonsStartX + buttonWidth,
+			[&]() { if (isMaximized) appWindow.Restore(); else appWindow.Maximize(); },
+			[&](float cx, float cy, ImU32 col) {
+				if (isMaximized) {
+					drawList->AddRect(ImVec2(cx - 4, cy - 2), ImVec2(cx + 4, cy + 6), col, 0.0f, 0, 1.5f);
+					drawList->AddRect(ImVec2(cx - 2, cy - 5), ImVec2(cx + 6, cy + 3), col, 0.0f, 0, 1.5f);
+				} else {
+					drawList->AddRect(ImVec2(cx - 5, cy - 5), ImVec2(cx + 5, cy + 5), col, 0.0f, 0, 1.5f);
+				}
+			},
+			IM_COL32(60, 60, 60, 255));
+
+		// 关闭
+		drawWindowButton("##close", buttonsStartX + buttonWidth * 2,
+			[&]() { appWindow.Close(); },
+			[&](float cx, float cy, ImU32 col) {
+				drawList->AddLine(ImVec2(cx - 5, cy - 5), ImVec2(cx + 5, cy + 5), col, 1.5f);
+				drawList->AddLine(ImVec2(cx + 5, cy - 5), ImVec2(cx - 5, cy + 5), col, 1.5f);
+			},
+			IM_COL32(210, 50, 50, 255));
+
+		return titlebarHeight;
 	}
 
 	void EditorLayer::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
+
+		// 标题栏命中测试
+		dispatcher.Dispatch<WindowTitleBarHitTestEvent>([this](WindowTitleBarHitTestEvent& event)
+		{
+			event.SetHit(m_titleBarHovered);
+			return true;
+		});
 
 		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) -> bool
 		{
@@ -243,7 +355,6 @@ namespace Yuicy {
 	}
 
 	// 场景操作
-
 	void EditorLayer::NewScene()
 	{
 		m_editorScene = CreateRef<Scene>();

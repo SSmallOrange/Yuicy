@@ -2,6 +2,8 @@
 
 #include "Yuicy/Core/Window.h"
 
+#include <Windows.h>
+
 struct GLFWwindow;
 struct GLFWcursor;
 
@@ -42,6 +44,12 @@ namespace Yuicy {
 	private:
 		virtual void Init(const WindowProps& props);
 		virtual void Shutdown();
+
+		// Win32 WndProc hook WM_NCHITTEST
+		static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		WNDPROC m_originalWndProc = nullptr;
+		static WindowsWindow* s_instance;
+
 	private:
 		GLFWwindow* _Window = nullptr;
 		GLFWcursor* m_customCursor = nullptr;

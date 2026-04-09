@@ -7,11 +7,20 @@
 #include "Yuicy/Events/KeyEvent.h"
 
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include <stb_image.h>
 
+#include <windowsx.h>
+
+#ifdef IsMaximized  // 规避名称冲突
+#undef IsMaximized
+#endif
+
 namespace Yuicy {
-	
+
 	static uint8_t s_GLFWWindowCount = 0;
+	WindowsWindow* WindowsWindow::s_instance = nullptr;
 
 	static void GLFWErrorCallback(int error, const char* description)
 	{
@@ -154,6 +163,11 @@ namespace Yuicy {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
+
+		// Win32 WndProc hook —— 拦截 WM_NCHITTEST 实现自定义标题栏拖拽
+		s_instance = this;
+		HWND hwnd = glfwGetWin32Window(_Window);
+		m_originalWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 	}
 
 	void WindowsWindow::Shutdown()
@@ -287,6 +301,40 @@ namespace Yuicy {
 	bool WindowsWindow::IsMaximized() const
 	{
 		return glfwGetWindowAttrib(_Window, GLFW_MAXIMIZED) == GLFW_TRUE;
+	}
+
+	// Win32 WndProc：拦截 WM_NCHITTEST，在自定义标题栏区域返回 HTCAPTION
+	LRESULT CALLBACK WindowsWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+	{
+		if (msg == WM_NCHITTEST && s_instance)
+		{
+			// 先调用原始 WndProc
+			LRESULT result = CallWindowProc(s_instance->m_originalWndProc, hWnd, msg, wParam, lParam);
+
+			// 只在客户区时判断是否命中标题栏
+			if (result == HTCLIENT)
+			{
+				int x = GET_X_LPARAM(lParam);
+				int y = GET_Y_LPARAM(lParam);
+				int hit = 0;
+
+				if (s_instance->_Data.EventCallback)
+				{
+					WindowTitleBarHitTestEvent event(x, y, hit);
+					s_instance->_Data.EventCallback(event);
+				}
+
+				if (hit)
+					return HTCAPTION;
+			}
+
+			return result;
+		}
+
+		if (s_instance && s_instance->m_originalWndProc)
+			return CallWindowProc(s_instance->m_originalWndProc, hWnd, msg, wParam, lParam);
+
+		return DefWindowProc(hWnd, msg, wParam, lParam);
 	}
 
 }

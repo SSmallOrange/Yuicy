@@ -18,9 +18,6 @@ namespace Yuicy {
 		void OnEvent(Event& e) override;
 
 	private:
-		// 菜单栏
-		void UIMenuBar();
-
 		// 场景操作
 		void NewScene();
 		void OpenScene();
@@ -35,6 +32,8 @@ namespace Yuicy {
 		void OnImGuiViewportRender();	// 视口渲染
 		void OnImGuiDrawStateRender();  // 渲染信息统计
 
+		// 自定义标题栏
+		float UIDrawTitlebar();
 	private:
 		enum class SceneState { Edit = 0, Play = 1 };
 
@@ -52,6 +51,8 @@ namespace Yuicy {
 
 		// 面板
 		SceneHierarchyPanel m_sceneHierarchyPanel;
+
+		bool m_titleBarHovered = false;
 	};
 
 }

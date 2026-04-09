@@ -55,4 +55,21 @@ namespace Yuicy {
 		EVENT_CLASS_TYPE(AppRender)
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
+
+	class WindowTitleBarHitTestEvent : public Event {
+	public:
+		WindowTitleBarHitTestEvent(int x, int y, int& hit)
+			: m_x(x), m_y(y), m_hit(hit) {}
+
+		int GetX() const { return m_x; }
+		int GetY() const { return m_y; }
+		void SetHit(bool hit) { m_hit = (int)hit; }
+
+		EVENT_CLASS_TYPE(WindowTitleBarHitTest)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	private:
+		int m_x;
+		int m_y;
+		int& m_hit;
+	};
 }
