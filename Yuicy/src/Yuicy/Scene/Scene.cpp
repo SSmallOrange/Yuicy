@@ -580,6 +580,7 @@ namespace Yuicy {
 			{
 				glm::mat4 Transform;
 				SpriteRendererComponent* Sprite;
+				int EntityID;
 			};
 			std::vector<SpriteRenderData> renderQueue;
 
@@ -589,7 +590,7 @@ namespace Yuicy {
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-				renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite });
+				renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
 			}
 
 			std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {
@@ -603,16 +604,16 @@ namespace Yuicy {
 				if (sprite.SubTexture)
 				{
 					Renderer2D::DrawSprite(data.Transform, 
-						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 				}
 				else if (sprite.Texture)
 				{
 					Renderer2D::DrawSprite(data.Transform,
-						sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+						sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 				}
 				else
 				{
-					Renderer2D::DrawQuad(data.Transform, sprite.Color);
+					Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
 				}
 			}
 
@@ -633,6 +634,7 @@ namespace Yuicy {
 		{
 			glm::mat4 Transform;
 			SpriteRendererComponent* Sprite;
+			int EntityID;
 		};
 		std::vector<SpriteRenderData> renderQueue;
 
@@ -642,7 +644,7 @@ namespace Yuicy {
 		for (auto entity : group)
 		{
 			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite });
+			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
 		}
 
 		std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {
@@ -656,16 +658,16 @@ namespace Yuicy {
 			if (sprite.SubTexture)
 			{
 				Renderer2D::DrawSprite(data.Transform,
-					sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+					sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 			}
 			else if (sprite.Texture)
 			{
 				Renderer2D::DrawSprite(data.Transform,
-					sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+					sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 			}
 			else
 			{
-				Renderer2D::DrawQuad(data.Transform, sprite.Color);
+				Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
 			}
 		}
 

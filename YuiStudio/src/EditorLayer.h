@@ -19,6 +19,9 @@ namespace Yuicy {
 		void OnEvent(Event& e) override;
 
 	private:
+		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+
+	private:
 		// 场景操作
 		void NewScene();
 		void OpenScene();
@@ -47,11 +50,16 @@ namespace Yuicy {
 		// 渲染
 		Ref<Framebuffer> m_framebuffer;
 		glm::vec2 m_viewportSize = { 0.0f, 0.0f };
+		std::array<glm::vec2, 2> m_viewportBounds = {};
+
 		bool m_viewportFocused = false;
 		bool m_viewportHovered = false;
 
 		// 编辑器相机
 		EditorCamera m_editorCamera;
+
+		// 鼠标拾取
+		Entity m_hoveredEntity;
 
 		// 面板
 		SceneHierarchyPanel m_sceneHierarchyPanel;

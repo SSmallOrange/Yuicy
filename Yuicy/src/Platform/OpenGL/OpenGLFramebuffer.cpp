@@ -270,7 +270,7 @@ namespace Yuicy {
 
 		auto& spec = m_colorAttachmentSpecifications[attachmentIndex];
 
-		glClearTexImage(m_colorAttachments[attachmentIndex], 0, GL_RED_INTEGER, GL_INT, &value);
+		glClearTexImage(m_colorAttachments[attachmentIndex], 0, GL_RED_INTEGER, GL_INT, &value);  // 修改纹理值
 	}
 
 }

@@ -84,6 +84,28 @@ namespace Yuicy {
 			break;
 		}
 
+		// 鼠标拾取
+		auto [mx, my] = ImGui::GetMousePos();
+		mx -= m_viewportBounds[0].x;
+		my -= m_viewportBounds[0].y;
+
+		glm::vec2 viewportBoundsSize = m_viewportBounds[1] - m_viewportBounds[0];
+		my = viewportBoundsSize.y - my;
+
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		if (mouseX >= 0 && mouseY >= 0
+			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
+		{
+			int pixelData = m_framebuffer->ReadPixel(1, mouseX, mouseY);
+			m_hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_activeScene.get());
+		}
+		else
+		{
+			m_hoveredEntity = {};
+		}
+
 		m_framebuffer->Unbind();
 	}
 
@@ -163,6 +185,12 @@ namespace Yuicy {
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		m_viewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
+		// 计算Viewport的屏幕坐标
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportOffset = ImGui::GetWindowPos();
+		m_viewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_viewportBounds[1] = m_viewportBounds[0] + m_viewportSize;
+
 		// 获取 Framebuffer 颜色附件的 纹理 ID
 		uint64_t textureID = m_framebuffer->GetColorAttachmentRendererID();
 
@@ -185,6 +213,10 @@ namespace Yuicy {
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 		ImGui::Separator();
 		ImGui::Text("Scene: %s", m_activeScene->GetName().c_str());
+		std::string hoveredName = "None";
+		if (m_hoveredEntity)
+			hoveredName = m_hoveredEntity.GetComponent<TagComponent>().Tag;
+		ImGui::Text("Hovered Entity: %s", hoveredName.c_str());
 
 		ImGui::End();
 	}
@@ -337,6 +369,11 @@ namespace Yuicy {
 			return true;
 		});
 
+		dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& event)
+		{
+			return OnMouseButtonPressed(event);
+		});
+
 		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) -> bool
 		{
 			if (e.IsRepeat())
@@ -362,6 +399,17 @@ namespace Yuicy {
 		});
 	}
 
+	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
+	{
+		if (e.GetMouseButton() == Mouse::ButtonLeft)
+		{
+			if (m_viewportHovered && !Input::IsKeyPressed(Key::LeftAlt))
+				m_sceneHierarchyPanel.SetSelectedEntity(m_hoveredEntity);
+		}
+
+		return false;
+	}
+
 	// 场景操作
 	void EditorLayer::NewScene()
 	{
@@ -370,6 +418,7 @@ namespace Yuicy {
 		m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		m_activeScene = m_editorScene;
 		m_currentScenePath = std::filesystem::path{};
+		m_hoveredEntity = {};
 		m_sceneHierarchyPanel.SetContext(m_activeScene);
 	}
 
@@ -386,6 +435,7 @@ namespace Yuicy {
 			{
 				m_activeScene = m_editorScene;
 				m_currentScenePath = filepath;
+				m_hoveredEntity = {};
 				m_sceneHierarchyPanel.SetContext(m_activeScene);
 				YUICY_CORE_INFO("Opened scene: {}", filepath);
 			}
