@@ -14,6 +14,7 @@ namespace Yuicy {
 
 	class Entity;
 	class ContactListener;
+	class EditorCamera;
 
 	class Scene
 	{
@@ -30,7 +31,7 @@ namespace Yuicy {
 		void OnRuntimeStop();
 
 		void OnUpdateRuntime(Timestep ts);
-		void OnUpdateEditor(Timestep ts);
+		void OnUpdateEditor(Timestep ts, EditorCamera& camera);
 
 		void OnUpdate(Timestep ts);
 		void OnViewportResize(uint32_t width, uint32_t height);
@@ -80,6 +81,7 @@ namespace Yuicy {
 		void UpdateAnimations(Timestep ts);
 
 		void RenderScene();
+		void RenderScene(EditorCamera& camera);
 
 	private:
 		entt::registry m_Registry;

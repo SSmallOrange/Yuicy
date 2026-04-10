@@ -22,7 +22,7 @@ namespace Yuicy {
 		if (s_initialized)
 			return;
 
-		YUICY_CORE_INFO("LuaScriptEngine: Initializing...");
+		// YUICY_CORE_INFO("LuaScriptEngine: Initializing...");
 		s_luaState = new sol::state();
 		// Open standard Lua libraries
 		s_luaState->open_libraries(

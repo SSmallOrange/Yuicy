@@ -35,9 +35,8 @@ namespace Yuicy {
 		m_activeScene = m_editorScene;
 		m_editorScene->SetName("UntitledScene");
 
-		// 默认相机
-		auto cameraEntity = m_editorScene->CreateEntity("EditorCamera");
-		cameraEntity.AddComponent<CameraComponent>();
+		// 编辑器相机
+		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
 
 		// 测试实体
 		auto testEntity = m_editorScene->CreateEntity("TestSprite");
@@ -60,6 +59,7 @@ namespace Yuicy {
 		{
 			m_framebuffer->Resize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 			m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+			m_editorCamera.SetViewportSize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
 		}
 
 		// 渲染到 Framebuffer
@@ -75,7 +75,9 @@ namespace Yuicy {
 		switch (m_sceneState)
 		{
 		case SceneState::Edit:
-			m_activeScene->OnUpdateEditor(ts);
+			if (m_viewportFocused)
+				m_editorCamera.OnUpdate(ts);
+			m_activeScene->OnUpdateEditor(ts, m_editorCamera);
 			break;
 		case SceneState::Play:
 			m_activeScene->OnUpdateRuntime(ts);
@@ -151,8 +153,11 @@ namespace Yuicy {
 		ImGui::Begin("Viewport");
 
 		// 检查当前窗口的焦点/悬停状态
-		m_viewportFocused = ImGui::IsWindowFocused();  // 此窗口是否获得键盘焦点
-		m_viewportHovered = ImGui::IsWindowHovered();  // 鼠标是否悬停在此窗口内
+		m_viewportFocused = ImGui::IsWindowFocused();
+		m_viewportHovered = ImGui::IsWindowHovered();
+
+		// 当视口聚焦或悬停时，不阻塞鼠标/键盘事件
+		Application::Get().GetImGuiLayer()->BlockEvents(!m_viewportFocused && !m_viewportHovered);
 
 		// GetContentRegionAvail() → 当前窗口内"可用区域"的尺寸 更新绘制时的视口大小
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
@@ -320,6 +325,9 @@ namespace Yuicy {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
+		if (m_viewportHovered)
+			m_editorCamera.OnEvent(e);
+
 		EventDispatcher dispatcher(e);
 
 		// 标题栏命中测试

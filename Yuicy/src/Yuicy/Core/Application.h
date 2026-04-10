@@ -19,6 +19,7 @@ namespace Yuicy {
 		void PushOverlay(Layer* layer);
 
 		Window& GetWindow() { return *_window; }
+		ImGuiLayer* GetImGuiLayer() { return _imGuiLayer; }
 
 		static Application& Get() { return *_instance; }
 

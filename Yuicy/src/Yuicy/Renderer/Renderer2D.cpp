@@ -2,8 +2,9 @@
 #include "Renderer2D.h"
 
 #include "Shader.h"
-#include "VertexArray.h"
-#include "RenderCommand.h"
+#include "Yuicy/Renderer/EditorCamera.h"
+#include "Yuicy/Renderer/VertexArray.h"
+#include "Yuicy/Renderer/RenderCommand.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -109,32 +110,32 @@ namespace Yuicy {
 		delete[] s_Data.QuadVertexBufferBase;
 	}
 
-	void Renderer2D::BeginScene(const OrthographicCamera& camera)
+	void Renderer2D::BeginScene(const glm::mat4& viewProjection)
 	{
 		YUICY_PROFILE_FUNCTION();
 
 		s_Data.TextureShader->Bind();
-		s_Data.TextureShader->SetMat4("u_ViewProjection", camera.GetViewProjectionMatrix());
+		s_Data.TextureShader->SetMat4("u_ViewProjection", viewProjection);
 
 		s_Data.QuadIndexCount = 0;									// Reset IndexCount
-		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;   // Reset Index
+		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;	// Reset Index
 
 		s_Data.TextureSlotIndex = 1;								// 默认有一个白色纹理
 	}
 
+	void Renderer2D::BeginScene(const OrthographicCamera& camera)
+	{
+		BeginScene(camera.GetViewProjectionMatrix());
+	}
+
 	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
 	{
-		YUICY_PROFILE_FUNCTION();
+		BeginScene(camera.GetProjection() * glm::inverse(transform));
+	}
 
-		glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
-
-		s_Data.TextureShader->Bind();
-		s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
-
-		s_Data.QuadIndexCount = 0;
-		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
-
-		s_Data.TextureSlotIndex = 1;
+	void Renderer2D::BeginScene(const EditorCamera& camera)
+	{
+		BeginScene(camera.GetViewProjection());
 	}
 
 	void Renderer2D::EndScene()

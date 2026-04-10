@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy.h"
+#include "Yuicy/Renderer/EditorCamera.h"
 #include "Panels/SceneHierarchyPanel.h"
 
 namespace Yuicy {
@@ -48,6 +49,9 @@ namespace Yuicy {
 		glm::vec2 m_viewportSize = { 0.0f, 0.0f };
 		bool m_viewportFocused = false;
 		bool m_viewportHovered = false;
+
+		// 编辑器相机
+		EditorCamera m_editorCamera;
 
 		// 面板
 		SceneHierarchyPanel m_sceneHierarchyPanel;

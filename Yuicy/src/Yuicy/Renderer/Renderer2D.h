@@ -7,12 +7,15 @@
 
 namespace Yuicy {
 
+	class EditorCamera;
+
 	class Renderer2D
 	{
 	public:
 		static void Init();
 		static void Shutdown();
 
+		static void BeginScene(const EditorCamera& camera);
 		static void BeginScene(const OrthographicCamera& camera);
 		static void BeginScene(const Camera& camera, const glm::mat4& transform);
 		static void EndScene();
@@ -59,6 +62,7 @@ namespace Yuicy {
 		static Statistics GetStats();
 
 	private:
+		static void BeginScene(const glm::mat4& viewProjection);
 		static void FlushAndReset();
 	};
 

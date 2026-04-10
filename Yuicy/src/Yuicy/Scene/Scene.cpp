@@ -4,6 +4,7 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Renderer/Renderer2D.h"
+#include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Renderer/RenderCommand.h"
 #include "Yuicy/Scene/ContactListener.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
@@ -538,10 +539,10 @@ namespace Yuicy {
 		RenderScene();
 	}
 
-	void Scene::OnUpdateEditor(Timestep ts)
+	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera)
 	{
-		// 编辑器模式：只渲染，不进行物理模拟
-		RenderScene();
+		// 编辑器模式：使用独立的 EditorCamera 渲染，不进行物理模拟
+		RenderScene(camera);
 	}
 
 	void Scene::OnUpdate(Timestep ts)
@@ -619,6 +620,58 @@ namespace Yuicy {
 
 			RenderCommand::SetDepthTest(true);
 		}
+	}
+
+	void Scene::RenderScene(EditorCamera& camera)
+	{
+		// 禁用2D渲染的深度测试
+		RenderCommand::SetDepthTest(false);
+
+		Renderer2D::BeginScene(camera);
+
+		struct SpriteRenderData
+		{
+			glm::mat4 Transform;
+			SpriteRendererComponent* Sprite;
+		};
+		std::vector<SpriteRenderData> renderQueue;
+
+		auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+		renderQueue.reserve(group.size());
+
+		for (auto entity : group)
+		{
+			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite });
+		}
+
+		std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {
+			return d.Sprite->SortingOrder;
+		});
+
+		for (const auto& data : renderQueue)
+		{
+			const auto& sprite = *data.Sprite;
+
+			if (sprite.SubTexture)
+			{
+				Renderer2D::DrawSprite(data.Transform,
+					sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+			}
+			else if (sprite.Texture)
+			{
+				Renderer2D::DrawSprite(data.Transform,
+					sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY);
+			}
+			else
+			{
+				Renderer2D::DrawQuad(data.Transform, sprite.Color);
+			}
+		}
+
+		Renderer2D::EndScene();
+
+		RenderCommand::SetDepthTest(true);
 	}
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
