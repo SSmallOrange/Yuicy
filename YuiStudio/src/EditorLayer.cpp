@@ -197,6 +197,9 @@ namespace Yuicy {
 		// ImGui::Image() → 绘制渲染结果
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_viewportSize.x, m_viewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
+		// Gizmo 绘制
+		OnImGuiDrawGizmos();
+
 		ImGui::End(); // Viewport
 		ImGui::PopStyleVar();
 	}
@@ -374,28 +377,9 @@ namespace Yuicy {
 			return OnMouseButtonPressed(event);
 		});
 
-		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e) -> bool
+		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& event)
 		{
-			if (e.IsRepeat())
-				return false;
-
-			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
-
-			switch (e.GetKeyCode())
-			{
-			case Key::N:
-				if (ctrl) NewScene();
-				break;
-			case Key::O:
-				if (ctrl) OpenScene();
-				break;
-			case Key::S:
-				if (ctrl && shift) SaveSceneAs();
-				else if (ctrl) SaveScene();
-				break;
-			}
-			return false;
+			return OnKeyPressed(event);
 		});
 	}
 
@@ -403,8 +387,50 @@ namespace Yuicy {
 	{
 		if (e.GetMouseButton() == Mouse::ButtonLeft)
 		{
-			if (m_viewportHovered && !Input::IsKeyPressed(Key::LeftAlt))
+			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
+			if (m_viewportHovered && !altPressed && !ImGuizmo::IsOver())
 				m_sceneHierarchyPanel.SetSelectedEntity(m_hoveredEntity);
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
+	{
+		if (e.IsRepeat())
+			return false;
+
+		bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+		switch (e.GetKeyCode())
+		{
+		case Key::N:
+			if (ctrl) NewScene();
+			break;
+		case Key::O:
+			if (ctrl) OpenScene();
+			break;
+		case Key::S:
+			if (ctrl && shift) SaveSceneAs();
+			else if (ctrl) SaveScene();
+			break;
+		case Key::Q:
+			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+				m_gizmoType = -1;
+			break;
+		case Key::W:
+			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::TRANSLATE;
+			break;
+		case Key::E:
+			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::ROTATE;
+			break;
+		case Key::R:
+			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
 		}
 
 		return false;
@@ -419,6 +445,7 @@ namespace Yuicy {
 		m_activeScene = m_editorScene;
 		m_currentScenePath = std::filesystem::path{};
 		m_hoveredEntity = {};
+		m_gizmoType = -1;
 		m_sceneHierarchyPanel.SetContext(m_activeScene);
 	}
 
@@ -436,6 +463,7 @@ namespace Yuicy {
 				m_activeScene = m_editorScene;
 				m_currentScenePath = filepath;
 				m_hoveredEntity = {};
+				m_gizmoType = -1;
 				m_sceneHierarchyPanel.SetContext(m_activeScene);
 				YUICY_CORE_INFO("Opened scene: {}", filepath);
 			}
@@ -508,6 +536,53 @@ namespace Yuicy {
 			return ofn.lpstrFile;
 
 		return {};
+	}
+
+	void EditorLayer::OnImGuiDrawGizmos()
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		Entity selectedEntity = m_sceneHierarchyPanel.GetSelectedEntity();
+		if (!selectedEntity || m_gizmoType == -1)
+			return;
+
+		ImGuizmo::SetOrthographic(true);
+		ImGuizmo::SetDrawlist();  // 设置当前绘制队列为 Viewport
+		ImGuizmo::SetRect(m_viewportBounds[0].x, m_viewportBounds[0].y, m_viewportSize.x, m_viewportSize.y);
+
+		const glm::mat4& cameraProjection = m_editorCamera.GetProjection();
+		glm::mat4 cameraView = m_editorCamera.GetViewMatrix();
+		glm::mat4 worldTransform = m_activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
+
+		bool snap = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		float snapValue = 0.5f;
+		if (m_gizmoType == ImGuizmo::OPERATION::ROTATE)
+			snapValue = 45.0f;
+		float snapValues[3] = { snapValue, snapValue, snapValue };  // 变化值
+
+		ImGuizmo::Manipulate(
+			glm::value_ptr(cameraView),			// 相机参数
+			glm::value_ptr(cameraProjection),
+			(ImGuizmo::OPERATION)m_gizmoType,	// 操作类型
+			ImGuizmo::LOCAL,					// 本地坐标系
+			glm::value_ptr(worldTransform),
+			nullptr,
+			snap ? snapValues : nullptr
+		);
+
+		if (ImGuizmo::IsUsing())  // 正在操作
+		{
+			glm::mat4 localTransform = worldTransform;
+			Entity parent = selectedEntity.GetParent();
+			if (parent)
+			{
+				glm::mat4 parentWorldTransform = m_activeScene->GetWorldSpaceTransformMatrix(parent);
+				localTransform = glm::inverse(parentWorldTransform) * worldTransform;
+			}
+
+			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
+		}
 	}
 
 }

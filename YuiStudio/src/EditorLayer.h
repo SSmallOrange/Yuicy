@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy.h"
+#include "Yuicy/ImGui/ImGuizmo.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Panels/SceneHierarchyPanel.h"
 
@@ -20,6 +21,7 @@ namespace Yuicy {
 
 	private:
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+		bool OnKeyPressed(KeyPressedEvent& e);
 
 	private:
 		// 场景操作
@@ -35,6 +37,7 @@ namespace Yuicy {
 	private:
 		void OnImGuiViewportRender();	// 视口渲染
 		void OnImGuiDrawStateRender();  // 渲染信息统计
+		void OnImGuiDrawGizmos();       // Gizmo 绘制
 
 		// 自定义标题栏
 		float UIDrawTitlebar();
@@ -65,6 +68,9 @@ namespace Yuicy {
 		SceneHierarchyPanel m_sceneHierarchyPanel;
 
 		bool m_titleBarHovered = false;
+
+		// Gizmo
+		int m_gizmoType = -1;
 	};
 
 }

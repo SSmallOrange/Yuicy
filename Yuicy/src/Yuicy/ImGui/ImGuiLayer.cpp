@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Yuicy/ImGui/ImGuiLayer.h"
+#include "Yuicy/ImGui/ImGuizmo.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -82,11 +83,11 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
- 		ImGui_ImplOpenGL3_NewFrame();
- 		ImGui_ImplGlfw_NewFrame();
- 		ImGui::NewFrame();
- 		// ImGuizmo::BeginFrame();
- 	}
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+	}
  
  	void ImGuiLayer::End()
 	{

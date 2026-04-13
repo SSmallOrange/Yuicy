@@ -17,6 +17,14 @@ namespace Yuicy {
 
 	void EditorCamera::OnUpdate(Timestep ts)
 	{
+		bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
+		if (!altPressed)
+		{
+			// 编辑器相机移动需要 Alt 作为修饰键，避免与 Gizmo 快捷键冲突。
+			m_translationSpeed = m_zoomLevel;
+			return;
+		}
+
 		if (Input::IsKeyPressed(Key::A))
 		{
 			m_position.x -= m_translationSpeed * ts;
