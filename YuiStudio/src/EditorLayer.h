@@ -22,6 +22,8 @@ namespace Yuicy {
 	private:
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 		bool OnKeyPressed(KeyPressedEvent& e);
+		void OnScenePlay();
+		void OnSceneStop();
 
 	private:
 		// 场景操作
@@ -38,6 +40,7 @@ namespace Yuicy {
 		void OnImGuiViewportRender();	// 视口渲染
 		void OnImGuiDrawStateRender();  // 渲染信息统计
 		void OnImGuiDrawGizmos();       // Gizmo 绘制
+		void OnImGuiToolbarRender();    // Play/Stop 工具栏
 
 		// 自定义标题栏
 		float UIDrawTitlebar();

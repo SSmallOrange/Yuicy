@@ -16,6 +16,30 @@
 
 namespace Yuicy {
 
+	static bool SceneHasPrimaryCamera(const Ref<Scene>& scene)
+	{
+		if (!scene)
+			return false;
+
+		auto view = scene->GetAllEntitiesWith<CameraComponent>();
+		for (auto entity : view)
+		{
+			if (view.get<CameraComponent>(entity).Primary)
+				return true;
+		}
+
+		return false;
+	}
+
+	static void CreateDefaultPrimaryCamera(const Ref<Scene>& scene)
+	{
+		if (!scene || SceneHasPrimaryCamera(scene))
+			return;
+
+		auto cameraEntity = scene->CreateEntity("Camera");
+		cameraEntity.AddComponent<CameraComponent>();
+	}
+
 	EditorLayer::EditorLayer()
 		: Layer("EditorLayer")
 	{
@@ -34,6 +58,7 @@ namespace Yuicy {
 		m_editorScene = CreateRef<Scene>();
 		m_activeScene = m_editorScene;
 		m_editorScene->SetName("UntitledScene");
+		CreateDefaultPrimaryCamera(m_editorScene);
 
 		// 编辑器相机
 		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
@@ -48,6 +73,41 @@ namespace Yuicy {
 
 	void EditorLayer::OnDetach()
 	{
+	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		if (!SceneHasPrimaryCamera(m_editorScene))
+		{
+			YUICY_CORE_WARN("Cannot enter Play mode: scene has no primary camera.");
+			return;
+		}
+
+		m_sceneState = SceneState::Play;
+
+		m_activeScene = Scene::Copy(m_editorScene);
+		m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+		m_activeScene->OnRuntimeStart();
+
+		m_hoveredEntity = {};
+		m_sceneHierarchyPanel.SetContext(m_activeScene);
+	}
+
+	void EditorLayer::OnSceneStop()
+	{
+		if (m_sceneState != SceneState::Play || !m_activeScene)
+			return;
+
+		m_activeScene->OnRuntimeStop();
+		m_sceneState = SceneState::Edit;
+
+		m_activeScene = m_editorScene;
+		m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+		m_hoveredEntity = {};
+		m_sceneHierarchyPanel.SetContext(m_activeScene);
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -161,6 +221,8 @@ namespace Yuicy {
 		OnImGuiViewportRender();
 		// State 面板
 		OnImGuiDrawStateRender();
+		// Play/Stop 工具栏
+		OnImGuiToolbarRender();
 
 		// Scene Hierarchy + Properties
 		m_sceneHierarchyPanel.OnImGuiRender();
@@ -212,6 +274,7 @@ namespace Yuicy {
 		ImGui::Text("Renderer2D Stats:");
 		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 		ImGui::Text("Quads: %d", stats.QuadCount);
+		ImGui::Text("Lines: %d", stats.LineCount);
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 		ImGui::Separator();
@@ -222,6 +285,60 @@ namespace Yuicy {
 		ImGui::Text("Hovered Entity: %s", hoveredName.c_str());
 
 		ImGui::End();
+	}
+
+	void EditorLayer::OnImGuiToolbarRender()
+	{
+		if (m_viewportSize.x <= 0.0f || m_viewportSize.y <= 0.0f)
+			return;
+
+		const bool isPlaying = m_sceneState == SceneState::Play;
+		const char* buttonLabel = isPlaying ? "Stop" : "Play";
+
+		const float edgeOffset = 8.0f;
+		const float buttonHeight = 24.0f;
+		const float labelWidth = ImGui::CalcTextSize(buttonLabel).x + 24.0f;
+		const float buttonWidth = labelWidth > buttonHeight ? labelWidth : buttonHeight;
+		const float windowWidth = buttonWidth + edgeOffset * 2.0f;
+		const float windowHeight = buttonHeight + edgeOffset;
+
+		float toolbarX = (m_viewportBounds[0].x + m_viewportBounds[1].x) * 0.5f;
+		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, m_viewportBounds[0].y + edgeOffset));
+		ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight));
+		ImGui::SetNextWindowBgAlpha(0.75f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(edgeOffset, edgeOffset * 0.5f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		ImGui::Begin("##toolbar", nullptr,
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
+			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		const ImVec4 hoveredColor = isPlaying
+			? ImVec4(0.8f, 0.2f, 0.2f, 1.0f)
+			: ImVec4(0.2f, 0.7f, 0.2f, 1.0f);
+		const ImVec4 activeColor = isPlaying
+			? ImVec4(0.7f, 0.15f, 0.15f, 1.0f)
+			: ImVec4(0.15f, 0.6f, 0.15f, 1.0f);
+
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoveredColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
+
+		if (ImGui::Button(buttonLabel, ImVec2(buttonWidth, buttonHeight)))
+		{
+			if (isPlaying)
+				OnSceneStop();
+			else
+				OnScenePlay();
+		}
+
+		ImGui::PopStyleColor(2);
+		ImGui::End();
+
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(3);
 	}
 
 	// 标题栏
@@ -439,9 +556,13 @@ namespace Yuicy {
 	// 场景操作
 	void EditorLayer::NewScene()
 	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
 		m_editorScene = CreateRef<Scene>();
 		m_editorScene->SetName("UntitledScene");
 		m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+		CreateDefaultPrimaryCamera(m_editorScene);
 		m_activeScene = m_editorScene;
 		m_currentScenePath = std::filesystem::path{};
 		m_hoveredEntity = {};
@@ -451,6 +572,9 @@ namespace Yuicy {
 
 	void EditorLayer::OpenScene()
 	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
 		std::string filepath = OpenFileDialog(Yuicy::SceneSerializer::GetSceneSerializerFileFilter());
 		if (!filepath.empty())
 		{
@@ -472,9 +596,12 @@ namespace Yuicy {
 
 	void EditorLayer::SaveScene()
 	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
 		if (!m_currentScenePath.empty())
 		{
-			SceneSerializer serializer(m_activeScene);
+			SceneSerializer serializer(m_editorScene);
 			serializer.Serialize(m_currentScenePath);
 		}
 		else
@@ -485,6 +612,9 @@ namespace Yuicy {
 
 	void EditorLayer::SaveSceneAs()
 	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
 		std::string filepath = SaveFileDialog(Yuicy::SceneSerializer::GetSceneSerializerFileFilter());
 		if (!filepath.empty())
 		{
@@ -492,7 +622,7 @@ namespace Yuicy {
 			if (filepath.find(".yui") == std::string::npos)
 				filepath += ".yui";
 
-			SceneSerializer serializer(m_activeScene);
+			SceneSerializer serializer(m_editorScene);
 			serializer.Serialize(filepath);
 			m_currentScenePath = filepath;
 		}
@@ -584,5 +714,4 @@ namespace Yuicy {
 			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
 		}
 	}
-
 }

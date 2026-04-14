@@ -35,6 +35,28 @@ namespace Yuicy {
 		return b2_staticBody;
 	}
 
+	template<typename T>
+	static void CopyComponent(entt::registry& dstRegistry, entt::registry& srcRegistry, const std::unordered_map<UUID, entt::entity>& enttMap)
+	{
+		auto srcEntities = srcRegistry.view<T>();
+		for (auto srcEntity : srcEntities)
+		{
+			entt::entity dstEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+			auto& srcComponent = srcRegistry.get<T>(srcEntity);
+			dstRegistry.emplace_or_replace<T>(dstEntity, srcComponent);
+		}
+	}
+
+	template<typename T>
+	static void CopyComponentIfExists(entt::entity dst, entt::registry& dstRegistry, entt::entity src, entt::registry& srcRegistry)
+	{
+		if (srcRegistry.all_of<T>(src))
+		{
+			auto& srcComponent = srcRegistry.get<T>(src);
+			dstRegistry.emplace_or_replace<T>(dst, srcComponent);
+		}
+	}
+
 	Scene::Scene()
 	{
 	}
@@ -43,6 +65,45 @@ namespace Yuicy {
 	{
 		delete m_PhysicsWorld;
 		delete m_ContactListener;
+	}
+
+	Ref<Scene> Scene::Copy(Ref<Scene> source)
+	{
+		if (!source)
+			return {};
+
+		Ref<Scene> newScene = CreateRef<Scene>();
+		newScene->m_name = source->m_name;
+		newScene->m_ViewportWidth = source->m_ViewportWidth;
+		newScene->m_ViewportHeight = source->m_ViewportHeight;
+
+		auto& srcRegistry = source->m_Registry;
+		auto& dstRegistry = newScene->m_Registry;
+
+		std::unordered_map<UUID, entt::entity> enttMap;
+
+		auto idView = srcRegistry.view<IDComponent>();
+		for (auto srcEntity : idView)
+		{
+			UUID uuid = srcRegistry.get<IDComponent>(srcEntity).ID;
+			const auto& name = srcRegistry.get<TagComponent>(srcEntity).Tag;
+			Entity newEntity = newScene->CreateEntityWithUUID(uuid, name);
+			enttMap[uuid] = newEntity.m_EntityHandle;
+		}
+
+		CopyComponent<TagComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<TransformComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<RelationshipComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<SpriteRendererComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<CameraComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<NativeScriptComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<LuaScriptComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<AnimationComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<Rigidbody2DComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<BoxCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<CircleCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
+
+		return newScene;
 	}
 
 	Entity Scene::CreateEntity(const std::string& name)

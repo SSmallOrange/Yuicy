@@ -19,6 +19,10 @@ namespace Yuicy {
 	class Scene
 	{
 	public:
+		// 场景拷贝
+		static Ref<Scene> Copy(Ref<Scene> source);
+
+	public:
 		Scene();
 		~Scene();
 
