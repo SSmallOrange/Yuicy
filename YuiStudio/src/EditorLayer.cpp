@@ -6,7 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <filesystem>
-#include <fstream>
+#include <string>
 
 // Win32 文件对话框
 #include <commdlg.h>
@@ -40,6 +40,42 @@ namespace Yuicy {
 		cameraEntity.AddComponent<CameraComponent>();
 	}
 
+	static void CreateDefaultSceneContent(const Ref<Scene>& scene)
+	{
+		if (!scene)
+			return;
+
+		scene->SetName("UntitledScene");
+		CreateDefaultPrimaryCamera(scene);
+
+		auto testEntity = scene->CreateEntity("TestSprite");
+		testEntity.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.2f, 0.6f, 0.9f, 1.0f });
+	}
+
+	static std::filesystem::path GetDefaultProjectScenePath(const Ref<Project>& project)
+	{
+		YUICY_CORE_ASSERT(project);
+		return project->GetAssetDirectory() / "Scenes" / ("StartScene" + std::string(SceneSerializer::GetSceneSerializerDefaultExtension()));
+	}
+
+	// 获取 filepath 相对于 directory 的相对路径
+	static bool TryGetPathRelativeToDirectory(const std::filesystem::path& filepath, const std::filesystem::path& directory, 
+		std::filesystem::path& outRelativePath)
+	{
+		if (filepath.empty() || directory.empty())
+			return false;
+
+		std::filesystem::path relativePath = filepath.lexically_normal().lexically_relative(directory.lexically_normal());
+		if (relativePath.empty())
+			return false;
+
+		if (auto it = relativePath.begin(); it != relativePath.end() && it->string() == "..")  // 判断当前路径在 directory 目录下
+			return false;
+
+		outRelativePath = relativePath;
+		return true;
+	}
+
 	EditorLayer::EditorLayer()
 		: Layer("EditorLayer")
 	{
@@ -57,15 +93,10 @@ namespace Yuicy {
 		// 创建默认场景
 		m_editorScene = CreateRef<Scene>();
 		m_activeScene = m_editorScene;
-		m_editorScene->SetName("UntitledScene");
-		CreateDefaultPrimaryCamera(m_editorScene);
+		CreateDefaultSceneContent(m_editorScene);
 
 		// 编辑器相机
 		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
-
-		// 测试实体
-		auto testEntity = m_editorScene->CreateEntity("TestSprite");
-		testEntity.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.2f, 0.6f, 0.9f, 1.0f });
 
 		// 初始化面板
 		m_sceneHierarchyPanel.SetContext(m_activeScene);
@@ -372,6 +403,17 @@ namespace Yuicy {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
+				if (ImGui::MenuItem("New Project..."))
+					NewProject();
+
+				if (ImGui::MenuItem("Open Project..."))
+					OpenProject();
+
+				if (ImGui::MenuItem("Save Project"))
+					SaveProject();
+
+				ImGui::Separator();
+
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
 					NewScene();
 
@@ -407,11 +449,18 @@ namespace Yuicy {
 
 		// 居中标题文字
 		{
-			const char* title = "YuiStudio";
-			ImVec2 textSize = ImGui::CalcTextSize(title);
+			std::string title = "YuiStudio";
+			if (auto activeProject = Project::GetActive())
+			{
+				const std::string& projectName = activeProject->GetConfig().Name;
+				if (!projectName.empty())
+					title += " - " + projectName;
+			}
+
+			ImVec2 textSize = ImGui::CalcTextSize(title.c_str());
 			float textX = titlebarMin.x + (windowWidth - textSize.x) * 0.5f;
 			float textY = titlebarMin.y + (titlebarHeight - textSize.y) * 0.5f;
-			drawList->AddText(ImVec2(textX, textY), IM_COL32(140, 140, 140, 255), title);
+			drawList->AddText(ImVec2(textX, textY), IM_COL32(140, 140, 140, 255), title.c_str());
 		}
 
 		// 窗口控制按钮
@@ -560,9 +609,8 @@ namespace Yuicy {
 			return;
 
 		m_editorScene = CreateRef<Scene>();
-		m_editorScene->SetName("UntitledScene");
+		CreateDefaultSceneContent(m_editorScene);
 		m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-		CreateDefaultPrimaryCamera(m_editorScene);
 		m_activeScene = m_editorScene;
 		m_currentScenePath = std::filesystem::path{};
 		m_hoveredEntity = {};
@@ -603,6 +651,9 @@ namespace Yuicy {
 		{
 			SceneSerializer serializer(m_editorScene);
 			serializer.Serialize(m_currentScenePath);
+
+			if (Project::GetActive())
+				SaveProject();
 		}
 		else
 		{
@@ -615,17 +666,180 @@ namespace Yuicy {
 		if (m_sceneState != SceneState::Edit)
 			return;
 
-		std::string filepath = SaveFileDialog(Yuicy::SceneSerializer::GetSceneSerializerFileFilter());
+		std::string filepath = SaveFileDialog(
+			Yuicy::SceneSerializer::GetSceneSerializerFileFilter(),
+			Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension());
 		if (!filepath.empty())
 		{
-			// 确保有 .yui 后缀
-			if (filepath.find(".yui") == std::string::npos)
-				filepath += ".yui";
+			std::filesystem::path scenePath = filepath;
+			if (scenePath.extension() != Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension())
+				scenePath += Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension();
 
 			SceneSerializer serializer(m_editorScene);
-			serializer.Serialize(filepath);
-			m_currentScenePath = filepath;
+			serializer.Serialize(scenePath);
+			m_currentScenePath = scenePath;
+
+			if (Project::GetActive())
+				SaveProject();
 		}
+	}
+
+	void EditorLayer::NewProject()
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		std::string filepath = SaveFileDialog(
+			ProjectSerializer::GetProjectSerializerFileFilter(),
+			ProjectSerializer::GetProjectSerializerDefaultExtension());
+		if (filepath.empty())
+			return;
+
+		std::filesystem::path projectPath = filepath;
+		if (projectPath.extension() != ProjectSerializer::GetProjectSerializerDefaultExtension())
+			projectPath += ProjectSerializer::GetProjectSerializerDefaultExtension();
+
+		auto project = CreateRef<Project>();
+		project->GetConfig().Name = projectPath.stem().string();
+		project->GetConfig().ProjectDirectory = projectPath.parent_path().string();
+		project->GetConfig().ProjectFileName = projectPath.filename().string();
+
+		std::error_code ec;
+		std::filesystem::create_directories(project->GetAssetDirectory(), ec);
+		if (ec)
+		{
+			YUICY_CORE_ERROR("[Project] Failed to create asset directory '{}': {}", project->GetAssetDirectory().string(), ec.message());
+			return;
+		}
+
+		ec.clear();
+		std::filesystem::path scriptDirectory = std::filesystem::path(project->GetConfig().ProjectDirectory) / project->GetConfig().ScriptDirectory;
+		std::filesystem::create_directories(scriptDirectory, ec);
+		if (ec)
+		{
+			YUICY_CORE_ERROR("[Project] Failed to create script directory '{}': {}", scriptDirectory.string(), ec.message());
+			return;
+		}
+
+		Project::SetActive(project);
+		m_currentProjectPath = projectPath.lexically_normal();
+
+		if (!m_editorScene)
+			NewScene();
+
+		SaveProject();
+	}
+
+	void EditorLayer::OpenProject()
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		std::string filepath = OpenFileDialog(ProjectSerializer::GetProjectSerializerFileFilter());
+		if (!filepath.empty())
+			OpenProject(filepath);
+	}
+
+	void EditorLayer::OpenProject(const std::filesystem::path& filepath)
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		auto project = CreateRef<Project>();
+		ProjectSerializer serializer(project);
+		if (!serializer.Deserialize(filepath))
+			return;
+
+		Project::SetActive(project);
+		m_currentProjectPath = filepath;
+
+		bool sceneLoaded = false;
+		if (!project->GetConfig().StartScene.empty())
+		{
+			std::filesystem::path scenePath = Project::GetActiveAssetDirectory() / project->GetConfig().StartScene;
+			if (std::filesystem::exists(scenePath))
+			{
+				auto scene = CreateRef<Scene>();
+				scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+
+				SceneSerializer sceneSerializer(scene);
+				if (sceneSerializer.Deserialize(scenePath))
+				{
+					m_editorScene = scene;
+					m_activeScene = m_editorScene;
+					m_currentScenePath = scenePath;
+					m_hoveredEntity = {};
+					m_gizmoType = -1;
+					m_sceneHierarchyPanel.SetContext(m_activeScene);
+					sceneLoaded = true;
+				}
+			}
+			else
+			{
+				YUICY_CORE_WARN("[Project] Start scene not found: {}", scenePath.string());
+			}
+		}
+
+		if (!sceneLoaded)
+			NewScene();
+	}
+
+	void EditorLayer::SaveProject()
+	{
+		if (m_sceneState != SceneState::Edit)
+			return;
+
+		Ref<Project> activeProject = Project::GetActive();
+		if (!activeProject || m_currentProjectPath.empty())
+		{
+			NewProject();
+			return;
+		}
+
+		auto& config = activeProject->GetConfig();
+		if (!m_editorScene)
+		{
+			config.StartScene.clear();
+		}
+		else
+		{
+			std::filesystem::path sceneSavePath = m_currentScenePath;
+			std::filesystem::path relativeScenePath;
+
+			if (sceneSavePath.empty()
+				|| !TryGetPathRelativeToDirectory(sceneSavePath, activeProject->GetAssetDirectory(), relativeScenePath))
+			{
+				sceneSavePath = GetDefaultProjectScenePath(activeProject);
+			}
+
+			std::error_code ec;
+			std::filesystem::create_directories(sceneSavePath.parent_path(), ec);
+			if (ec)
+			{
+				YUICY_CORE_ERROR("[Project] Failed to create scene directory '{}': {}", sceneSavePath.parent_path().string(), ec.message());
+				return;
+			}
+
+			SceneSerializer sceneSerializer(m_editorScene);
+			sceneSerializer.Serialize(sceneSavePath);
+			m_currentScenePath = sceneSavePath.lexically_normal();
+
+			if (TryGetPathRelativeToDirectory(m_currentScenePath, activeProject->GetAssetDirectory(), relativeScenePath))
+			{
+				config.StartScene = relativeScenePath.generic_string();
+			}
+			else
+			{
+				YUICY_CORE_ERROR(
+					"[Project] Failed to compute StartScene relative path for '{}' in asset directory '{}'.",
+					m_currentScenePath.string(),
+					activeProject->GetAssetDirectory().string());
+				return;
+			}
+		}
+
+		ProjectSerializer serializer(activeProject);
+		serializer.Serialize(m_currentProjectPath);
 	}
 
 	// Win32 文件对话框
@@ -648,10 +862,11 @@ namespace Yuicy {
 		return {};
 	}
 
-	std::string EditorLayer::SaveFileDialog(const char* filter)
+	std::string EditorLayer::SaveFileDialog(const char* filter, const char* defaultExtension)
 	{
 		OPENFILENAMEA ofn;
 		CHAR szFile[260] = { 0 };
+		std::string normalizedExtension;
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
 		ofn.lStructSize = sizeof(OPENFILENAME);
 		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
@@ -660,7 +875,12 @@ namespace Yuicy {
 		ofn.lpstrFilter = filter;
 		ofn.nFilterIndex = 1;
 		ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
-		ofn.lpstrDefExt = "yui";
+
+		if (defaultExtension && defaultExtension[0] != '\0')
+		{
+			normalizedExtension = defaultExtension[0] == '.' ? defaultExtension + 1 : defaultExtension;
+			ofn.lpstrDefExt = normalizedExtension.c_str();
+		}
 
 		if (GetSaveFileNameA(&ofn) == TRUE)
 			return ofn.lpstrFile;

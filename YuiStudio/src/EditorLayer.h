@@ -32,9 +32,15 @@ namespace Yuicy {
 		void SaveScene();
 		void SaveSceneAs();
 
+		// 项目操作
+		void NewProject();
+		void OpenProject();
+		void OpenProject(const std::filesystem::path& filepath);
+		void SaveProject();
+
 		// 文件对话框
 		std::string OpenFileDialog(const char* filter);
-		std::string SaveFileDialog(const char* filter);
+		std::string SaveFileDialog(const char* filter, const char* defaultExtension = nullptr);
 
 	private:
 		void OnImGuiViewportRender();	// 视口渲染
@@ -51,7 +57,9 @@ namespace Yuicy {
 		Ref<Scene> m_editorScene;
 		Ref<Scene> m_activeScene;
 		SceneState m_sceneState = SceneState::Edit;
+
 		std::filesystem::path m_currentScenePath;
+		std::filesystem::path m_currentProjectPath;
 
 		// 渲染
 		Ref<Framebuffer> m_framebuffer;
