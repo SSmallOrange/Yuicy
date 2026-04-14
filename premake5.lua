@@ -134,7 +134,8 @@ project "YuiStudio"
     files { 
         "YuiStudio/src/**.h", 
         "YuiStudio/src/**.hpp", 
-        "YuiStudio/src/**.cpp"
+        "YuiStudio/src/**.cpp",
+        "YuiStudio/assets/**.*"
     }
     includedirs { 
         "Yuicy/src", 
