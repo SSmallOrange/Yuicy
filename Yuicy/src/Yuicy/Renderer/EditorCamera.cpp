@@ -27,19 +27,19 @@ namespace Yuicy {
 
 		if (Input::IsKeyPressed(Key::A))
 		{
-			m_position.x -= m_translationSpeed * ts;
+			m_position.x += m_translationSpeed * ts;
 		}
 		if (Input::IsKeyPressed(Key::D))
 		{
-			m_position.x += m_translationSpeed * ts;
+			m_position.x -= m_translationSpeed * ts;
 		}
 		if (Input::IsKeyPressed(Key::W))
 		{
-			m_position.y += m_translationSpeed * ts;
+			m_position.y -= m_translationSpeed * ts;
 		}
 		if (Input::IsKeyPressed(Key::S))
 		{
-			m_position.y -= m_translationSpeed * ts;
+			m_position.y += m_translationSpeed * ts;
 		}
 
 		// 移动速度受缩放级别控制
