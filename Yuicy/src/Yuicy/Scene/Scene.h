@@ -5,6 +5,7 @@
 
 #include "Yuicy/Core/UUID.h"
 #include "Yuicy/Core/Timestep.h"
+#include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Physics/Physics2D.h"
 
@@ -16,9 +17,12 @@ namespace Yuicy {
 	class ContactListener;
 	class EditorCamera;
 
-	class Scene
+	class Scene : public Asset
 	{
 	public:
+		static AssetType GetStaticType() { return AssetType::Scene; }
+		virtual AssetType GetAssetType() const override { return GetStaticType(); }
+
 		// 场景拷贝
 		static Ref<Scene> Copy(Ref<Scene> source);
 

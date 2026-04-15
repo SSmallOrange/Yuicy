@@ -3,12 +3,17 @@
 #include <string>
 #include <glm/glm.hpp>
 
+#include "Yuicy/Asset/Asset.h"
+
 namespace Yuicy {
 
-	class Shader
+	class Shader : public Asset
 	{
 	public:
 		virtual ~Shader() = default;
+
+		static AssetType GetStaticType() { return AssetType::Shader; }
+		virtual AssetType GetAssetType() const override { return GetStaticType(); }
 
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;

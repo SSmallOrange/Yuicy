@@ -34,6 +34,10 @@
 #include "Yuicy/Scene/ScriptableEntity.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
+// Asset
+#include "Yuicy/Asset/Asset.h"
+#include "Yuicy/Asset/AssetTypes.h"
+
 // Project
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Project/ProjectSerializer.h"

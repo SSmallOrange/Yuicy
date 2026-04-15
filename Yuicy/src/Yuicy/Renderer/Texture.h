@@ -3,10 +3,11 @@
 #include <string>
 
 #include "Yuicy/Core/Base.h"
+#include "Yuicy/Asset/Asset.h"
 
 namespace Yuicy {
 
-	class Texture
+	class Texture : public Asset
 	{
 	public:
 		virtual ~Texture() = default;
@@ -26,6 +27,9 @@ namespace Yuicy {
 	class Texture2D : public Texture
 	{
 	public:
+		static AssetType GetStaticType() { return AssetType::Texture; }
+		virtual AssetType GetAssetType() const override { return GetStaticType(); }
+
 		static Ref<Texture2D> Create(const std::string& path);
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 	};
