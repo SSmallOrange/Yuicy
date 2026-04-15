@@ -554,7 +554,7 @@ namespace Yuicy {
 		if (e.GetMouseButton() == Mouse::ButtonLeft)
 		{
 			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
-			if (m_viewportHovered && !altPressed && !ImGuizmo::IsOver())
+			if (m_viewportHovered && !altPressed)
 				m_sceneHierarchyPanel.SetSelectedEntity(m_hoveredEntity);
 		}
 
