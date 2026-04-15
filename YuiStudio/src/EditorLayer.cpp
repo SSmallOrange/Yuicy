@@ -258,6 +258,9 @@ namespace Yuicy {
 		// Scene Hierarchy + Properties
 		m_sceneHierarchyPanel.OnImGuiRender();
 
+		// Content Browser
+		m_contentBrowserPanel.OnImGuiRender();
+
 		ImGui::End(); // DockSpace
 	}
 
@@ -289,6 +292,20 @@ namespace Yuicy {
 
 		// ImGui::Image() → 绘制渲染结果
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_viewportSize.x, m_viewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		// 接收从 ContentBrowser 拖拽过来的场景文件
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const auto* pathData = (const std::filesystem::path::value_type*)payload->Data;
+				std::filesystem::path filepath(pathData);
+				if (filepath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
+					OpenScene(filepath);
+			}
+
+			ImGui::EndDragDropTarget();
+		}
 
 		// Gizmo 绘制
 		OnImGuiDrawGizmos();
@@ -624,22 +641,31 @@ namespace Yuicy {
 			return;
 
 		std::string filepath = OpenFileDialog(Yuicy::SceneSerializer::GetSceneSerializerFileFilter());
-		if (!filepath.empty())
+		if (!filepath.empty() && OpenScene(filepath))
 		{
-			m_editorScene = CreateRef<Scene>();
-			m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-
-			SceneSerializer serializer(m_editorScene);
-			if (serializer.Deserialize(filepath))
-			{
-				m_activeScene = m_editorScene;
-				m_currentScenePath = filepath;
-				m_hoveredEntity = {};
-				m_gizmoType = -1;
-				m_sceneHierarchyPanel.SetContext(m_activeScene);
-				YUICY_CORE_INFO("Opened scene: {}", filepath);
-			}
+			YUICY_CORE_INFO("Opened scene: {}", filepath);
 		}
+	}
+
+	bool EditorLayer::OpenScene(const std::filesystem::path& filepath)
+	{
+		if (m_sceneState != SceneState::Edit)
+			return false;
+
+		Ref<Scene> scene = CreateRef<Scene>();
+		scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+
+		SceneSerializer serializer(scene);
+		if (!serializer.Deserialize(filepath))
+			return false;
+
+		m_editorScene = scene;
+		m_activeScene = m_editorScene;
+		m_currentScenePath = filepath.lexically_normal();
+		m_hoveredEntity = {};
+		m_gizmoType = -1;
+		m_sceneHierarchyPanel.SetContext(m_activeScene);
+		return true;
 	}
 
 	void EditorLayer::SaveScene()
@@ -759,20 +785,7 @@ namespace Yuicy {
 			std::filesystem::path scenePath = Project::GetActiveAssetDirectory() / project->GetConfig().StartScene;
 			if (std::filesystem::exists(scenePath))
 			{
-				auto scene = CreateRef<Scene>();
-				scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-
-				SceneSerializer sceneSerializer(scene);
-				if (sceneSerializer.Deserialize(scenePath))
-				{
-					m_editorScene = scene;
-					m_activeScene = m_editorScene;
-					m_currentScenePath = scenePath;
-					m_hoveredEntity = {};
-					m_gizmoType = -1;
-					m_sceneHierarchyPanel.SetContext(m_activeScene);
-					sceneLoaded = true;
-				}
+				sceneLoaded = OpenScene(scenePath);
 			}
 			else
 			{

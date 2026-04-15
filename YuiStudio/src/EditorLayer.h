@@ -3,6 +3,8 @@
 #include "Yuicy.h"
 #include "Yuicy/ImGui/ImGuizmo.h"
 #include "Yuicy/Renderer/EditorCamera.h"
+
+#include "Panels/ContentBrowserPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 
 namespace Yuicy {
@@ -29,6 +31,7 @@ namespace Yuicy {
 		// 场景操作
 		void NewScene();
 		void OpenScene();
+		bool OpenScene(const std::filesystem::path& filepath);
 		void SaveScene();
 		void SaveSceneAs();
 
@@ -77,6 +80,7 @@ namespace Yuicy {
 
 		// 面板
 		SceneHierarchyPanel m_sceneHierarchyPanel;
+		ContentBrowserPanel m_contentBrowserPanel;
 
 		bool m_titleBarHovered = false;
 
