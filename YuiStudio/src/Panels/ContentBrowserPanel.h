@@ -19,6 +19,7 @@ namespace Yuicy {
 
 		Ref<Texture2D> m_directoryIcon;
 		Ref<Texture2D> m_fileIcon;
+		Ref<Texture2D> m_backIcon;
 
 		float m_thumbnailSize = 96.0f;
 		float m_padding = 16.0f;

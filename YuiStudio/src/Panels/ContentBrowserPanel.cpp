@@ -90,8 +90,9 @@ namespace Yuicy {
 
 	ContentBrowserPanel::ContentBrowserPanel()
 	{
-		m_directoryIcon = LoadIconTexture("assets/textures/ContentBrowser/Folder.png", { 237, 190, 67, 255 });
-		m_fileIcon = LoadIconTexture("assets/textures/ContentBrowser/File.png", { 181, 187, 196, 255 });
+		m_directoryIcon = LoadIconTexture("assets/textures/Editor/ContentBrowser/Folder.png", { 237, 190, 67, 255 });
+		m_fileIcon = LoadIconTexture("assets/textures/Editor/ContentBrowser/File.png", { 181, 187, 196, 255 });
+		m_backIcon = LoadIconTexture("assets/textures/Editor/Generic/Back.png", { 200, 200, 200, 255 });
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
@@ -125,16 +126,34 @@ namespace Yuicy {
 			return;
 		}
 
+		const float headerLineHeight = 18.0f;
+		const float defaultFontSize = ImGui::GetFontSize();
+		const float headerFontScale = defaultFontSize > 0.0f ? headerLineHeight / defaultFontSize : 1.0f;
+		ImGui::SetWindowFontScale(headerFontScale);
+
 		if (m_currentDirectory != m_baseDirectory)
 		{
-			if (ImGui::Button("<-"))
+			ImTextureID backTexID = reinterpret_cast<ImTextureID>((uintptr_t)m_backIcon->GetRendererID());
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 0.0f, 0.0f });
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
+			if (ImGui::ImageButton("##BackBtn", backTexID, ImVec2{ headerLineHeight, headerLineHeight }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
 				m_currentDirectory = m_currentDirectory.parent_path();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
 
 			ImGui::SameLine();
 		}
 
 		const std::string currentPathLabel = GetDisplayPath(activeProject->GetConfig(), m_baseDirectory, m_currentDirectory);
-		ImGui::TextUnformatted(currentPathLabel.c_str());
+		std::vector<char> currentPathBuffer(currentPathLabel.begin(), currentPathLabel.end());
+		currentPathBuffer.push_back('\0');
+
+		// Render the current directory as a read-only field so it can be selected and copied.
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4.0f, 0.0f });
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		ImGui::InputText("##CurrentPath", currentPathBuffer.data(), currentPathBuffer.size(), ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_AutoSelectAll);
+		ImGui::PopStyleVar();
+		ImGui::SetWindowFontScale(1.0f);
 		ImGui::Separator();
 
 		if (ImGui::BeginPopupContextWindow("ContentBrowserContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
@@ -211,9 +230,7 @@ namespace Yuicy {
 			if (isDirectory && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				m_currentDirectory /= entryPath.filename();
 
-			if (!isDirectory
-				&& entryPath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension()
-				&& ImGui::BeginDragDropSource())
+			if (!isDirectory && ImGui::BeginDragDropSource())
 			{
 				const auto& nativePath = entryPath.native();
 				ImGui::SetDragDropPayload(

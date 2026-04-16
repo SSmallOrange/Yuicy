@@ -6,6 +6,7 @@
 
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
+#include "Utils/EditorIconUtils.h"
 
 namespace Yuicy {
 
@@ -86,6 +87,10 @@ namespace Yuicy {
 
 		// Gizmo
 		int m_gizmoType = -1;
+
+		// 编辑器图标
+		Ref<Texture2D> m_playIcon;
+		Ref<Texture2D> m_stopIcon;
 	};
 
 }

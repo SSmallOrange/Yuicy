@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Asset/AssetManager.h"
+#include "Yuicy/Asset/EditorAssetManager.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -334,10 +336,93 @@ namespace Yuicy {
 		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
 			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
 
-			// TextureHandle
-			uint64_t textureHandle = (uint64_t)component.TextureHandle;
-			if (ImGui::InputScalar("Texture Handle", ImGuiDataType_U64, &textureHandle))
-				component.TextureHandle = textureHandle;
+			// Texture
+			std::string textureName = "None";
+			std::string texturePath;
+			bool hasTexture = component.TextureHandle != 0
+				&& AssetManager::IsAssetHandleValid(component.TextureHandle);
+
+			Ref<Texture2D> texture = nullptr;
+			if (hasTexture)
+			{
+				const auto& metadata = Project::GetEditorAssetManager()->GetMetadata(component.TextureHandle);
+				if (metadata.IsValid())
+				{
+					textureName = metadata.filePath.filename().string();
+					texturePath = metadata.filePath.string();
+				}
+				texture = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
+			}
+
+			// 纹理缩略图
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+			ImVec2 textureCursorPos = ImGui::GetCursorPos();
+			const float thumbnailSize = 64.0f;
+
+			// 绘制缩略图
+			if (hasTexture && texture)
+			{
+				ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)texture->GetRendererID());
+				ImGui::Image(texID, ImVec2{ thumbnailSize, thumbnailSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			}
+			else
+			{
+				ImGui::Button("Drop\nTexture", ImVec2{ thumbnailSize, thumbnailSize });
+			}
+
+			// 拖拽接收
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				{
+					const wchar_t* droppedPath = (const wchar_t*)payload->Data;
+					std::filesystem::path filepath = droppedPath;
+
+					// 检查是否为纹理类型
+					auto assetManager = Project::GetEditorAssetManager();
+					AssetType type = assetManager->GetAssetTypeFromPath(filepath);
+					if (type == AssetType::Texture)
+					{
+						AssetHandle handle = assetManager->ImportAsset(filepath);
+						if (handle != 0)
+							component.TextureHandle = handle;
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::PopStyleVar();
+
+			// Hover Tooltip: 大预览 + 文件路径
+			if (ImGui::IsItemHovered() && hasTexture && texture)
+			{
+				ImGui::BeginTooltip();
+				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+				ImGui::TextUnformatted(texturePath.c_str());
+				ImGui::PopTextWrapPos();
+				ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)texture->GetRendererID());
+				ImGui::Image(texID, ImVec2(256, 256), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+				ImGui::EndTooltip();
+			}
+
+			// 记录下一行位置，然后 SameLine 回到图片右侧
+			ImVec2 nextRowCursorPos = ImGui::GetCursorPos();
+			ImGui::SameLine();
+			ImVec2 rightOfImagePos = ImGui::GetCursorPos();
+
+			// X 按钮叠加在缩略图左上角
+			ImGui::SetCursorPos(textureCursorPos);
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+			if (hasTexture && ImGui::Button("X##ClearTexture", ImVec2(18, 18)))
+				component.TextureHandle = 0;
+			ImGui::PopStyleVar();
+
+			// 回到图片右侧，显示文件名
+			ImGui::SetCursorPos(rightOfImagePos);
+			ImGui::Text("%s", textureName.c_str());
+
+			// 恢复到下一行
+			ImGui::SetCursorPos(nextRowCursorPos);
 
 			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
 			ImGui::Checkbox("Flip X", &component.FlipX);

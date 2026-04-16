@@ -100,6 +100,10 @@ namespace Yuicy {
 
 		// 初始化面板
 		m_sceneHierarchyPanel.SetContext(m_activeScene);
+
+		// 编辑器图标
+		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
+		m_stopIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png", { 200, 50, 50, 255 });
 	}
 
 	void EditorLayer::OnDetach()
@@ -341,14 +345,12 @@ namespace Yuicy {
 			return;
 
 		const bool isPlaying = m_sceneState == SceneState::Play;
-		const char* buttonLabel = isPlaying ? "Stop" : "Play";
+		Ref<Texture2D> icon = isPlaying ? m_stopIcon : m_playIcon;
 
 		const float edgeOffset = 8.0f;
-		const float buttonHeight = 24.0f;
-		const float labelWidth = ImGui::CalcTextSize(buttonLabel).x + 24.0f;
-		const float buttonWidth = labelWidth > buttonHeight ? labelWidth : buttonHeight;
-		const float windowWidth = buttonWidth + edgeOffset * 2.0f;
-		const float windowHeight = buttonHeight + edgeOffset;
+		const float iconSize = 24.0f;
+		const float windowWidth = iconSize + edgeOffset * 2.0f;
+		const float windowHeight = iconSize + edgeOffset;
 
 		float toolbarX = (m_viewportBounds[0].x + m_viewportBounds[1].x) * 0.5f;
 		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, m_viewportBounds[0].y + edgeOffset));
@@ -364,17 +366,14 @@ namespace Yuicy {
 			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
 			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		const ImVec4 hoveredColor = isPlaying
-			? ImVec4(0.8f, 0.2f, 0.2f, 1.0f)
-			: ImVec4(0.2f, 0.7f, 0.2f, 1.0f);
-		const ImVec4 activeColor = isPlaying
-			? ImVec4(0.7f, 0.15f, 0.15f, 1.0f)
-			: ImVec4(0.15f, 0.6f, 0.15f, 1.0f);
+		const ImVec4 tintNormal = ImVec4(1, 1, 1, 0.8f);
+		const ImVec4 tintHovered = ImVec4(1, 1, 1, 1.0f);
 
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoveredColor);
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
 
-		if (ImGui::Button(buttonLabel, ImVec2(buttonWidth, buttonHeight)))
+		ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)icon->GetRendererID());
+		if (ImGui::ImageButton("##PlayStop", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
 		{
 			if (isPlaying)
 				OnSceneStop();
