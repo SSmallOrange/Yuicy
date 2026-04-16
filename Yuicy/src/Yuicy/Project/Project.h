@@ -1,12 +1,14 @@
 #pragma once
 
-#include "Yuicy/Core/Assert.h"
 #include "Yuicy/Core/Base.h"
+#include "Yuicy/Core/Assert.h"
 
 #include <filesystem>
 #include <string>
 
 namespace Yuicy {
+
+	class EditorAssetManager;
 
 	struct ProjectConfig
 	{
@@ -41,6 +43,9 @@ namespace Yuicy {
 		// 活动项目管理
 		static Ref<Project> GetActive() { return s_activeProject; }
 		static void SetActive(const Ref<Project>& project);
+
+		// 资源管理
+		static Ref<EditorAssetManager> GetEditorAssetManager() { return s_assetManager; }
 
 		// 路径工具方法
 		static const std::string& GetProjectName()
@@ -79,10 +84,17 @@ namespace Yuicy {
 			return std::filesystem::path(s_activeProject->GetConfig().ProjectDirectory) / "Cache";
 		}
 
+		static std::filesystem::path GetAssetRegistryPath()
+		{
+			YUICY_CORE_ASSERT(s_activeProject);
+			return s_activeProject->GetAssetDirectory() / "AssetRegistry.yregistry";
+		}
+
 	private:
 		ProjectConfig m_config;
 
 		inline static Ref<Project> s_activeProject;
+		inline static Ref<EditorAssetManager> s_assetManager;
 
 		friend class ProjectSerializer;
 	};

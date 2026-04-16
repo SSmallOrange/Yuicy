@@ -36,6 +36,7 @@
 
 // Asset
 #include "Yuicy/Asset/Asset.h"
+#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/AssetTypes.h"
 
 // Project

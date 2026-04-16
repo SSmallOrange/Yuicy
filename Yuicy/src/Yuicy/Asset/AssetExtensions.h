@@ -6,7 +6,7 @@
 
 namespace Yuicy {
 
-	inline static std::unordered_map<std::string, AssetType> s_AssetExtensionMap =
+	inline static std::unordered_map<std::string, AssetType> s_assetExtensionMap =
 	{
 		// Yuicy types
 		{ ".yui",  AssetType::Scene },
