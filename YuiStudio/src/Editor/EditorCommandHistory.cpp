@@ -3,7 +3,7 @@
 
 namespace Yuicy {
 
-	void EditorCommandHistory::ExecuteCommand(std::unique_ptr<IEditorCommand> command)
+	void EditorCommandHistory::ExecuteCommand(Scope<IEditorCommand> command)
 	{
 		if (!command)
 			return;

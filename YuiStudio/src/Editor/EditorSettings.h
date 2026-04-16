@@ -42,7 +42,10 @@ namespace Yuicy {
 	private:
 		static void RemoveFromList(std::vector<std::string>& list, const std::string& value)
 		{
-			list.erase(list, value);
+			list.erase(
+				std::remove(list.begin(), list.end(), value),
+				list.end()
+			);
 		}
 	};
 

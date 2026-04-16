@@ -8,73 +8,7 @@
 #include <filesystem>
 #include <string>
 
-// Win32 文件对话框
-#include <commdlg.h>
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-
 namespace Yuicy {
-
-	static bool SceneHasPrimaryCamera(const Ref<Scene>& scene)
-	{
-		if (!scene)
-			return false;
-
-		auto view = scene->GetAllEntitiesWith<CameraComponent>();
-		for (auto entity : view)
-		{
-			if (view.get<CameraComponent>(entity).Primary)
-				return true;
-		}
-
-		return false;
-	}
-
-	static void CreateDefaultPrimaryCamera(const Ref<Scene>& scene)
-	{
-		if (!scene || SceneHasPrimaryCamera(scene))
-			return;
-
-		auto cameraEntity = scene->CreateEntity("Camera");
-		cameraEntity.AddComponent<CameraComponent>();
-	}
-
-	static void CreateDefaultSceneContent(const Ref<Scene>& scene)
-	{
-		if (!scene)
-			return;
-
-		scene->SetName("UntitledScene");
-		CreateDefaultPrimaryCamera(scene);
-
-		auto testEntity = scene->CreateEntity("TestSprite");
-		testEntity.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.2f, 0.6f, 0.9f, 1.0f });
-	}
-
-	static std::filesystem::path GetDefaultProjectScenePath(const Ref<Project>& project)
-	{
-		YUICY_CORE_ASSERT(project);
-		return project->GetAssetDirectory() / "Scenes" / ("StartScene" + std::string(SceneSerializer::GetSceneSerializerDefaultExtension()));
-	}
-
-	// 获取 filepath 相对于 directory 的相对路径
-	static bool TryGetPathRelativeToDirectory(const std::filesystem::path& filepath, const std::filesystem::path& directory, 
-		std::filesystem::path& outRelativePath)
-	{
-		if (filepath.empty() || directory.empty())
-			return false;
-
-		std::filesystem::path relativePath = filepath.lexically_normal().lexically_relative(directory.lexically_normal());
-		if (relativePath.empty())
-			return false;
-
-		if (auto it = relativePath.begin(); it != relativePath.end() && it->string() == "..")  // 判断当前路径在 directory 目录下
-			return false;
-
-		outRelativePath = relativePath;
-		return true;
-	}
 
 	EditorLayer::EditorLayer()
 		: Layer("EditorLayer")
@@ -90,16 +24,20 @@ namespace Yuicy {
 		fbSpec.height = 720;
 		m_framebuffer = Framebuffer::Create(fbSpec);
 
-		// 创建默认场景
-		m_editorScene = CreateRef<Scene>();
-		m_activeScene = m_editorScene;
-		CreateDefaultSceneContent(m_editorScene);
-
 		// 编辑器相机
 		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
 
-		// 初始化面板
-		m_sceneHierarchyPanel.SetContext(m_activeScene);
+		// 初始化编辑器服务
+		m_sceneController.SetContext(&m_editorContext);
+		m_sceneController.SetOnSceneChanged([this]() { OnSceneChanged(); });
+		m_dirtyTracker.SetContext(&m_editorContext);
+
+		// 面板共享选择上下文
+		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
+		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
+
+		// 创建默认场景
+		m_sceneController.NewScene();
 
 		// 编辑器图标
 		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
@@ -110,51 +48,27 @@ namespace Yuicy {
 	{
 	}
 
-	void EditorLayer::OnScenePlay()
+	void EditorLayer::OnSceneChanged()
 	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		if (!SceneHasPrimaryCamera(m_editorScene))
-		{
-			YUICY_CORE_WARN("Cannot enter Play mode: scene has no primary camera.");
-			return;
-		}
-
-		m_sceneState = SceneState::Play;
-
-		m_activeScene = Scene::Copy(m_editorScene);
-		m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-		m_activeScene->OnRuntimeStart();
-
-		m_hoveredEntity = {};
-		m_sceneHierarchyPanel.SetContext(m_activeScene);
-	}
-
-	void EditorLayer::OnSceneStop()
-	{
-		if (m_sceneState != SceneState::Play || !m_activeScene)
-			return;
-
-		m_activeScene->OnRuntimeStop();
-		m_sceneState = SceneState::Edit;
-
-		m_activeScene = m_editorScene;
-		m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-		m_hoveredEntity = {};
-		m_sceneHierarchyPanel.SetContext(m_activeScene);
+		// 场景切换后更新面板上下文
+		m_sceneHierarchyPanel.SetContext(m_editorContext.activeScene);
+		m_propertiesPanel.SetContext(m_editorContext.activeScene);
+		m_gizmoType = -1;
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
+		auto& viewportState = m_editorContext.viewport;
+		auto& runtimeState = m_editorContext.runtime;
+
 		// Viewport resize
 		auto spec = m_framebuffer->GetSpecification();
-		if (m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f
-			&& (spec.width != (uint32_t)m_viewportSize.x || spec.height != (uint32_t)m_viewportSize.y))
+		if (viewportState.size.x > 0.0f && viewportState.size.y > 0.0f
+			&& (spec.width != (uint32_t)viewportState.size.x || spec.height != (uint32_t)viewportState.size.y))
 		{
-			m_framebuffer->Resize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-			m_activeScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-			m_editorCamera.SetViewportSize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
+			m_framebuffer->Resize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
+			m_editorContext.activeScene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
+			m_editorCamera.SetViewportSize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
 		}
 
 		// 渲染到 Framebuffer
@@ -167,24 +81,30 @@ namespace Yuicy {
 		// 清除实体 ID 附件为 -1
 		m_framebuffer->ClearAttachment(1, -1);
 
-		switch (m_sceneState)
+		switch (runtimeState.mode)
 		{
-		case SceneState::Edit:
-			if (m_viewportFocused)
+		case SceneMode::Edit:
+			if (viewportState.focused)
 				m_editorCamera.OnUpdate(ts);
-			m_activeScene->OnUpdateEditor(ts, m_editorCamera);
+			m_editorContext.activeScene->OnUpdateEditor(ts, m_editorCamera);
 			break;
-		case SceneState::Play:
-			m_activeScene->OnUpdateRuntime(ts);
+		case SceneMode::Play:
+			m_editorContext.activeScene->OnUpdateRuntime(ts);
+			break;
+		case SceneMode::Simulate:
+			// TODO: Simulate 模式更新
+			if (viewportState.focused)
+				m_editorCamera.OnUpdate(ts);
+			m_editorContext.activeScene->OnUpdateEditor(ts, m_editorCamera);
 			break;
 		}
 
 		// 鼠标拾取
 		auto [mx, my] = ImGui::GetMousePos();
-		mx -= m_viewportBounds[0].x;
-		my -= m_viewportBounds[0].y;
+		mx -= viewportState.bounds[0].x;
+		my -= viewportState.bounds[0].y;
 
-		glm::vec2 viewportBoundsSize = m_viewportBounds[1] - m_viewportBounds[0];
+		glm::vec2 viewportBoundsSize = viewportState.bounds[1] - viewportState.bounds[0];
 		my = viewportBoundsSize.y - my;
 
 		int mouseX = (int)mx;
@@ -194,11 +114,11 @@ namespace Yuicy {
 			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
 		{
 			int pixelData = m_framebuffer->ReadPixel(1, mouseX, mouseY);
-			m_hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_activeScene.get());
+			viewportState.hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_editorContext.activeScene.get());
 		}
 		else
 		{
-			m_hoveredEntity = {};
+			viewportState.hoveredEntity = {};
 		}
 
 		m_framebuffer->Unbind();
@@ -259,8 +179,11 @@ namespace Yuicy {
 		// Play/Stop 工具栏
 		OnImGuiToolbarRender();
 
-		// Scene Hierarchy + Properties
+		// Scene Hierarchy
 		m_sceneHierarchyPanel.OnImGuiRender();
+
+		// Properties
+		m_propertiesPanel.OnImGuiRender();
 
 		// Content Browser
 		m_contentBrowserPanel.OnImGuiRender();
@@ -270,32 +193,28 @@ namespace Yuicy {
 
 	void EditorLayer::OnImGuiViewportRender()
 	{
-		// 无边框
+		auto& viewportState = m_editorContext.viewport;
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
 
-		// 检查当前窗口的焦点/悬停状态
-		m_viewportFocused = ImGui::IsWindowFocused();
-		m_viewportHovered = ImGui::IsWindowHovered();
+		viewportState.focused = ImGui::IsWindowFocused();
+		viewportState.hovered = ImGui::IsWindowHovered();
 
 		// 当视口聚焦或悬停时，不阻塞鼠标/键盘事件
-		Application::Get().GetImGuiLayer()->BlockEvents(!m_viewportFocused && !m_viewportHovered);
+		Application::Get().GetImGuiLayer()->BlockEvents(!viewportState.focused && !viewportState.hovered);
 
-		// GetContentRegionAvail() → 当前窗口内"可用区域"的尺寸 更新绘制时的视口大小
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_viewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+		viewportState.size = { viewportPanelSize.x, viewportPanelSize.y };
 
-		// 计算Viewport的屏幕坐标
+		// 计算 Viewport 的屏幕坐标
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportOffset = ImGui::GetWindowPos();
-		m_viewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_viewportBounds[1] = m_viewportBounds[0] + m_viewportSize;
+		viewportState.bounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		viewportState.bounds[1] = viewportState.bounds[0] + viewportState.size;
 
-		// 获取 Framebuffer 颜色附件的 纹理 ID
 		uint64_t textureID = m_framebuffer->GetColorAttachmentRendererID();
-
-		// ImGui::Image() → 绘制渲染结果
-		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_viewportSize.x, m_viewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ viewportState.size.x, viewportState.size.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		// 接收从 ContentBrowser 拖拽过来的场景文件
 		if (ImGui::BeginDragDropTarget())
@@ -305,7 +224,7 @@ namespace Yuicy {
 				const auto* pathData = (const std::filesystem::path::value_type*)payload->Data;
 				std::filesystem::path filepath(pathData);
 				if (filepath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
-					OpenScene(filepath);
+					m_sceneController.OpenScene(filepath);
 			}
 
 			ImGui::EndDragDropTarget();
@@ -330,10 +249,10 @@ namespace Yuicy {
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 		ImGui::Separator();
-		ImGui::Text("Scene: %s", m_activeScene->GetName().c_str());
+		ImGui::Text("Scene: %s", m_editorContext.activeScene->GetName().c_str());
 		std::string hoveredName = "None";
-		if (m_hoveredEntity)
-			hoveredName = m_hoveredEntity.GetComponent<TagComponent>().Tag;
+		if (m_editorContext.viewport.hoveredEntity)
+			hoveredName = m_editorContext.viewport.hoveredEntity.GetComponent<TagComponent>().Tag;
 		ImGui::Text("Hovered Entity: %s", hoveredName.c_str());
 
 		ImGui::End();
@@ -341,10 +260,12 @@ namespace Yuicy {
 
 	void EditorLayer::OnImGuiToolbarRender()
 	{
-		if (m_viewportSize.x <= 0.0f || m_viewportSize.y <= 0.0f)
+		auto& viewportState = m_editorContext.viewport;
+
+		if (viewportState.size.x <= 0.0f || viewportState.size.y <= 0.0f)
 			return;
 
-		const bool isPlaying = m_sceneState == SceneState::Play;
+		const bool isPlaying = m_editorContext.runtime.mode == SceneMode::Play;
 		Ref<Texture2D> icon = isPlaying ? m_stopIcon : m_playIcon;
 
 		const float edgeOffset = 8.0f;
@@ -352,8 +273,8 @@ namespace Yuicy {
 		const float windowWidth = iconSize + edgeOffset * 2.0f;
 		const float windowHeight = iconSize + edgeOffset;
 
-		float toolbarX = (m_viewportBounds[0].x + m_viewportBounds[1].x) * 0.5f;
-		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, m_viewportBounds[0].y + edgeOffset));
+		float toolbarX = (viewportState.bounds[0].x + viewportState.bounds[1].x) * 0.5f;
+		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, viewportState.bounds[0].y + edgeOffset));
 		ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight));
 		ImGui::SetNextWindowBgAlpha(0.75f);
 
@@ -376,9 +297,9 @@ namespace Yuicy {
 		if (ImGui::ImageButton("##PlayStop", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
 		{
 			if (isPlaying)
-				OnSceneStop();
+				m_sceneController.OnSceneStop();
 			else
-				OnScenePlay();
+				m_sceneController.OnScenePlay();
 		}
 
 		ImGui::PopStyleColor(2);
@@ -420,27 +341,27 @@ namespace Yuicy {
 			if (ImGui::BeginMenu("File"))
 			{
 				if (ImGui::MenuItem("New Project..."))
-					NewProject();
+					m_sceneController.NewProject();
 
 				if (ImGui::MenuItem("Open Project..."))
-					OpenProject();
+					m_sceneController.OpenProjectDialog();
 
 				if (ImGui::MenuItem("Save Project"))
-					SaveProject();
+					m_sceneController.SaveProject();
 
 				ImGui::Separator();
 
 				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-					NewScene();
+					m_sceneController.NewScene();
 
 				if (ImGui::MenuItem("Open Scene...", "Ctrl+O"))
-					OpenScene();
+					m_sceneController.OpenSceneDialog();
 
 				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-					SaveScene();
+					m_sceneController.SaveScene();
 
 				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
-					SaveSceneAs();
+					m_sceneController.SaveSceneAs();
 
 				ImGui::Separator();
 
@@ -542,7 +463,7 @@ namespace Yuicy {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (m_viewportHovered)
+		if (m_editorContext.viewport.hovered)
 			m_editorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
@@ -570,8 +491,15 @@ namespace Yuicy {
 		if (e.GetMouseButton() == Mouse::ButtonLeft)
 		{
 			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
-			if (m_viewportHovered && !altPressed)
-				m_sceneHierarchyPanel.SetSelectedEntity(m_hoveredEntity);
+			if (m_editorContext.viewport.hovered && !altPressed)
+			{
+				// 写入共享选择上下文
+				Entity hovered = m_editorContext.viewport.hoveredEntity;
+				if (hovered)
+					m_editorContext.selection.SetSelectedEntity(hovered.GetUUID());
+				else
+					m_editorContext.selection.ClearEntitySelection();
+			}
 		}
 
 		return false;
@@ -588,29 +516,29 @@ namespace Yuicy {
 		switch (e.GetKeyCode())
 		{
 		case Key::N:
-			if (ctrl) NewScene();
+			if (ctrl) m_sceneController.NewScene();
 			break;
 		case Key::O:
-			if (ctrl) OpenScene();
+			if (ctrl) m_sceneController.OpenSceneDialog();
 			break;
 		case Key::S:
-			if (ctrl && shift) SaveSceneAs();
-			else if (ctrl) SaveScene();
+			if (ctrl && shift) m_sceneController.SaveSceneAs();
+			else if (ctrl) m_sceneController.SaveScene();
 			break;
 		case Key::Q:
-			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
 				m_gizmoType = -1;
 			break;
 		case Key::W:
-			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 		case Key::E:
-			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::ROTATE;
 			break;
 		case Key::R:
-			if (m_sceneState == SceneState::Edit && m_viewportHovered && !ctrl && !shift)
+			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
@@ -618,328 +546,55 @@ namespace Yuicy {
 		return false;
 	}
 
-	// 场景操作
-	void EditorLayer::NewScene()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		m_editorScene = CreateRef<Scene>();
-		CreateDefaultSceneContent(m_editorScene);
-		m_editorScene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-		m_activeScene = m_editorScene;
-		m_currentScenePath = std::filesystem::path{};
-		m_hoveredEntity = {};
-		m_gizmoType = -1;
-		m_sceneHierarchyPanel.SetContext(m_activeScene);
-	}
-
-	void EditorLayer::OpenScene()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		std::string filepath = OpenFileDialog(Yuicy::SceneSerializer::GetSceneSerializerFileFilter());
-		if (!filepath.empty() && OpenScene(filepath))
-		{
-			YUICY_CORE_INFO("Opened scene: {}", filepath);
-		}
-	}
-
-	bool EditorLayer::OpenScene(const std::filesystem::path& filepath)
-	{
-		if (m_sceneState != SceneState::Edit)
-			return false;
-
-		Ref<Scene> scene = CreateRef<Scene>();
-		scene->OnViewportResize((uint32_t)m_viewportSize.x, (uint32_t)m_viewportSize.y);
-
-		SceneSerializer serializer(scene);
-		if (!serializer.Deserialize(filepath))
-			return false;
-
-		m_editorScene = scene;
-		m_activeScene = m_editorScene;
-		m_currentScenePath = filepath.lexically_normal();
-		m_hoveredEntity = {};
-		m_gizmoType = -1;
-		m_sceneHierarchyPanel.SetContext(m_activeScene);
-		return true;
-	}
-
-	void EditorLayer::SaveScene()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		if (!m_currentScenePath.empty())
-		{
-			SceneSerializer serializer(m_editorScene);
-			serializer.Serialize(m_currentScenePath);
-
-			if (Project::GetActive())
-				SaveProject();
-		}
-		else
-		{
-			SaveSceneAs();
-		}
-	}
-
-	void EditorLayer::SaveSceneAs()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		std::string filepath = SaveFileDialog(
-			Yuicy::SceneSerializer::GetSceneSerializerFileFilter(),
-			Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension());
-		if (!filepath.empty())
-		{
-			std::filesystem::path scenePath = filepath;
-			if (scenePath.extension() != Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension())
-				scenePath += Yuicy::SceneSerializer::GetSceneSerializerDefaultExtension();
-
-			SceneSerializer serializer(m_editorScene);
-			serializer.Serialize(scenePath);
-			m_currentScenePath = scenePath;
-
-			if (Project::GetActive())
-				SaveProject();
-		}
-	}
-
-	void EditorLayer::NewProject()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		std::string filepath = SaveFileDialog(
-			ProjectSerializer::GetProjectSerializerFileFilter(),
-			ProjectSerializer::GetProjectSerializerDefaultExtension());
-		if (filepath.empty())
-			return;
-
-		std::filesystem::path projectPath = filepath;
-		if (projectPath.extension() != ProjectSerializer::GetProjectSerializerDefaultExtension())
-			projectPath += ProjectSerializer::GetProjectSerializerDefaultExtension();
-
-		auto project = CreateRef<Project>();
-		project->GetConfig().Name = projectPath.stem().string();
-		project->GetConfig().ProjectDirectory = projectPath.parent_path().string();
-		project->GetConfig().ProjectFileName = projectPath.filename().string();
-
-		std::error_code ec;
-		std::filesystem::create_directories(project->GetAssetDirectory(), ec);
-		if (ec)
-		{
-			YUICY_CORE_ERROR("[Project] Failed to create asset directory '{}': {}", project->GetAssetDirectory().string(), ec.message());
-			return;
-		}
-
-		ec.clear();
-		std::filesystem::path scriptDirectory = std::filesystem::path(project->GetConfig().ProjectDirectory) / project->GetConfig().ScriptDirectory;
-		std::filesystem::create_directories(scriptDirectory, ec);
-		if (ec)
-		{
-			YUICY_CORE_ERROR("[Project] Failed to create script directory '{}': {}", scriptDirectory.string(), ec.message());
-			return;
-		}
-
-		Project::SetActive(project);
-		m_currentProjectPath = projectPath.lexically_normal();
-
-		if (!m_editorScene)
-			NewScene();
-
-		SaveProject();
-	}
-
-	void EditorLayer::OpenProject()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		std::string filepath = OpenFileDialog(ProjectSerializer::GetProjectSerializerFileFilter());
-		if (!filepath.empty())
-			OpenProject(filepath);
-	}
-
-	void EditorLayer::OpenProject(const std::filesystem::path& filepath)
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		auto project = CreateRef<Project>();
-		ProjectSerializer serializer(project);
-		if (!serializer.Deserialize(filepath))
-			return;
-
-		Project::SetActive(project);
-		m_currentProjectPath = filepath;
-
-		bool sceneLoaded = false;
-		if (!project->GetConfig().StartScene.empty())
-		{
-			std::filesystem::path scenePath = Project::GetActiveAssetDirectory() / project->GetConfig().StartScene;
-			if (std::filesystem::exists(scenePath))
-			{
-				sceneLoaded = OpenScene(scenePath);
-			}
-			else
-			{
-				YUICY_CORE_WARN("[Project] Start scene not found: {}", scenePath.string());
-			}
-		}
-
-		if (!sceneLoaded)
-			NewScene();
-	}
-
-	void EditorLayer::SaveProject()
-	{
-		if (m_sceneState != SceneState::Edit)
-			return;
-
-		Ref<Project> activeProject = Project::GetActive();
-		if (!activeProject || m_currentProjectPath.empty())
-		{
-			NewProject();
-			return;
-		}
-
-		auto& config = activeProject->GetConfig();
-		if (!m_editorScene)
-		{
-			config.StartScene.clear();
-		}
-		else
-		{
-			std::filesystem::path sceneSavePath = m_currentScenePath;
-			std::filesystem::path relativeScenePath;
-
-			if (sceneSavePath.empty()
-				|| !TryGetPathRelativeToDirectory(sceneSavePath, activeProject->GetAssetDirectory(), relativeScenePath))
-			{
-				sceneSavePath = GetDefaultProjectScenePath(activeProject);
-			}
-
-			std::error_code ec;
-			std::filesystem::create_directories(sceneSavePath.parent_path(), ec);
-			if (ec)
-			{
-				YUICY_CORE_ERROR("[Project] Failed to create scene directory '{}': {}", sceneSavePath.parent_path().string(), ec.message());
-				return;
-			}
-
-			SceneSerializer sceneSerializer(m_editorScene);
-			sceneSerializer.Serialize(sceneSavePath);
-			m_currentScenePath = sceneSavePath.lexically_normal();
-
-			if (TryGetPathRelativeToDirectory(m_currentScenePath, activeProject->GetAssetDirectory(), relativeScenePath))
-			{
-				config.StartScene = relativeScenePath.generic_string();
-			}
-			else
-			{
-				YUICY_CORE_ERROR(
-					"[Project] Failed to compute StartScene relative path for '{}' in asset directory '{}'.",
-					m_currentScenePath.string(),
-					activeProject->GetAssetDirectory().string());
-				return;
-			}
-		}
-
-		ProjectSerializer serializer(activeProject);
-		serializer.Serialize(m_currentProjectPath);
-	}
-
-	// Win32 文件对话框
-	std::string EditorLayer::OpenFileDialog(const char* filter)
-	{
-		OPENFILENAMEA ofn;
-		CHAR szFile[260] = { 0 };
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-
-		if (GetOpenFileNameA(&ofn) == TRUE)
-			return ofn.lpstrFile;
-
-		return {};
-	}
-
-	std::string EditorLayer::SaveFileDialog(const char* filter, const char* defaultExtension)
-	{
-		OPENFILENAMEA ofn;
-		CHAR szFile[260] = { 0 };
-		std::string normalizedExtension;
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
-
-		if (defaultExtension && defaultExtension[0] != '\0')
-		{
-			normalizedExtension = defaultExtension[0] == '.' ? defaultExtension + 1 : defaultExtension;
-			ofn.lpstrDefExt = normalizedExtension.c_str();
-		}
-
-		if (GetSaveFileNameA(&ofn) == TRUE)
-			return ofn.lpstrFile;
-
-		return {};
-	}
-
 	void EditorLayer::OnImGuiDrawGizmos()
 	{
-		if (m_sceneState != SceneState::Edit)
+		if (!m_editorContext.runtime.IsEditing())
 			return;
 
-		Entity selectedEntity = m_sceneHierarchyPanel.GetSelectedEntity();
-		if (!selectedEntity || m_gizmoType == -1)
+		// 从共享选择上下文解析选中实体
+		UUID selectedUUID = m_editorContext.selection.GetPrimarySelectedEntityUUID();
+		if (selectedUUID == 0 || m_gizmoType == -1)
+			return;
+
+		Entity selectedEntity = m_editorContext.activeScene->FindEntityByUUID(selectedUUID);
+		if (!selectedEntity)
 			return;
 
 		ImGuizmo::SetOrthographic(true);
-		ImGuizmo::SetDrawlist();  // 设置当前绘制队列为 Viewport
-		ImGuizmo::SetRect(m_viewportBounds[0].x, m_viewportBounds[0].y, m_viewportSize.x, m_viewportSize.y);
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(
+			m_editorContext.viewport.bounds[0].x, m_editorContext.viewport.bounds[0].y,
+			m_editorContext.viewport.size.x, m_editorContext.viewport.size.y);
 
 		const glm::mat4& cameraProjection = m_editorCamera.GetProjection();
 		glm::mat4 cameraView = m_editorCamera.GetViewMatrix();
-		glm::mat4 worldTransform = m_activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
+		glm::mat4 worldTransform = m_editorContext.activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
 
+		// 吸附设置来自 EditorViewportSettings
+		auto& snapSettings = m_editorContext.viewportSettings;
 		bool snap = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
 		float snapValue = 0.5f;
 		if (m_gizmoType == ImGuizmo::OPERATION::ROTATE)
 			snapValue = 45.0f;
-		float snapValues[3] = { snapValue, snapValue, snapValue };  // 变化值
+		float snapValues[3] = { snapValue, snapValue, snapValue };
 
 		ImGuizmo::Manipulate(
-			glm::value_ptr(cameraView),			// 相机参数
+			glm::value_ptr(cameraView),
 			glm::value_ptr(cameraProjection),
-			(ImGuizmo::OPERATION)m_gizmoType,	// 操作类型
-			ImGuizmo::LOCAL,					// 本地坐标系
+			(ImGuizmo::OPERATION)m_gizmoType,
+			ImGuizmo::LOCAL,
 			glm::value_ptr(worldTransform),
 			nullptr,
 			snap ? snapValues : nullptr
 		);
 
-		if (ImGuizmo::IsUsing())  // 正在操作
+		if (ImGuizmo::IsUsing())
 		{
 			glm::mat4 localTransform = worldTransform;
 			Entity parent = selectedEntity.GetParent();
 			if (parent)
 			{
-				glm::mat4 parentWorldTransform = m_activeScene->GetWorldSpaceTransformMatrix(parent);
+				glm::mat4 parentWorldTransform = m_editorContext.activeScene->GetWorldSpaceTransformMatrix(parent);
 				localTransform = glm::inverse(parentWorldTransform) * worldTransform;
 			}
 

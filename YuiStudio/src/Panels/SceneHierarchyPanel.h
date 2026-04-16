@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Yuicy.h"
+#include "../Editor/EditorSelectionContext.h"
 
 namespace Yuicy {
 
+	// 场景层级面板
 	class SceneHierarchyPanel
 	{
 	public:
@@ -11,26 +13,20 @@ namespace Yuicy {
 		SceneHierarchyPanel(const Ref<Scene>& scene);
 
 		void SetContext(const Ref<Scene>& scene);
+		void SetSelectionContext(EditorSelectionContext* selectionContext) { m_editorSelection = selectionContext; }
 
 		void OnImGuiRender();
 
-		Entity GetSelectedEntity() const { return m_selectionContext; }
-		void SetSelectedEntity(Entity entity) { m_selectionContext = entity; }
+		// 选择操作
+		Entity GetSelectedEntity() const;
+		void SetSelectedEntity(Entity entity);
 
 	private:
 		void DrawEntityNode(Entity entity);
-		void DrawComponents(Entity entity);
-
-		// 组件绘制
-		void DrawVec3Control(const std::string& label, glm::vec3& values,
-			float resetValue = 0.0f, float columnWidth = 100.0f);
-
-		template<typename T>
-		void DrawAddComponentEntry(const std::string& entryName);
 
 	private:
 		Ref<Scene> m_context;
-		Entity m_selectionContext;
+		EditorSelectionContext* m_editorSelection = nullptr;
 	};
 
 }
