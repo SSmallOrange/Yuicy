@@ -3,6 +3,7 @@
 
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Utilities/YAMLSerializationHelpers.h"
 
 #include "yaml-cpp/yaml.h"
@@ -76,7 +77,7 @@ namespace Yuicy {
 
 			auto& sprite = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << sprite.Color;
-			out << YAML::Key << "TexturePath" << YAML::Value << sprite.TexturePath;
+			out << YAML::Key << "TextureHandle" << YAML::Value << (uint64_t)sprite.TextureHandle;
 			out << YAML::Key << "TilingFactor" << YAML::Value << sprite.TilingFactor;
 			out << YAML::Key << "FlipX" << YAML::Value << sprite.FlipX;
 			out << YAML::Key << "FlipY" << YAML::Value << sprite.FlipY;
@@ -243,20 +244,15 @@ namespace Yuicy {
 			{
 				auto& sprite = deserializedEntity.AddComponent<SpriteRendererComponent>();
 				sprite.Color = spriteRendererComponent["Color"].as<glm::vec4>(glm::vec4(1.0f));
-				sprite.TexturePath = spriteRendererComponent["TexturePath"].as<std::string>("");
+
+				// TextureHandle
+				if (spriteRendererComponent["TextureHandle"])
+					sprite.TextureHandle = spriteRendererComponent["TextureHandle"].as<uint64_t>(0);
+
 				sprite.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>(1.0f);
 				sprite.FlipX = spriteRendererComponent["FlipX"].as<bool>(false);
 				sprite.FlipY = spriteRendererComponent["FlipY"].as<bool>(false);
 				sprite.SortingOrder = spriteRendererComponent["SortingOrder"].as<int>(0);
-
-				// 如果有纹理路径，尝试加载纹理
-				if (!sprite.TexturePath.empty())
-				{
-					if (std::filesystem::exists(sprite.TexturePath))
-						sprite.Texture = Texture2D::Create(sprite.TexturePath);
-					else
-						YUICY_CORE_WARN("Texture not found: {}", sprite.TexturePath);
-				}
 			}
 
 			// CameraComponent

@@ -3,6 +3,7 @@
 
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Renderer/RenderCommand.h"
@@ -667,10 +668,14 @@ namespace Yuicy {
 					Renderer2D::DrawSprite(data.Transform, 
 						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 				}
-				else if (sprite.Texture)
+				else if (sprite.TextureHandle != 0)
 				{
-					Renderer2D::DrawSprite(data.Transform,
-						sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
+					Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle);
+					if (texture)
+						Renderer2D::DrawSprite(data.Transform,
+							texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
+					else
+						Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
 				}
 				else
 				{
@@ -721,10 +726,14 @@ namespace Yuicy {
 				Renderer2D::DrawSprite(data.Transform,
 					sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
 			}
-			else if (sprite.Texture)
+			else if (sprite.TextureHandle != 0)
 			{
-				Renderer2D::DrawSprite(data.Transform,
-					sprite.Texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
+				Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle);
+				if (texture)
+					Renderer2D::DrawSprite(data.Transform,
+						texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
+				else
+					Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
 			}
 			else
 			{

@@ -334,17 +334,10 @@ namespace Yuicy {
 		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
 			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
 
-			// 纹理路径
-			std::array<char, 256> texPathBuffer{};
-			std::memcpy(texPathBuffer.data(), component.TexturePath.c_str(), 
-						std::min(component.TexturePath.size(), texPathBuffer.size() - 1));
-			
-			if (ImGui::InputText("Texture Path", texPathBuffer.data(), texPathBuffer.size()))
-			{
-				component.TexturePath = texPathBuffer.data();
-				if (!component.TexturePath.empty() && std::filesystem::exists(component.TexturePath))
-					component.Texture = Texture2D::Create(component.TexturePath);
-			}
+			// TextureHandle
+			uint64_t textureHandle = (uint64_t)component.TextureHandle;
+			if (ImGui::InputScalar("Texture Handle", ImGuiDataType_U64, &textureHandle))
+				component.TextureHandle = textureHandle;
 
 			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
 			ImGui::Checkbox("Flip X", &component.FlipX);

@@ -5,6 +5,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Core/UUID.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/SubTexture.h"
@@ -92,9 +93,10 @@ namespace Yuicy {
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
 
 		// 纹理
-		Ref<Texture2D> Texture = nullptr;
+		AssetHandle TextureHandle = 0;
+
+		// SubTexture
 		Ref<SubTexture2D> SubTexture = nullptr;
-		std::string TexturePath;  				// 纹理路径
 
 		// 纹理属性
 		float TilingFactor = 1.0f;              // 纹理平铺系数
@@ -113,20 +115,8 @@ namespace Yuicy {
 			: Color(color) {
 		}
 
-		SpriteRendererComponent(const Ref<Texture2D>& texture)
-			: Texture(texture) {
-		}
-
-		SpriteRendererComponent(const Ref<Texture2D>& texture, const glm::vec4& tint)
-			: Texture(texture), Color(tint) {
-		}
-
-		SpriteRendererComponent(const Ref<SubTexture2D>& subTexture)
-			: SubTexture(subTexture) {
-		}
-
-		SpriteRendererComponent(const Ref<SubTexture2D>& subTexture, const glm::vec4& tint)
-			: SubTexture(subTexture), Color(tint) {
+		SpriteRendererComponent(AssetHandle textureHandle)
+			: TextureHandle(textureHandle) {
 		}
 	};
 

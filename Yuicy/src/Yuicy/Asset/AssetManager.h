@@ -1,8 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Asset/AssetTypes.h"
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Asset/EditorAssetManager.h"
 
 #include <unordered_set>
 
