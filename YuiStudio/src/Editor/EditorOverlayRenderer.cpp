@@ -36,6 +36,9 @@ namespace Yuicy {
 		if (settings.showCameraBounds)
 			DrawCameraBounds(scene);
 
+		if (settings.showColliders)
+			DrawColliders(scene);
+
 		if (settings.showSelectionBounds)
 			DrawSelectionBounds(scene);
 	}
@@ -205,6 +208,53 @@ namespace Yuicy {
 				color = isSelected ? glm::vec4{ 0.0f, 0.85f, 1.0f, 0.9f } : glm::vec4{ 0.6f, 0.6f, 0.6f, 0.5f };
 
 			Renderer2D::DrawRect(boundsTransform, color);
+		}
+	}
+
+	void EditorOverlayRenderer::DrawColliders(const Ref<Scene>& scene)
+	{
+		glm::vec4 colliderColor = { 0.0f, 0.7f, 0.0f, 0.8f };
+		glm::vec4 triggerColor  = { 0.9f, 0.3f, 0.9f, 0.8f };
+
+		// BoxCollider2D
+		{
+			auto view = scene->GetAllEntitiesWith<TransformComponent, BoxCollider2DComponent>();
+			for (auto entityHandle : view)
+			{
+				Entity entity(entityHandle, scene.get());
+				auto& bc = entity.GetComponent<BoxCollider2DComponent>();
+
+				glm::mat4 worldTransform = scene->GetWorldSpaceTransformMatrix(entity);
+
+				glm::mat4 boundsTransform = worldTransform
+					* glm::translate(glm::mat4(1.0f), glm::vec3(bc.Offset, 0.0f))
+					* glm::scale(glm::mat4(1.0f), glm::vec3(bc.Size * 2.0f, 1.0f));
+
+				Renderer2D::DrawRect(boundsTransform, bc.IsTrigger ? triggerColor : colliderColor);
+			}
+		}
+
+		// CircleCollider2D
+		{
+			auto view = scene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>();
+			for (auto entityHandle : view)
+			{
+				Entity entity(entityHandle, scene.get());
+				auto& cc = entity.GetComponent<CircleCollider2DComponent>();
+
+				TransformComponent worldTC = scene->GetWorldSpaceTransform(entity);
+
+				// 取 X/Y 轴较大的 scale 分量作为半径缩放
+				float maxScale = glm::max(glm::abs(worldTC.Scale.x), glm::abs(worldTC.Scale.y));
+				float diameter = cc.Radius * maxScale * 2.0f;
+
+				glm::mat4 boundsTransform = glm::translate(glm::mat4(1.0f), worldTC.Translation)
+					* glm::toMat4(glm::quat(worldTC.Rotation))
+					* glm::translate(glm::mat4(1.0f), glm::vec3(cc.Offset * maxScale, 0.0f))
+					* glm::scale(glm::mat4(1.0f), glm::vec3(diameter, diameter, 1.0f));
+
+				Renderer2D::DrawCircle(boundsTransform, cc.IsTrigger ? triggerColor : colliderColor);
+			}
 		}
 	}
 
