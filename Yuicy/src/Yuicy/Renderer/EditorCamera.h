@@ -25,6 +25,7 @@ namespace Yuicy {
 		const glm::vec3& GetPosition() const { return m_position; }
 
 		float GetZoomLevel() const { return m_zoomLevel; }
+		float GetAspectRatio() const { return m_aspectRatio; }
 		void SetZoomLevel(float level);
 
 	private:

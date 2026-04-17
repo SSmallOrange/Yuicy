@@ -10,9 +10,7 @@ namespace Yuicy {
 	class EditorOverlayRenderer;
 
 	// 编辑器渲染管线
-	// 负责调度 Scene Pass 和 Overlay Pass，管理帧缓冲。
-	// Scene Pass：渲染场景内容 + 写入实体 ID 附件
-	// Overlay Pass：渲染编辑器辅助信息，不写入实体 ID 附件
+	// 负责调度 Background Overlay → Scene Pass → Foreground Overlay，管理帧缓冲。
 	class EditorRenderPipeline
 	{
 	public:
@@ -40,8 +38,9 @@ namespace Yuicy {
 		Ref<Framebuffer> GetFramebuffer() const { return m_framebuffer; }
 
 	private:
+		void ExecuteBackgroundOverlayPass(EditorCamera& camera);
 		void ExecuteScenePass(Timestep ts, EditorCamera& camera);
-		void ExecuteOverlayPass(EditorCamera& camera);
+		void ExecuteForegroundOverlayPass(EditorCamera& camera);
 
 		EditorContext* m_context = nullptr;
 		EditorOverlayRenderer* m_overlayRenderer = nullptr;

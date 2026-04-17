@@ -26,14 +26,28 @@ namespace Yuicy {
 		// 清除实体 ID 附件为 -1（无实体）
 		m_framebuffer->ClearAttachment(1, -1);
 
-		// Scene Pass：渲染场景内容，写入 Color + EntityID
+		// Background Overlay Pass
+		if (m_context->runtime.mode != SceneMode::Play)
+			ExecuteBackgroundOverlayPass(camera);
+
+		// Scene Pass：渲染场景内容
 		ExecuteScenePass(ts, camera);
 
-		// Overlay Pass：非 Play 模式下渲染
+		// Foreground Overlay Pass
 		if (m_context->runtime.mode != SceneMode::Play)
-			ExecuteOverlayPass(camera);
+			ExecuteForegroundOverlayPass(camera);
 
 		m_framebuffer->Unbind();
+	}
+
+	void EditorRenderPipeline::ExecuteBackgroundOverlayPass(EditorCamera& camera)
+	{
+		if (!m_overlayRenderer)
+			return;
+
+		Renderer2D::BeginScene(camera);
+		m_overlayRenderer->RenderBackground(camera, m_context->activeScene);
+		Renderer2D::EndScene();
 	}
 
 	void EditorRenderPipeline::ExecuteScenePass(Timestep ts, EditorCamera& camera)
@@ -53,14 +67,14 @@ namespace Yuicy {
 		}
 	}
 
-	void EditorRenderPipeline::ExecuteOverlayPass(EditorCamera& camera)
+	void EditorRenderPipeline::ExecuteForegroundOverlayPass(EditorCamera& camera)
 	{
 		if (!m_overlayRenderer)
 			return;
 
 		// 使用编辑器相机开始新的渲染批次
 		Renderer2D::BeginScene(camera);
-		m_overlayRenderer->Render(camera, m_context->activeScene);
+		m_overlayRenderer->RenderForeground(camera, m_context->activeScene);
 		Renderer2D::EndScene();
 	}
 
