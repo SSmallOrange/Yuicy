@@ -35,9 +35,8 @@ namespace Yuicy {
 		void DrawCameraBounds(const Ref<Scene>& scene);
 		void DrawColliders(const Ref<Scene>& scene);
 
-		// Phase 2 后续子任务接口
-		// void DrawEntityPivot(const Ref<Scene>& scene);
-		// void DrawRelationshipLines(const Ref<Scene>& scene);
+		void DrawEntityPivot(const Ref<Scene>& scene);
+		void DrawRelationshipLines(const Ref<Scene>& scene);
 
 		EditorContext* m_context = nullptr;
 	};

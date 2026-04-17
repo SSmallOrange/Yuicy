@@ -158,12 +158,32 @@ namespace Yuicy {
 		glm::mat4 cameraView = m_editorCamera.GetViewMatrix();
 		glm::mat4 worldTransform = m_context->activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
 
-		// 吸附设置来自 EditorViewportSettings
+		// 吸附：根据 Gizmo 操作类型从 EditorViewportSettings 读取吸附参数
+		// Ctrl 键作为吸附切换：设置中开启则 Ctrl 临时关闭，设置中关闭则 Ctrl 临时开启
 		auto& snapSettings = m_context->viewportSettings;
-		bool snap = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-		float snapValue = 0.5f;
-		if (m_gizmoType == ImGuizmo::OPERATION::ROTATE)
-			snapValue = 45.0f;
+		bool ctrlPressed = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+
+		bool snapEnabled = false;
+		float snapValue = 0.0f;
+
+		switch (m_gizmoType)
+		{
+		case ImGuizmo::OPERATION::TRANSLATE:
+			snapEnabled = snapSettings.enableTranslationSnap;
+			snapValue = snapSettings.translationSnapValue;
+			break;
+		case ImGuizmo::OPERATION::ROTATE:
+			snapEnabled = snapSettings.enableRotationSnap;
+			snapValue = snapSettings.rotationSnapValue;
+			break;
+		case ImGuizmo::OPERATION::SCALE:
+			snapEnabled = snapSettings.enableScaleSnap;
+			snapValue = snapSettings.scaleSnapValue;
+			break;
+		}
+
+		// Ctrl 切换吸附状态
+		bool snap = ctrlPressed ? !snapEnabled : snapEnabled;
 		float snapValues[3] = { snapValue, snapValue, snapValue };
 
 		ImGuizmo::Manipulate(
@@ -269,9 +289,10 @@ namespace Yuicy {
 			{
 				// 写入共享选择上下文
 				Entity hovered = m_context->viewport.hoveredEntity;
+
 				if (hovered)
 					m_context->selection.SetSelectedEntity(hovered.GetUUID());
-				else
+				else if (!ImGuizmo::IsOver())
 					m_context->selection.ClearEntitySelection();
 			}
 		}

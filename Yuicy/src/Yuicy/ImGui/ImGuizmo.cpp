@@ -1458,8 +1458,7 @@ namespace ImGuizmo
 	{
 		// Check for modifiers
 		if (Yuicy::Input::IsKeyPressed(Yuicy::Key::LeftAlt) || Yuicy::Input::IsKeyPressed(Yuicy::Key::RightAlt)
-			|| Yuicy::Input::IsKeyPressed(Yuicy::Key::LeftShift) || Yuicy::Input::IsKeyPressed(Yuicy::Key::RightShift)
-			|| Yuicy::Input::IsKeyPressed(Yuicy::Key::LeftControl) || Yuicy::Input::IsKeyPressed(Yuicy::Key::RightControl))
+			|| Yuicy::Input::IsKeyPressed(Yuicy::Key::LeftShift) || Yuicy::Input::IsKeyPressed(Yuicy::Key::RightShift))
 			return false;
 
 		if (ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive())

@@ -13,6 +13,7 @@ namespace Yuicy {
 		bool showCameraBounds      = true;
 		bool showColliders         = true;
 		bool showSelectionBounds   = true;
+		bool showPivot             = true;
 		bool showRelationshipLines = false;
 
 		// 网格参数

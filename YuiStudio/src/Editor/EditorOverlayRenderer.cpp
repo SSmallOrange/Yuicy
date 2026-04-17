@@ -41,6 +41,12 @@ namespace Yuicy {
 
 		if (settings.showSelectionBounds)
 			DrawSelectionBounds(scene);
+
+		if (settings.showRelationshipLines)
+			DrawRelationshipLines(scene);
+
+		if (settings.showPivot)
+			DrawEntityPivot(scene);
 	}
 
 	// 世界网格绘制
@@ -281,6 +287,77 @@ namespace Yuicy {
 		// 橙色选中框
 		glm::vec4 selectionColor = { 1.0f, 0.6f, 0.0f, 1.0f };
 		Renderer2D::DrawRect(worldTransform, selectionColor);
+	}
+
+	void EditorOverlayRenderer::DrawEntityPivot(const Ref<Scene>& scene)
+	{
+		if (!m_context->selection.HasEntitySelection())
+			return;
+
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+		if (selectedUUID == 0)
+			return;
+
+		Entity selectedEntity = scene->FindEntityByUUID(selectedUUID);
+		if (!selectedEntity || !selectedEntity.HasComponent<TransformComponent>())
+			return;
+
+		TransformComponent worldTC = scene->GetWorldSpaceTransform(selectedEntity);
+		glm::vec3 pos = worldTC.Translation;
+
+		// 根据实体旋转计算局部 X/Y 轴方向
+		glm::mat4 rotMat = glm::toMat4(glm::quat(worldTC.Rotation));
+		glm::vec3 localX = glm::vec3(rotMat[0]);
+		glm::vec3 localY = glm::vec3(rotMat[1]);
+
+		const float pivotLength = 0.12f;
+		const float z = -0.05f;
+		glm::vec3 pivotPos = { pos.x, pos.y, z };
+
+		glm::vec4 xColor = { 1.0f, 0.3f, 0.3f, 0.9f };
+		glm::vec4 yColor = { 0.3f, 1.0f, 0.3f, 0.9f };
+
+		Renderer2D::DrawLine(pivotPos, pivotPos + localX * pivotLength, xColor);
+		Renderer2D::DrawLine(pivotPos, pivotPos + localY * pivotLength, yColor);
+	}
+
+	void EditorOverlayRenderer::DrawRelationshipLines(const Ref<Scene>& scene)
+	{
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+
+		glm::vec4 defaultColor  = { 0.6f, 0.6f, 0.6f, 0.4f };
+		glm::vec4 selectedColor = { 1.0f, 0.7f, 0.2f, 0.7f };
+
+		const float z = -0.02f;
+
+		auto view = scene->GetAllEntitiesWith<TransformComponent, RelationshipComponent>();
+		for (auto entityHandle : view)
+		{
+			Entity entity(entityHandle, scene.get());
+			const auto& children = entity.Children();
+			if (children.empty())
+				continue;
+
+			TransformComponent parentWorldTC = scene->GetWorldSpaceTransform(entity);
+			glm::vec3 parentPos = { parentWorldTC.Translation.x, parentWorldTC.Translation.y, z };
+
+			bool isSelected = (entity.GetUUID() == selectedUUID);
+
+			for (UUID childUUID : children)
+			{
+				Entity childEntity = scene->FindEntityByUUID(childUUID);
+				if (!childEntity || !childEntity.HasComponent<TransformComponent>())
+					continue;
+
+				bool childSelected = (childUUID == selectedUUID);
+				glm::vec4 color = (isSelected || childSelected) ? selectedColor : defaultColor;
+
+				TransformComponent childWorldTC = scene->GetWorldSpaceTransform(childEntity);
+				glm::vec3 childPos = { childWorldTC.Translation.x, childWorldTC.Translation.y, z };
+
+				Renderer2D::DrawLine(parentPos, childPos, color);
+			}
+		}
 	}
 
 }
