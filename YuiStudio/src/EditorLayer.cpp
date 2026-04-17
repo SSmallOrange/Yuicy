@@ -17,12 +17,17 @@ namespace Yuicy {
 
 	void EditorLayer::OnAttach()
 	{
-		// 创建 Framebuffer
+		// 创建渲染管线
 		FramebufferSpecification fbSpec;
 		fbSpec.attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 		fbSpec.width = 1280;
 		fbSpec.height = 720;
-		m_framebuffer = Framebuffer::Create(fbSpec);
+		m_renderPipeline.Init(fbSpec);
+		m_renderPipeline.SetContext(&m_editorContext);
+		m_renderPipeline.SetOverlayRenderer(&m_overlayRenderer);
+
+		// 初始化 Overlay 渲染器
+		m_overlayRenderer.SetContext(&m_editorContext);
 
 		// 编辑器相机
 		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
@@ -59,45 +64,26 @@ namespace Yuicy {
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		auto& viewportState = m_editorContext.viewport;
-		auto& runtimeState = m_editorContext.runtime;
 
 		// Viewport resize
-		auto spec = m_framebuffer->GetSpecification();
+		auto fbSpec = m_renderPipeline.GetFramebuffer()->GetSpecification();
 		if (viewportState.size.x > 0.0f && viewportState.size.y > 0.0f
-			&& (spec.width != (uint32_t)viewportState.size.x || spec.height != (uint32_t)viewportState.size.y))
+			&& (fbSpec.width != (uint32_t)viewportState.size.x || fbSpec.height != (uint32_t)viewportState.size.y))
 		{
-			m_framebuffer->Resize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
-			m_editorContext.activeScene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
-			m_editorCamera.SetViewportSize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
+			uint32_t width = (uint32_t)viewportState.size.x;
+			uint32_t height = (uint32_t)viewportState.size.y;
+			// TODO: 考虑将视口大小抽象到上下文中
+			m_renderPipeline.OnViewportResize(width, height);
+			m_editorContext.activeScene->OnViewportResize(width, height);
+			m_editorCamera.SetViewportSize(width, height);
 		}
 
-		// 渲染到 Framebuffer
-		Renderer2D::ResetStats();
-		m_framebuffer->Bind();
+		// 编辑器相机更新
+		if (m_editorContext.runtime.mode != SceneMode::Play && viewportState.focused)
+			m_editorCamera.OnUpdate(ts);
 
-		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
-		RenderCommand::Clear();
-
-		// 清除实体 ID 附件为 -1
-		m_framebuffer->ClearAttachment(1, -1);
-
-		switch (runtimeState.mode)
-		{
-		case SceneMode::Edit:
-			if (viewportState.focused)
-				m_editorCamera.OnUpdate(ts);
-			m_editorContext.activeScene->OnUpdateEditor(ts, m_editorCamera);
-			break;
-		case SceneMode::Play:
-			m_editorContext.activeScene->OnUpdateRuntime(ts);
-			break;
-		case SceneMode::Simulate:
-			// TODO: Simulate 模式更新
-			if (viewportState.focused)
-				m_editorCamera.OnUpdate(ts);
-			m_editorContext.activeScene->OnUpdateEditor(ts, m_editorCamera);
-			break;
-		}
+		// 执行渲染管线：Scene Pass + Overlay Pass
+		m_renderPipeline.Execute(ts, m_editorCamera);
 
 		// 鼠标拾取
 		auto [mx, my] = ImGui::GetMousePos();
@@ -113,15 +99,13 @@ namespace Yuicy {
 		if (mouseX >= 0 && mouseY >= 0
 			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
 		{
-			int pixelData = m_framebuffer->ReadPixel(1, mouseX, mouseY);
+			int pixelData = m_renderPipeline.ReadEntityIDAtPixel(mouseX, mouseY);
 			viewportState.hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_editorContext.activeScene.get());
 		}
 		else
 		{
 			viewportState.hoveredEntity = {};
 		}
-
-		m_framebuffer->Unbind();
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -213,7 +197,7 @@ namespace Yuicy {
 		viewportState.bounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
 		viewportState.bounds[1] = viewportState.bounds[0] + viewportState.size;
 
-		uint64_t textureID = m_framebuffer->GetColorAttachmentRendererID();
+		uint64_t textureID = m_renderPipeline.GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ viewportState.size.x, viewportState.size.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		// 接收从 ContentBrowser 拖拽过来的场景文件

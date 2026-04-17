@@ -8,6 +8,8 @@
 #include "Editor/EditorSceneController.h"
 #include "Editor/EditorCommandHistory.h"
 #include "Editor/EditorDirtyTracker.h"
+#include "Editor/EditorRenderPipeline.h"
+#include "Editor/EditorOverlayRenderer.h"
 
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -55,8 +57,10 @@ namespace Yuicy {
 		// 脏数据跟踪
 		EditorDirtyTracker m_dirtyTracker;
 
-		// 渲染
-		Ref<Framebuffer> m_framebuffer;
+		// 渲染管线
+		EditorRenderPipeline m_renderPipeline;
+		// Overlay
+		EditorOverlayRenderer m_overlayRenderer;
 
 		// 编辑器相机
 		EditorCamera m_editorCamera;
