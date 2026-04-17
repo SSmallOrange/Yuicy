@@ -216,7 +216,7 @@ namespace Yuicy {
 
 			Entity deserializedEntity = m_scene->CreateEntityWithUUID(uuid, name);
 
-			// RelationshipComponent（CreateEntityWithUUID 已自动添加）
+			// RelationshipComponent
 			auto& relationshipComponent = deserializedEntity.GetComponent<RelationshipComponent>();
 			uint64_t parentHandle = entity["Parent"] ? entity["Parent"].as<uint64_t>() : 0;
 			relationshipComponent.ParentHandle = parentHandle;
@@ -230,7 +230,7 @@ namespace Yuicy {
 				}
 			}
 
-			// TransformComponent（CreateEntityWithUUID 已自动添加）
+			// TransformComponent
 			if (auto transformComponent = entity["TransformComponent"]; transformComponent)
 			{
 				auto& transform = deserializedEntity.GetComponent<TransformComponent>();

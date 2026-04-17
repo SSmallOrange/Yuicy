@@ -14,6 +14,7 @@ namespace Yuicy {
 
 		void SetViewportSize(uint32_t width, uint32_t height);
 
+		float GetAspectRatio() const { return m_AspectRatio; }
 		float GetOrthographicSize() const { return m_OrthographicSize; }
 		void SetOrthographicSize(float size) { m_OrthographicSize = size; RecalculateProjection(); }
 

@@ -33,7 +33,9 @@ namespace Yuicy {
 
 		auto& settings = m_context->viewportSettings;
 
-		// 选中实体外框
+		if (settings.showCameraBounds)
+			DrawCameraBounds(scene);
+
 		if (settings.showSelectionBounds)
 			DrawSelectionBounds(scene);
 	}
@@ -168,6 +170,44 @@ namespace Yuicy {
 		Renderer2D::DrawLine({ 0.0f, 0.0f, z }, { 0.0f, crossLength, z }, yBright);
 	}
 
+	// 相机可视范围绘制
+	void EditorOverlayRenderer::DrawCameraBounds(const Ref<Scene>& scene)
+	{
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+
+		auto view = scene->GetAllEntitiesWith<TransformComponent, CameraComponent>();
+		for (auto entityHandle : view)
+		{
+			Entity entity(entityHandle, scene.get());
+			auto& cameraComp = entity.GetComponent<CameraComponent>();
+
+			float orthoSize = cameraComp.Camera.GetOrthographicSize();
+			float aspect = cameraComp.Camera.GetAspectRatio();
+			if (aspect <= 0.0f)
+				continue;
+
+			// orthoSize
+			TransformComponent worldTC = scene->GetWorldSpaceTransform(entity);
+			float boundsWidth  = orthoSize * aspect;
+			float boundsHeight = orthoSize;
+
+			glm::mat4 boundsTransform = glm::translate(glm::mat4(1.0f), worldTC.Translation)
+				* glm::toMat4(glm::quat(worldTC.Rotation))
+				* glm::scale(glm::mat4(1.0f), { boundsWidth, boundsHeight, 1.0f });
+
+			// 颜色：Primary / 非 Primary / 选中高亮
+			bool isSelected = (entity.GetUUID() == selectedUUID);
+			glm::vec4 color;
+
+			if (cameraComp.Primary)
+				color = isSelected ? glm::vec4{ 1.0f, 0.85f, 0.0f, 0.9f } : glm::vec4{ 1.0f, 0.85f, 0.0f, 0.6f };
+			else
+				color = isSelected ? glm::vec4{ 0.0f, 0.85f, 1.0f, 0.9f } : glm::vec4{ 0.6f, 0.6f, 0.6f, 0.5f };
+
+			Renderer2D::DrawRect(boundsTransform, color);
+		}
+	}
+
 	void EditorOverlayRenderer::DrawSelectionBounds(const Ref<Scene>& scene)
 	{
 		if (!m_context->selection.HasEntitySelection())
@@ -179,6 +219,10 @@ namespace Yuicy {
 
 		Entity selectedEntity = scene->FindEntityByUUID(selectedUUID);
 		if (!selectedEntity || !selectedEntity.HasComponent<TransformComponent>())
+			return;
+
+		// 有 CameraComponent 的实体由 DrawCameraBounds 提供选中高亮
+		if (m_context->viewportSettings.showCameraBounds && selectedEntity.HasComponent<CameraComponent>())
 			return;
 
 		// 获取世界空间变换矩阵

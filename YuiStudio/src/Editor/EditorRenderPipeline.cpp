@@ -72,10 +72,14 @@ namespace Yuicy {
 		if (!m_overlayRenderer)
 			return;
 
-		// 使用编辑器相机开始新的渲染批次
+		// 关闭深度测试，确保 Overlay 置顶
+		RenderCommand::SetDepthTest(false);
+
 		Renderer2D::BeginScene(camera);
 		m_overlayRenderer->RenderForeground(camera, m_context->activeScene);
 		Renderer2D::EndScene();
+
+		RenderCommand::SetDepthTest(true);
 	}
 
 	void EditorRenderPipeline::OnViewportResize(uint32_t width, uint32_t height)

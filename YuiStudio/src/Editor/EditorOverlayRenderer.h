@@ -32,9 +32,9 @@ namespace Yuicy {
 
 		// 前景层 Overlay
 		void DrawSelectionBounds(const Ref<Scene>& scene);
+		void DrawCameraBounds(const Ref<Scene>& scene);
 
-		// Phase 2 后续子任务接口（当前不实现）
-		// void DrawCameraBounds(const Ref<Scene>& scene);
+		// Phase 2 后续子任务接口
 		// void DrawColliders(const Ref<Scene>& scene);
 		// void DrawEntityPivot(const Ref<Scene>& scene);
 		// void DrawRelationshipLines(const Ref<Scene>& scene);

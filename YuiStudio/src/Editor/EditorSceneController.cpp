@@ -117,12 +117,13 @@ namespace Yuicy {
 			return false;
 
 		Ref<Scene> scene = CreateRef<Scene>();
-		auto& viewportState = m_context->viewport;
-		scene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
 
 		SceneSerializer serializer(scene);
 		if (!serializer.Deserialize(filepath))
 			return false;
+
+		auto& viewportState = m_context->viewport;
+		scene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
 
 		m_context->editorScene = scene;
 		m_context->activeScene = m_context->editorScene;
