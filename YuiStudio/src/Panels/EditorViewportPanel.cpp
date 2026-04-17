@@ -1,0 +1,313 @@
+#include "EditorViewportPanel.h"
+
+#include "../Utils/EditorIconUtils.h"
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
+
+#include "Yuicy/Scene/SceneSerializer.h"
+
+#include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
+
+namespace Yuicy {
+
+	void EditorViewportPanel::Init()
+	{
+		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
+
+		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
+		m_stopIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png", { 200, 50, 50, 255 });
+	}
+
+	void EditorViewportPanel::OnSceneChanged()
+	{
+		m_gizmoType = -1;
+	}
+
+	void EditorViewportPanel::OnUpdate(Timestep ts)
+	{
+		if (!m_context || !m_renderPipeline)
+			return;
+
+		auto& viewportState = m_context->viewport;
+
+		// Viewport resize
+		auto fbSpec = m_renderPipeline->GetFramebuffer()->GetSpecification();
+		if (viewportState.size.x > 0.0f && viewportState.size.y > 0.0f
+			&& (fbSpec.width != (uint32_t)viewportState.size.x || fbSpec.height != (uint32_t)viewportState.size.y))
+		{
+			uint32_t width = (uint32_t)viewportState.size.x;
+			uint32_t height = (uint32_t)viewportState.size.y;
+			// TODO: 考虑将视口大小抽象到上下文中
+			m_renderPipeline->OnViewportResize(width, height);
+			m_context->activeScene->OnViewportResize(width, height);
+			m_editorCamera.SetViewportSize(width, height);
+		}
+
+		// 编辑器相机更新
+		if (m_context->runtime.mode != SceneMode::Play && viewportState.focused)
+			m_editorCamera.OnUpdate(ts);
+
+		// 执行渲染管线
+		m_renderPipeline->Execute(ts, m_editorCamera);
+
+		// 鼠标拾取
+		UpdateMousePicking();
+	}
+
+	void EditorViewportPanel::UpdateMousePicking()
+	{
+		auto& viewportState = m_context->viewport;
+
+		auto [mx, my] = ImGui::GetMousePos();
+		mx -= viewportState.bounds[0].x;
+		my -= viewportState.bounds[0].y;
+
+		glm::vec2 viewportBoundsSize = viewportState.bounds[1] - viewportState.bounds[0];
+		my = viewportBoundsSize.y - my;
+
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		if (mouseX >= 0 && mouseY >= 0
+			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
+		{
+			int pixelData = m_renderPipeline->ReadEntityIDAtPixel(mouseX, mouseY);
+			viewportState.hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_context->activeScene.get());
+		}
+		else
+		{
+			viewportState.hoveredEntity = {};
+		}
+	}
+
+	void EditorViewportPanel::OnImGuiRender()
+	{
+		if (!m_context || !m_renderPipeline)
+			return;
+
+		auto& viewportState = m_context->viewport;
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
+		ImGui::Begin("Viewport");
+
+		viewportState.focused = ImGui::IsWindowFocused();
+		viewportState.hovered = ImGui::IsWindowHovered();
+
+		// 当视口聚焦或悬停时，不阻塞鼠标/键盘事件
+		Application::Get().GetImGuiLayer()->BlockEvents(!viewportState.focused && !viewportState.hovered);
+
+		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+		viewportState.size = { viewportPanelSize.x, viewportPanelSize.y };
+
+		// 计算 Viewport 的屏幕坐标
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportOffset = ImGui::GetWindowPos();
+		viewportState.bounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		viewportState.bounds[1] = viewportState.bounds[0] + viewportState.size;
+
+		uint64_t textureID = m_renderPipeline->GetColorAttachmentRendererID();
+		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ viewportState.size.x, viewportState.size.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		// 接收从 ContentBrowser 拖拽过来的场景文件
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const auto* pathData = (const std::filesystem::path::value_type*)payload->Data;
+				std::filesystem::path filepath(pathData);
+				if (filepath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
+					m_sceneController->OpenScene(filepath);
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+
+		// Gizmo 绘制
+		OnImGuiDrawGizmos();
+
+		ImGui::End(); // Viewport
+		ImGui::PopStyleVar();
+
+		// Play/Stop 工具栏
+		OnImGuiToolbarRender();
+	}
+
+	void EditorViewportPanel::OnImGuiDrawGizmos()
+	{
+		if (!m_context->runtime.IsEditing())
+			return;
+
+		// 从共享选择上下文解析选中实体
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+		if (selectedUUID == 0 || m_gizmoType == -1)
+			return;
+
+		Entity selectedEntity = m_context->activeScene->FindEntityByUUID(selectedUUID);
+		if (!selectedEntity)
+			return;
+
+		ImGuizmo::SetOrthographic(true);
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(
+			m_context->viewport.bounds[0].x, m_context->viewport.bounds[0].y,
+			m_context->viewport.size.x, m_context->viewport.size.y);
+
+		const glm::mat4& cameraProjection = m_editorCamera.GetProjection();
+		glm::mat4 cameraView = m_editorCamera.GetViewMatrix();
+		glm::mat4 worldTransform = m_context->activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
+
+		// 吸附设置来自 EditorViewportSettings
+		auto& snapSettings = m_context->viewportSettings;
+		bool snap = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		float snapValue = 0.5f;
+		if (m_gizmoType == ImGuizmo::OPERATION::ROTATE)
+			snapValue = 45.0f;
+		float snapValues[3] = { snapValue, snapValue, snapValue };
+
+		ImGuizmo::Manipulate(
+			glm::value_ptr(cameraView),
+			glm::value_ptr(cameraProjection),
+			(ImGuizmo::OPERATION)m_gizmoType,
+			ImGuizmo::LOCAL,
+			glm::value_ptr(worldTransform),
+			nullptr,
+			snap ? snapValues : nullptr
+		);
+
+		if (ImGuizmo::IsUsing())
+		{
+			glm::mat4 localTransform = worldTransform;
+			Entity parent = selectedEntity.GetParent();
+			if (parent)
+			{
+				glm::mat4 parentWorldTransform = m_context->activeScene->GetWorldSpaceTransformMatrix(parent);
+				localTransform = glm::inverse(parentWorldTransform) * worldTransform;
+			}
+
+			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
+		}
+	}
+
+	void EditorViewportPanel::OnImGuiToolbarRender()
+	{
+		auto& viewportState = m_context->viewport;
+
+		if (viewportState.size.x <= 0.0f || viewportState.size.y <= 0.0f)
+			return;
+
+		const bool isPlaying = m_context->runtime.mode == SceneMode::Play;
+		Ref<Texture2D> icon = isPlaying ? m_stopIcon : m_playIcon;
+
+		const float edgeOffset = 8.0f;
+		const float iconSize = 24.0f;
+		const float windowWidth = iconSize + edgeOffset * 2.0f;
+		const float windowHeight = iconSize + edgeOffset;
+
+		float toolbarX = (viewportState.bounds[0].x + viewportState.bounds[1].x) * 0.5f;
+		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, viewportState.bounds[0].y + edgeOffset));
+		ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight));
+		ImGui::SetNextWindowBgAlpha(0.75f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(edgeOffset, edgeOffset * 0.5f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		ImGui::Begin("##toolbar", nullptr,
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
+			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		const ImVec4 tintNormal = ImVec4(1, 1, 1, 0.8f);
+		const ImVec4 tintHovered = ImVec4(1, 1, 1, 1.0f);
+
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+
+		ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)icon->GetRendererID());
+		if (ImGui::ImageButton("##PlayStop", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
+		{
+			if (isPlaying)
+				m_sceneController->OnSceneStop();
+			else
+				m_sceneController->OnScenePlay();
+		}
+
+		ImGui::PopStyleColor(2);
+		ImGui::End();
+
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(3);
+	}
+
+	void EditorViewportPanel::OnEvent(Event& e)
+	{
+		// 相机滚轮事件
+		if (m_context->viewport.hovered)
+			m_editorCamera.OnEvent(e);
+
+		EventDispatcher dispatcher(e);
+
+		dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& event)
+		{
+			return OnMouseButtonPressed(event);
+		});
+
+		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& event)
+		{
+			return OnKeyPressed(event);
+		});
+	}
+
+	bool EditorViewportPanel::OnMouseButtonPressed(MouseButtonPressedEvent& e)
+	{
+		if (e.GetMouseButton() == Mouse::ButtonLeft)
+		{
+			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
+			if (m_context->viewport.hovered && !altPressed)
+			{
+				// 写入共享选择上下文
+				Entity hovered = m_context->viewport.hoveredEntity;
+				if (hovered)
+					m_context->selection.SetSelectedEntity(hovered.GetUUID());
+				else
+					m_context->selection.ClearEntitySelection();
+			}
+		}
+
+		return false;
+	}
+
+	bool EditorViewportPanel::OnKeyPressed(KeyPressedEvent& e)
+	{
+		if (e.IsRepeat())
+			return false;
+
+		bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+		switch (e.GetKeyCode())
+		{
+		case Key::Q:
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+				m_gizmoType = -1;
+			break;
+		case Key::W:
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::TRANSLATE;
+			break;
+		case Key::E:
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::ROTATE;
+			break;
+		case Key::R:
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+				m_gizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
+		}
+
+		return false;
+	}
+
+}

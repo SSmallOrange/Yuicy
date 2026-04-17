@@ -3,9 +3,6 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
-#include <glm/gtc/type_ptr.hpp>
-
-#include <filesystem>
 #include <string>
 
 namespace Yuicy {
@@ -29,8 +26,11 @@ namespace Yuicy {
 		// 初始化 Overlay 渲染器
 		m_overlayRenderer.SetContext(&m_editorContext);
 
-		// 编辑器相机
-		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
+		// 初始化视口面板
+		m_viewportPanel.SetContext(&m_editorContext);
+		m_viewportPanel.SetRenderPipeline(&m_renderPipeline);
+		m_viewportPanel.SetSceneController(&m_sceneController);
+		m_viewportPanel.Init();
 
 		// 初始化编辑器服务
 		m_sceneController.SetContext(&m_editorContext);
@@ -43,10 +43,6 @@ namespace Yuicy {
 
 		// 创建默认场景
 		m_sceneController.NewScene();
-
-		// 编辑器图标
-		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
-		m_stopIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png", { 200, 50, 50, 255 });
 	}
 
 	void EditorLayer::OnDetach()
@@ -58,54 +54,12 @@ namespace Yuicy {
 		// 场景切换后更新面板上下文
 		m_sceneHierarchyPanel.SetContext(m_editorContext.activeScene);
 		m_propertiesPanel.SetContext(m_editorContext.activeScene);
-		m_gizmoType = -1;
+		m_viewportPanel.OnSceneChanged();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
-		auto& viewportState = m_editorContext.viewport;
-
-		// Viewport resize
-		auto fbSpec = m_renderPipeline.GetFramebuffer()->GetSpecification();
-		if (viewportState.size.x > 0.0f && viewportState.size.y > 0.0f
-			&& (fbSpec.width != (uint32_t)viewportState.size.x || fbSpec.height != (uint32_t)viewportState.size.y))
-		{
-			uint32_t width = (uint32_t)viewportState.size.x;
-			uint32_t height = (uint32_t)viewportState.size.y;
-			// TODO: 考虑将视口大小抽象到上下文中
-			m_renderPipeline.OnViewportResize(width, height);
-			m_editorContext.activeScene->OnViewportResize(width, height);
-			m_editorCamera.SetViewportSize(width, height);
-		}
-
-		// 编辑器相机更新
-		if (m_editorContext.runtime.mode != SceneMode::Play && viewportState.focused)
-			m_editorCamera.OnUpdate(ts);
-
-		// 执行渲染管线：Scene Pass + Overlay Pass
-		m_renderPipeline.Execute(ts, m_editorCamera);
-
-		// 鼠标拾取
-		auto [mx, my] = ImGui::GetMousePos();
-		mx -= viewportState.bounds[0].x;
-		my -= viewportState.bounds[0].y;
-
-		glm::vec2 viewportBoundsSize = viewportState.bounds[1] - viewportState.bounds[0];
-		my = viewportBoundsSize.y - my;
-
-		int mouseX = (int)mx;
-		int mouseY = (int)my;
-
-		if (mouseX >= 0 && mouseY >= 0
-			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
-		{
-			int pixelData = m_renderPipeline.ReadEntityIDAtPixel(mouseX, mouseY);
-			viewportState.hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_editorContext.activeScene.get());
-		}
-		else
-		{
-			viewportState.hoveredEntity = {};
-		}
+		m_viewportPanel.OnUpdate(ts);
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -157,11 +111,10 @@ namespace Yuicy {
 		style.WindowMinSize.x = minWinSizeX;
 
 		// Viewport 面板
-		OnImGuiViewportRender();
+		m_viewportPanel.OnImGuiRender();
+
 		// State 面板
 		OnImGuiDrawStateRender();
-		// Play/Stop 工具栏
-		OnImGuiToolbarRender();
 
 		// Scene Hierarchy
 		m_sceneHierarchyPanel.OnImGuiRender();
@@ -173,52 +126,6 @@ namespace Yuicy {
 		m_contentBrowserPanel.OnImGuiRender();
 
 		ImGui::End(); // DockSpace
-	}
-
-	void EditorLayer::OnImGuiViewportRender()
-	{
-		auto& viewportState = m_editorContext.viewport;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-		ImGui::Begin("Viewport");
-
-		viewportState.focused = ImGui::IsWindowFocused();
-		viewportState.hovered = ImGui::IsWindowHovered();
-
-		// 当视口聚焦或悬停时，不阻塞鼠标/键盘事件
-		Application::Get().GetImGuiLayer()->BlockEvents(!viewportState.focused && !viewportState.hovered);
-
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		viewportState.size = { viewportPanelSize.x, viewportPanelSize.y };
-
-		// 计算 Viewport 的屏幕坐标
-		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		auto viewportOffset = ImGui::GetWindowPos();
-		viewportState.bounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		viewportState.bounds[1] = viewportState.bounds[0] + viewportState.size;
-
-		uint64_t textureID = m_renderPipeline.GetColorAttachmentRendererID();
-		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ viewportState.size.x, viewportState.size.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-
-		// 接收从 ContentBrowser 拖拽过来的场景文件
-		if (ImGui::BeginDragDropTarget())
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-			{
-				const auto* pathData = (const std::filesystem::path::value_type*)payload->Data;
-				std::filesystem::path filepath(pathData);
-				if (filepath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
-					m_sceneController.OpenScene(filepath);
-			}
-
-			ImGui::EndDragDropTarget();
-		}
-
-		// Gizmo 绘制
-		OnImGuiDrawGizmos();
-
-		ImGui::End(); // Viewport
-		ImGui::PopStyleVar();
 	}
 
 	void EditorLayer::OnImGuiDrawStateRender()
@@ -240,57 +147,6 @@ namespace Yuicy {
 		ImGui::Text("Hovered Entity: %s", hoveredName.c_str());
 
 		ImGui::End();
-	}
-
-	void EditorLayer::OnImGuiToolbarRender()
-	{
-		auto& viewportState = m_editorContext.viewport;
-
-		if (viewportState.size.x <= 0.0f || viewportState.size.y <= 0.0f)
-			return;
-
-		const bool isPlaying = m_editorContext.runtime.mode == SceneMode::Play;
-		Ref<Texture2D> icon = isPlaying ? m_stopIcon : m_playIcon;
-
-		const float edgeOffset = 8.0f;
-		const float iconSize = 24.0f;
-		const float windowWidth = iconSize + edgeOffset * 2.0f;
-		const float windowHeight = iconSize + edgeOffset;
-
-		float toolbarX = (viewportState.bounds[0].x + viewportState.bounds[1].x) * 0.5f;
-		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, viewportState.bounds[0].y + edgeOffset));
-		ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight));
-		ImGui::SetNextWindowBgAlpha(0.75f);
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(edgeOffset, edgeOffset * 0.5f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-
-		ImGui::Begin("##toolbar", nullptr,
-			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
-			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-		const ImVec4 tintNormal = ImVec4(1, 1, 1, 0.8f);
-		const ImVec4 tintHovered = ImVec4(1, 1, 1, 1.0f);
-
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
-
-		ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)icon->GetRendererID());
-		if (ImGui::ImageButton("##PlayStop", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
-		{
-			if (isPlaying)
-				m_sceneController.OnSceneStop();
-			else
-				m_sceneController.OnScenePlay();
-		}
-
-		ImGui::PopStyleColor(2);
-		ImGui::End();
-
-		ImGui::PopStyleColor();
-		ImGui::PopStyleVar(3);
 	}
 
 	// 标题栏
@@ -447,8 +303,8 @@ namespace Yuicy {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (m_editorContext.viewport.hovered)
-			m_editorCamera.OnEvent(e);
+		// 视口面板处理相机、选择、Gizmo 快捷键
+		m_viewportPanel.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 
@@ -459,34 +315,11 @@ namespace Yuicy {
 			return true;
 		});
 
-		dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& event)
-		{
-			return OnMouseButtonPressed(event);
-		});
-
+		// 文件操作快捷键
 		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& event)
 		{
 			return OnKeyPressed(event);
 		});
-	}
-
-	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
-	{
-		if (e.GetMouseButton() == Mouse::ButtonLeft)
-		{
-			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
-			if (m_editorContext.viewport.hovered && !altPressed)
-			{
-				// 写入共享选择上下文
-				Entity hovered = m_editorContext.viewport.hoveredEntity;
-				if (hovered)
-					m_editorContext.selection.SetSelectedEntity(hovered.GetUUID());
-				else
-					m_editorContext.selection.ClearEntitySelection();
-			}
-		}
-
-		return false;
 	}
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
@@ -509,80 +342,9 @@ namespace Yuicy {
 			if (ctrl && shift) m_sceneController.SaveSceneAs();
 			else if (ctrl) m_sceneController.SaveScene();
 			break;
-		case Key::Q:
-			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
-				m_gizmoType = -1;
-			break;
-		case Key::W:
-			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
-				m_gizmoType = ImGuizmo::OPERATION::TRANSLATE;
-			break;
-		case Key::E:
-			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
-				m_gizmoType = ImGuizmo::OPERATION::ROTATE;
-			break;
-		case Key::R:
-			if (m_editorContext.runtime.IsEditing() && m_editorContext.viewport.hovered && !ctrl && !shift)
-				m_gizmoType = ImGuizmo::OPERATION::SCALE;
-			break;
 		}
 
 		return false;
 	}
 
-	void EditorLayer::OnImGuiDrawGizmos()
-	{
-		if (!m_editorContext.runtime.IsEditing())
-			return;
-
-		// 从共享选择上下文解析选中实体
-		UUID selectedUUID = m_editorContext.selection.GetPrimarySelectedEntityUUID();
-		if (selectedUUID == 0 || m_gizmoType == -1)
-			return;
-
-		Entity selectedEntity = m_editorContext.activeScene->FindEntityByUUID(selectedUUID);
-		if (!selectedEntity)
-			return;
-
-		ImGuizmo::SetOrthographic(true);
-		ImGuizmo::SetDrawlist();
-		ImGuizmo::SetRect(
-			m_editorContext.viewport.bounds[0].x, m_editorContext.viewport.bounds[0].y,
-			m_editorContext.viewport.size.x, m_editorContext.viewport.size.y);
-
-		const glm::mat4& cameraProjection = m_editorCamera.GetProjection();
-		glm::mat4 cameraView = m_editorCamera.GetViewMatrix();
-		glm::mat4 worldTransform = m_editorContext.activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
-
-		// 吸附设置来自 EditorViewportSettings
-		auto& snapSettings = m_editorContext.viewportSettings;
-		bool snap = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-		float snapValue = 0.5f;
-		if (m_gizmoType == ImGuizmo::OPERATION::ROTATE)
-			snapValue = 45.0f;
-		float snapValues[3] = { snapValue, snapValue, snapValue };
-
-		ImGuizmo::Manipulate(
-			glm::value_ptr(cameraView),
-			glm::value_ptr(cameraProjection),
-			(ImGuizmo::OPERATION)m_gizmoType,
-			ImGuizmo::LOCAL,
-			glm::value_ptr(worldTransform),
-			nullptr,
-			snap ? snapValues : nullptr
-		);
-
-		if (ImGuizmo::IsUsing())
-		{
-			glm::mat4 localTransform = worldTransform;
-			Entity parent = selectedEntity.GetParent();
-			if (parent)
-			{
-				glm::mat4 parentWorldTransform = m_editorContext.activeScene->GetWorldSpaceTransformMatrix(parent);
-				localTransform = glm::inverse(parentWorldTransform) * worldTransform;
-			}
-
-			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
-		}
-	}
 }

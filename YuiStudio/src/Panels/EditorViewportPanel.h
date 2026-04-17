@@ -1,0 +1,60 @@
+#pragma once
+
+#include "Yuicy.h"
+#include "Yuicy/ImGui/ImGuizmo.h"
+#include "Yuicy/Renderer/EditorCamera.h"
+
+#include "../Editor/EditorContext.h"
+#include "../Editor/EditorRenderPipeline.h"
+#include "../Editor/EditorSceneController.h"
+
+namespace Yuicy {
+
+	// 编辑器视口面板
+	// 管理 Viewport UI、Framebuffer 尺寸同步、拖拽接收、
+	// 鼠标拾取坐标换算、Gizmo 绘制和编辑器相机
+	class EditorViewportPanel
+	{
+	public:
+		EditorViewportPanel() = default;
+		~EditorViewportPanel() = default;
+
+		void Init();
+
+		void SetContext(EditorContext* context) { m_context = context; }
+		void SetRenderPipeline(EditorRenderPipeline* pipeline) { m_renderPipeline = pipeline; }
+		void SetSceneController(EditorSceneController* controller) { m_sceneController = controller; }
+
+		void OnUpdate(Timestep ts);
+		void OnImGuiRender();
+		void OnEvent(Event& e);
+
+		// 场景切换通知
+		void OnSceneChanged();
+
+		EditorCamera& GetEditorCamera() { return m_editorCamera; }
+
+	private:
+		void OnImGuiDrawGizmos();
+		void OnImGuiToolbarRender();
+		void UpdateMousePicking();
+
+		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+		bool OnKeyPressed(KeyPressedEvent& e);
+
+		EditorContext* m_context = nullptr;
+		EditorRenderPipeline* m_renderPipeline = nullptr;
+		EditorSceneController* m_sceneController = nullptr;
+
+		// 编辑器相机
+		EditorCamera m_editorCamera;
+
+		// Gizmo
+		int m_gizmoType = -1;
+
+		// 编辑器图标
+		Ref<Texture2D> m_playIcon;
+		Ref<Texture2D> m_stopIcon;
+	};
+
+}
