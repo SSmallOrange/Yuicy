@@ -7,6 +7,7 @@
 
 #include "Yuicy/Scene/SceneSerializer.h"
 
+#include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 
@@ -18,6 +19,7 @@ namespace Yuicy {
 
 		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
 		m_stopIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png", { 200, 50, 50, 255 });
+		m_overlayIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Generic/Gear.png", { 160, 160, 160, 255 });
 	}
 
 	void EditorViewportPanel::OnSceneChanged()
@@ -129,6 +131,9 @@ namespace Yuicy {
 
 		ImGui::End(); // Viewport
 		ImGui::PopStyleVar();
+		
+		// Setting Render
+		OnImGuiOverlaySettingsRender();
 
 		// Play/Stop 工具栏
 		OnImGuiToolbarRender();
@@ -259,6 +264,104 @@ namespace Yuicy {
 
 		ImGui::PopStyleColor();
 		ImGui::PopStyleVar(3);
+	}
+
+	void EditorViewportPanel::OnImGuiOverlaySettingsRender()
+	{
+		auto& viewportState = m_context->viewport;
+		if (viewportState.size.x <= 0.0f || viewportState.size.y <= 0.0f)
+			return;
+
+		const float edgeOffset = 8.0f;
+		const float iconSize = 18.0f;
+
+		ImGui::SetNextWindowPos(
+			ImVec2(viewportState.bounds[1].x - edgeOffset, viewportState.bounds[0].y + edgeOffset),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 0.0f));
+		ImGui::SetNextWindowBgAlpha(0.75f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		ImGui::Begin("##viewport_overlay_controls", nullptr,
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
+			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
+			| ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+
+		ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)m_overlayIcon->GetRendererID());
+		if (ImGui::ImageButton("##OverlaySettings", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
+			ImGui::OpenPopup("ViewportOverlaySettings");
+
+		DrawOverlaySettingsPopup();
+
+		ImGui::PopStyleColor(2);
+		ImGui::End();
+
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(3);
+	}
+
+	void EditorViewportPanel::DrawOverlaySettingsPopup()
+	{
+		if (!ImGui::BeginPopup("ViewportOverlaySettings"))
+			return;
+
+		auto& settings = m_context->viewportSettings;
+
+		ImGui::Checkbox("Enable Overlay", &settings.showOverlay);
+		ImGui::Separator();
+
+		if (!settings.showOverlay)
+			ImGui::BeginDisabled();
+
+		ImGui::TextUnformatted("Display");
+		ImGui::Checkbox("Grid", &settings.showGrid);
+		ImGui::Checkbox("Origin", &settings.showOrigin);
+		ImGui::Checkbox("Camera Bounds", &settings.showCameraBounds);
+		ImGui::Checkbox("Colliders", &settings.showColliders);
+		ImGui::Checkbox("Selection Bounds", &settings.showSelectionBounds);
+		ImGui::Checkbox("Pivot", &settings.showPivot);
+		ImGui::Checkbox("Relationship Lines", &settings.showRelationshipLines);
+
+		ImGui::Separator();
+		ImGui::TextUnformatted("Grid");
+
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::DragFloat("Major Step", &settings.gridMajorStep, 0.05f, 0.05f, 100.0f, "%.2f"))
+			settings.gridMajorStep = std::max(settings.gridMajorStep, 0.05f);
+
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::DragFloat("Minor Step", &settings.gridMinorStep, 0.01f, 0.01f, 100.0f, "%.2f"))
+			settings.gridMinorStep = std::max(settings.gridMinorStep, 0.01f);
+
+		ImGui::Separator();
+		ImGui::TextUnformatted("Snap");
+
+		ImGui::Checkbox("Translate Snap", &settings.enableTranslationSnap);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::DragFloat("Translate Step", &settings.translationSnapValue, 0.05f, 0.01f, 100.0f, "%.2f"))
+			settings.translationSnapValue = std::max(settings.translationSnapValue, 0.01f);
+
+		ImGui::Checkbox("Rotate Snap", &settings.enableRotationSnap);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::DragFloat("Rotate Step", &settings.rotationSnapValue, 1.0f, 1.0f, 360.0f, "%.1f"))
+			settings.rotationSnapValue = std::max(settings.rotationSnapValue, 1.0f);
+
+		ImGui::Checkbox("Scale Snap", &settings.enableScaleSnap);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::DragFloat("Scale Step", &settings.scaleSnapValue, 0.01f, 0.01f, 10.0f, "%.2f"))
+			settings.scaleSnapValue = std::max(settings.scaleSnapValue, 0.01f);
+
+		if (!settings.showOverlay)
+			ImGui::EndDisabled();
+
+		ImGui::EndPopup();
 	}
 
 	void EditorViewportPanel::OnEvent(Event& e)

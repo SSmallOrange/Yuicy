@@ -7,6 +7,9 @@ namespace Yuicy {
 	// TODO: 这些设置可以在后续持久化到编辑器配置文件中。
 	struct EditorViewportSettings
 	{
+		// Overlay 总开关
+		bool showOverlay           = true;
+
 		// Overlay 显示开关
 		bool showGrid              = true;
 		bool showOrigin            = true;

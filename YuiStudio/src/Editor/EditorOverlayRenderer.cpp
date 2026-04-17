@@ -15,6 +15,8 @@ namespace Yuicy {
 			return;
 
 		auto& settings = m_context->viewportSettings;
+		if (!settings.showOverlay)
+			return;
 
 		// 世界网格
 		if (settings.showGrid)
@@ -32,6 +34,8 @@ namespace Yuicy {
 			return;
 
 		auto& settings = m_context->viewportSettings;
+		if (!settings.showOverlay)
+			return;
 
 		if (settings.showCameraBounds)
 			DrawCameraBounds(scene);

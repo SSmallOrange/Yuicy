@@ -37,6 +37,9 @@ namespace Yuicy {
 	private:
 		void OnImGuiDrawGizmos();
 		void OnImGuiToolbarRender();
+		void OnImGuiOverlaySettingsRender();
+
+		void DrawOverlaySettingsPopup();
 		void UpdateMousePicking();
 
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
@@ -55,6 +58,7 @@ namespace Yuicy {
 		// 编辑器图标
 		Ref<Texture2D> m_playIcon;
 		Ref<Texture2D> m_stopIcon;
+		Ref<Texture2D> m_overlayIcon;
 	};
 
 }
