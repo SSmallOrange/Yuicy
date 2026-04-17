@@ -40,6 +40,9 @@ namespace Yuicy {
 		// 场景切换后刷新面板
 		void OnSceneChanged();
 
+		// 窗口关闭拦截
+		void HandleWindowClose();
+
 	private:
 		// 编辑器核心上下文
 		EditorContext m_editorContext;
@@ -63,6 +66,10 @@ namespace Yuicy {
 		ContentBrowserPanel m_contentBrowserPanel;
 
 		bool m_titleBarHovered = false;
+
+		// 窗口关闭控制
+		bool m_showCloseConfirmDialog = false;
+		bool m_pendingClose = false;
 	};
 
 }

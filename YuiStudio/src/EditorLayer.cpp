@@ -30,16 +30,25 @@ namespace Yuicy {
 		m_viewportPanel.SetContext(&m_editorContext);
 		m_viewportPanel.SetRenderPipeline(&m_renderPipeline);
 		m_viewportPanel.SetSceneController(&m_sceneController);
+		m_viewportPanel.SetDirtyTracker(&m_dirtyTracker);
 		m_viewportPanel.Init();
 
 		// 初始化编辑器服务
 		m_sceneController.SetContext(&m_editorContext);
+		m_sceneController.SetDirtyTracker(&m_dirtyTracker);
 		m_sceneController.SetOnSceneChanged([this]() { OnSceneChanged(); });
+
+		// Dirty Tracker
 		m_dirtyTracker.SetContext(&m_editorContext);
+		m_dirtyTracker.SetIsSafeToAutoSave([this]() { return !m_viewportPanel.IsGizmoInUse(); });
+		m_dirtyTracker.SetAutoSaveCallback([this]() { m_sceneController.SaveScene(); });
 
 		// 面板共享选择上下文
 		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
+		m_sceneHierarchyPanel.SetDirtyTracker(&m_dirtyTracker);
+		
 		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
+		m_propertiesPanel.SetDirtyTracker(&m_dirtyTracker);
 
 		// 创建默认场景
 		m_sceneController.NewScene();
@@ -60,6 +69,7 @@ namespace Yuicy {
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		m_viewportPanel.OnUpdate(ts);
+		m_dirtyTracker.OnUpdate(ts);
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -125,7 +135,60 @@ namespace Yuicy {
 		// Content Browser
 		m_contentBrowserPanel.OnImGuiRender();
 
+		// SceneController 模态框
+		m_sceneController.OnImGuiRender();
+
+		// 窗口关闭确认对话框
+		HandleWindowClose();
+
 		ImGui::End(); // DockSpace
+	}
+
+	void EditorLayer::HandleWindowClose()
+	{
+		if (m_showCloseConfirmDialog)
+		{
+			ImGui::OpenPopup("Unsaved Changes##CloseEditor");
+			m_showCloseConfirmDialog = false;
+
+			ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		}
+
+		if (!ImGui::BeginPopupModal("Unsaved Changes##CloseEditor", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		ImGui::Text("The current scene has unsaved changes.");
+		ImGui::Text("Do you want to save before closing?");
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		float buttonWidth = 100.0f;
+		float totalWidth = buttonWidth * 3 + ImGui::GetStyle().ItemSpacing.x * 2;
+		ImGui::SetCursorPosX((ImGui::GetWindowWidth() - totalWidth) * 0.5f);
+
+		if (ImGui::Button("Save", ImVec2(buttonWidth, 0)))
+		{
+			m_sceneController.SaveScene();
+			m_pendingClose = true;
+			Application::Get().GetWindow().Close();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Don't Save", ImVec2(buttonWidth, 0)))
+		{
+			m_pendingClose = true;
+			Application::Get().GetWindow().Close();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 
 	void EditorLayer::OnImGuiDrawStateRender()
@@ -224,7 +287,7 @@ namespace Yuicy {
 			m_titleBarHovered = inTitlebar && !menuHovered;
 		}
 
-		// 居中标题文字
+		// 居中标题文字（包含未保存标记）
 		{
 			std::string title = "YuiStudio";
 			if (auto activeProject = Project::GetActive())
@@ -233,6 +296,9 @@ namespace Yuicy {
 				if (!projectName.empty())
 					title += " - " + projectName;
 			}
+
+			if (m_dirtyTracker.IsSceneDirty())
+				title += " *";
 
 			ImVec2 textSize = ImGui::CalcTextSize(title.c_str());
 			float textX = titlebarMin.x + (windowWidth - textSize.x) * 0.5f;
@@ -313,6 +379,22 @@ namespace Yuicy {
 		{
 			event.SetHit(m_titleBarHovered);
 			return true;
+		});
+
+		// 窗口关闭拦截
+		dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& event)
+		{
+			if (m_pendingClose)
+				return false; // 允许关闭
+
+			if (m_dirtyTracker.IsSceneDirty())
+			{
+				m_showCloseConfirmDialog = true;
+				Application::Get().GetWindow().CancelClose();
+				return true; // 拦截关闭
+			}
+
+			return false;
 		});
 
 		// 文件操作快捷键

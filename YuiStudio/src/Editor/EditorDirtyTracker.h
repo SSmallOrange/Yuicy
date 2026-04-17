@@ -2,10 +2,11 @@
 
 #include "EditorContext.h"
 
+#include <functional>
+
 namespace Yuicy {
 
 	// 编辑器脏状态追踪器
-	// TODO: 完善实现
 	class EditorDirtyTracker
 	{
 	public:
@@ -33,11 +34,23 @@ namespace Yuicy {
 		// 当前项目是否为脏状态
 		bool IsProjectDirty() const;
 
-		// TODO 每帧调用，用于检查自动保存时机
+		// AutoSave 安全时机回调（如：非 Gizmo 拖拽中）
+		using SafeToSaveCallback = std::function<bool()>;
+		void SetIsSafeToAutoSave(SafeToSaveCallback callback) { m_isSafeToAutoSave = std::move(callback); }
+
+		// AutoSave 执行回调
+		using AutoSaveCallback = std::function<void()>;
+		void SetAutoSaveCallback(AutoSaveCallback callback) { m_autoSaveCallback = std::move(callback); }
+
+		// 每帧调用，驱动 AutoSave 计时器
 		void OnUpdate(float deltaTime);
 
 	private:
 		EditorContext* m_context = nullptr;
+		float m_autoSaveTimer = 0.0f;
+
+		SafeToSaveCallback m_isSafeToAutoSave;
+		AutoSaveCallback m_autoSaveCallback;
 	};
 
 }

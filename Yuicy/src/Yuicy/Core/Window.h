@@ -50,6 +50,7 @@ namespace Yuicy {
 
 		// Window control
 		virtual void Close() = 0;
+		virtual void CancelClose() = 0;
 		virtual void Minimize() = 0;
 		virtual void Maximize() = 0;
 		virtual void Restore() = 0;

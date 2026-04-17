@@ -6,6 +6,8 @@
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/Application.h"
 
+#include "imgui/imgui.h"
+
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -80,10 +82,90 @@ namespace Yuicy {
 			m_onSceneChanged();
 	}
 
+	// Dirty 检查与确认流程
+	bool EditorSceneController::CheckDirtyAndConfirm(PendingAction action)
+	{
+		if (!m_dirtyTracker || !m_dirtyTracker->IsSceneDirty())
+			return true; // 无需确认，可以直接执行
+
+		m_pendingAction = action;
+		m_showUnsavedDialog = true;
+		return false; // 需要等待用户确认
+	}
+
+	void EditorSceneController::ExecutePendingAction()
+	{
+		PendingAction action = m_pendingAction;
+		std::filesystem::path filepath = m_pendingFilePath;
+		m_pendingAction = PendingAction::None;
+		m_pendingFilePath.clear();
+
+		switch (action)
+		{
+		case PendingAction::NewScene:     NewScene(); break;
+		case PendingAction::OpenScene:    OpenScene(filepath); break;
+		case PendingAction::OpenProject:  OpenProject(filepath); break;
+		case PendingAction::NewProject:   NewProject(); break;
+		default: break;
+		}
+	}
+
+	void EditorSceneController::OnImGuiRender()
+	{
+		if (m_showUnsavedDialog)
+		{
+			ImGui::OpenPopup("Unsaved Changes##SceneController");
+			m_showUnsavedDialog = false;
+
+			ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		}
+
+		if (!ImGui::BeginPopupModal("Unsaved Changes##SceneController", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		ImGui::Text("The current scene has unsaved changes.");
+		ImGui::Text("Do you want to save before continuing?");
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		float buttonWidth = 100.0f;
+		float totalWidth = buttonWidth * 3 + ImGui::GetStyle().ItemSpacing.x * 2;
+		ImGui::SetCursorPosX((ImGui::GetWindowWidth() - totalWidth) * 0.5f);
+
+		if (ImGui::Button("Save", ImVec2(buttonWidth, 0)))
+		{
+			SaveScene();
+			ExecutePendingAction();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Don't Save", ImVec2(buttonWidth, 0)))
+		{
+			if (m_dirtyTracker)
+				m_dirtyTracker->ClearSceneDirty();
+			ExecutePendingAction();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0)))
+		{
+			m_pendingAction = PendingAction::None;
+			m_pendingFilePath.clear();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
 	// 场景操作
 	void EditorSceneController::NewScene()
 	{
 		if (!m_context || !m_context->runtime.IsEditing())
+			return;
+
+		if (m_pendingAction == PendingAction::None && !CheckDirtyAndConfirm(PendingAction::NewScene))
 			return;
 
 		m_context->editorScene = CreateRef<Scene>();
@@ -96,6 +178,9 @@ namespace Yuicy {
 		m_context->viewport.hoveredEntity = {};
 		m_context->selection.ClearEntitySelection();
 
+		if (m_dirtyTracker)
+			m_dirtyTracker->ClearSceneDirty();
+
 		NotifySceneChanged();
 	}
 
@@ -105,9 +190,14 @@ namespace Yuicy {
 			return;
 
 		std::string filepath = ShowOpenFileDialog(SceneSerializer::GetSceneSerializerFileFilter());
-		if (!filepath.empty() && OpenScene(filepath))
+		if (!filepath.empty())
 		{
-			YUICY_CORE_INFO("Opened scene: {}", filepath);
+			m_pendingFilePath = filepath;
+			if (CheckDirtyAndConfirm(PendingAction::OpenScene))
+			{
+				m_pendingFilePath.clear();
+				OpenScene(filepath);
+			}
 		}
 	}
 
@@ -115,6 +205,13 @@ namespace Yuicy {
 	{
 		if (!m_context || !m_context->runtime.IsEditing())
 			return false;
+
+		// 从 ExecutePendingAction 调用时不再检查 dirty
+		if (m_pendingAction == PendingAction::None && !CheckDirtyAndConfirm(PendingAction::OpenScene))
+		{
+			m_pendingFilePath = filepath;
+			return false;
+		}
 
 		Ref<Scene> scene = CreateRef<Scene>();
 
@@ -131,6 +228,9 @@ namespace Yuicy {
 		m_context->viewport.hoveredEntity = {};
 		m_context->selection.ClearEntitySelection();
 
+		if (m_dirtyTracker)
+			m_dirtyTracker->ClearSceneDirty();
+
 		NotifySceneChanged();
 		return true;
 	}
@@ -144,6 +244,12 @@ namespace Yuicy {
 		{
 			SceneSerializer serializer(m_context->editorScene);
 			serializer.Serialize(m_context->document.currentScenePath);
+
+			if (m_dirtyTracker)
+			{
+				m_dirtyTracker->ClearSceneDirty();
+				m_dirtyTracker->ClearProjectDirty();
+			}
 
 			if (Project::GetActive())
 				SaveProject();
@@ -172,6 +278,12 @@ namespace Yuicy {
 			serializer.Serialize(scenePath);
 			m_context->document.currentScenePath = scenePath;
 
+			if (m_dirtyTracker)
+			{
+				m_dirtyTracker->ClearSceneDirty();
+				m_dirtyTracker->ClearProjectDirty();
+			}
+
 			if (Project::GetActive())
 				SaveProject();
 		}
@@ -181,6 +293,9 @@ namespace Yuicy {
 	void EditorSceneController::NewProject()
 	{
 		if (!m_context || !m_context->runtime.IsEditing())
+			return;
+
+		if (m_pendingAction == PendingAction::None && !CheckDirtyAndConfirm(PendingAction::NewProject))
 			return;
 
 		std::string filepath = ShowSaveFileDialog(
@@ -231,7 +346,14 @@ namespace Yuicy {
 
 		std::string filepath = ShowOpenFileDialog(ProjectSerializer::GetProjectSerializerFileFilter());
 		if (!filepath.empty())
-			OpenProject(filepath);
+		{
+			m_pendingFilePath = filepath;
+			if (CheckDirtyAndConfirm(PendingAction::OpenProject))
+			{
+				m_pendingFilePath.clear();
+				OpenProject(filepath);
+			}
+		}
 	}
 
 	void EditorSceneController::OpenProject(const std::filesystem::path& filepath)
@@ -321,6 +443,9 @@ namespace Yuicy {
 
 		ProjectSerializer projectSerializer(activeProject);
 		projectSerializer.Serialize(m_context->document.currentProjectPath);
+
+		if (m_dirtyTracker)
+			m_dirtyTracker->ClearProjectDirty();
 	}
 
 	// Play / Stop

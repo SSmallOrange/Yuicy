@@ -39,7 +39,6 @@ namespace Yuicy {
 		YUICY_PROFILE_FUNCTION();
 
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
 		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Application::OnWindowResize, this, std::placeholders::_1));
 
 		for (auto it = _layerStack.rbegin(); it != _layerStack.rend(); ++it) {  // 事件反向冒泡
@@ -47,6 +46,10 @@ namespace Yuicy {
 				break;
 			(*it)->OnEvent(e);
 		}
+
+		// WindowCloseEvent：仅在没有被 Layer 拦截时关闭
+		if (e.GetEventType() == EventType::WindowClose && !e.Handled)
+			OnWindowClose(e);
 
 		// YUICY_CORE_INFO("EventInfo:{}", e.ToString());
 	}

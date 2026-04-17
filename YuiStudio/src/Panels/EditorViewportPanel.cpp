@@ -201,7 +201,10 @@ namespace Yuicy {
 			snap ? snapValues : nullptr
 		);
 
-		if (ImGuizmo::IsUsing())
+		bool wasUsing = m_gizmoInUse;
+		m_gizmoInUse = ImGuizmo::IsUsing();
+
+		if (m_gizmoInUse)
 		{
 			glm::mat4 localTransform = worldTransform;
 			Entity parent = selectedEntity.GetParent();
@@ -213,6 +216,10 @@ namespace Yuicy {
 
 			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
 		}
+
+		// Gizmo 拖拽结束时标脏
+		if (wasUsing && !m_gizmoInUse && m_dirtyTracker)
+			m_dirtyTracker->MarkSceneDirty();
 	}
 
 	void EditorViewportPanel::OnImGuiToolbarRender()

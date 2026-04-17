@@ -36,6 +36,7 @@ namespace Yuicy {
 
 		// Window control
 		void Close() override;
+		void CancelClose() override;
 		void Minimize() override;
 		void Maximize() override;
 		void Restore() override;

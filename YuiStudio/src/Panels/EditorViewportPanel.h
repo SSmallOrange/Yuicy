@@ -7,6 +7,7 @@
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorRenderPipeline.h"
 #include "../Editor/EditorSceneController.h"
+#include "../Editor/EditorDirtyTracker.h"
 
 namespace Yuicy {
 
@@ -24,6 +25,7 @@ namespace Yuicy {
 		void SetContext(EditorContext* context) { m_context = context; }
 		void SetRenderPipeline(EditorRenderPipeline* pipeline) { m_renderPipeline = pipeline; }
 		void SetSceneController(EditorSceneController* controller) { m_sceneController = controller; }
+		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; }
 
 		void OnUpdate(Timestep ts);
 		void OnImGuiRender();
@@ -33,6 +35,8 @@ namespace Yuicy {
 		void OnSceneChanged();
 
 		EditorCamera& GetEditorCamera() { return m_editorCamera; }
+
+		bool IsGizmoInUse() const { return m_gizmoInUse; }
 
 	private:
 		void OnImGuiDrawGizmos();
@@ -48,12 +52,14 @@ namespace Yuicy {
 		EditorContext* m_context = nullptr;
 		EditorRenderPipeline* m_renderPipeline = nullptr;
 		EditorSceneController* m_sceneController = nullptr;
+		EditorDirtyTracker* m_dirtyTracker = nullptr;
 
 		// 编辑器相机
 		EditorCamera m_editorCamera;
 
 		// Gizmo
 		int m_gizmoType = -1;
+		bool m_gizmoInUse = false;
 
 		// 编辑器图标
 		Ref<Texture2D> m_playIcon;

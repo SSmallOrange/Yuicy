@@ -59,10 +59,14 @@ namespace Yuicy {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4{ 0.9f, 0.2f, 0.2f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
 		if (ImGui::Button("X", buttonSize))
+		{
 			values.x = resetValue;
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+		}
 		ImGui::PopStyleColor(3);
 		ImGui::SameLine();
-		ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
+		if (ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f"))
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 		ImGui::PopItemWidth();
 		ImGui::SameLine();
 
@@ -71,10 +75,14 @@ namespace Yuicy {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4{ 0.3f, 0.8f, 0.3f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
 		if (ImGui::Button("Y", buttonSize))
+		{
 			values.y = resetValue;
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+		}
 		ImGui::PopStyleColor(3);
 		ImGui::SameLine();
-		ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
+		if (ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f"))
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 		ImGui::PopItemWidth();
 		ImGui::SameLine();
 
@@ -83,10 +91,14 @@ namespace Yuicy {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4{ 0.2f, 0.35f, 0.9f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
 		if (ImGui::Button("Z", buttonSize))
+		{
 			values.z = resetValue;
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+		}
 		ImGui::PopStyleColor(3);
 		ImGui::SameLine();
-		ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
+		if (ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f"))
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 		ImGui::PopItemWidth();
 
 		ImGui::PopStyleVar();
@@ -97,7 +109,8 @@ namespace Yuicy {
 
 	// DrawComponent 模板
 	template<typename T, typename UIFunction>
-	static void DrawComponentUI(const std::string& name, Entity entity, UIFunction uiFunction, bool canRemove = true)
+	static void DrawComponentUI(const std::string& name, Entity entity, UIFunction uiFunction,
+		EditorDirtyTracker* dirtyTracker = nullptr, bool canRemove = true)
 	{
 		if (!entity.HasComponent<T>())
 			return;
@@ -130,6 +143,7 @@ namespace Yuicy {
 				if (ImGui::MenuItem("Remove component"))
 				{
 					entity.RemoveComponent<T>();
+					if (dirtyTracker) dirtyTracker->MarkSceneDirty();
 					ImGui::EndPopup();
 					if (open) ImGui::TreePop();
 					return;
@@ -155,6 +169,7 @@ namespace Yuicy {
 			if (ImGui::MenuItem(entryName.c_str()))
 			{
 				selectedEntity.AddComponent<T>();
+				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 				ImGui::CloseCurrentPopup();
 			}
 		}
@@ -172,7 +187,10 @@ namespace Yuicy {
 			std::memcpy(buffer.data(), tag.c_str(), std::min(tag.size(), buffer.size() - 1));
 
 			if (ImGui::InputText("##Tag", buffer.data(), buffer.size()))
+			{
 				tag = std::string(buffer.data());
+				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+			}
 		}
 
 		ImGui::SameLine();
@@ -195,6 +213,8 @@ namespace Yuicy {
 
 		ImGui::PopItemWidth();
 
+		auto* dt = m_dirtyTracker;
+
 		// TransformComponent
 		DrawComponentUI<TransformComponent>("Transform", entity, [this](auto& component) {
 			DrawVec3Control("Position", component.Translation);
@@ -204,11 +224,12 @@ namespace Yuicy {
 			component.Rotation = glm::radians(rotation);
 
 			DrawVec3Control("Scale", component.Scale, 1.0f);
-		}, false);
+		}, nullptr, false);
 
 		// SpriteRendererComponent
-		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
-			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
+		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [dt](auto& component) {
+			if (ImGui::ColorEdit4("Color", glm::value_ptr(component.Color)))
+				if (dt) dt->MarkSceneDirty();
 
 			std::string textureName = "None";
 			std::string texturePath;
@@ -254,7 +275,10 @@ namespace Yuicy {
 					{
 						AssetHandle handle = assetManager->ImportAsset(filepath);
 						if (handle != 0)
+						{
 							component.TextureHandle = handle;
+							if (dt) dt->MarkSceneDirty();
+						}
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -280,7 +304,10 @@ namespace Yuicy {
 			ImGui::SetCursorPos(textureCursorPos);
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 			if (hasTexture && ImGui::Button("X##ClearTexture", ImVec2(18, 18)))
+			{
 				component.TextureHandle = 0;
+				if (dt) dt->MarkSceneDirty();
+			}
 			ImGui::PopStyleVar();
 
 			ImGui::SetCursorPos(rightOfImagePos);
@@ -288,47 +315,65 @@ namespace Yuicy {
 
 			ImGui::SetCursorPos(nextRowCursorPos);
 
-			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
-			ImGui::Checkbox("Flip X", &component.FlipX);
+			if (ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::Checkbox("Flip X", &component.FlipX))
+				if (dt) dt->MarkSceneDirty();
 			ImGui::SameLine();
-			ImGui::Checkbox("Flip Y", &component.FlipY);
-			ImGui::DragInt("Sorting Order", &component.SortingOrder);
-		});
+			if (ImGui::Checkbox("Flip Y", &component.FlipY))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragInt("Sorting Order", &component.SortingOrder))
+				if (dt) dt->MarkSceneDirty();
+		}, dt);
 
 		// CameraComponent
-		DrawComponentUI<CameraComponent>("Camera", entity, [](auto& component) {
+		DrawComponentUI<CameraComponent>("Camera", entity, [dt](auto& component) {
 			auto& camera = component.Camera;
-			ImGui::Checkbox("Primary", &component.Primary);
+			if (ImGui::Checkbox("Primary", &component.Primary))
+				if (dt) dt->MarkSceneDirty();
 
 			float orthoSize = camera.GetOrthographicSize();
 			if (ImGui::DragFloat("Orthographic Size", &orthoSize, 0.1f))
+			{
 				camera.SetOrthographicSize(orthoSize);
+				if (dt) dt->MarkSceneDirty();
+			}
 
 			float orthoNear = camera.GetOrthographicNearClip();
 			if (ImGui::DragFloat("Near Clip", &orthoNear, 0.1f))
+			{
 				camera.SetOrthographicNearClip(orthoNear);
+				if (dt) dt->MarkSceneDirty();
+			}
 
 			float orthoFar = camera.GetOrthographicFarClip();
 			if (ImGui::DragFloat("Far Clip", &orthoFar, 0.1f))
+			{
 				camera.SetOrthographicFarClip(orthoFar);
+				if (dt) dt->MarkSceneDirty();
+			}
 
-			ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio);
-		});
+			if (ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio))
+				if (dt) dt->MarkSceneDirty();
+		}, dt);
 
 		// LuaScriptComponent
-		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [](auto& component)
+		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [dt](auto& component)
 		{
 			std::array<char, 256> scriptPathBuffer{};
 			std::memcpy(scriptPathBuffer.data(), component.ScriptPath.c_str(),
 					std::min(component.ScriptPath.size(), scriptPathBuffer.size() - 1));
 			if (ImGui::InputText("Script Path", scriptPathBuffer.data(), scriptPathBuffer.size()))
+			{
 				component.ScriptPath = scriptPathBuffer.data();
+				if (dt) dt->MarkSceneDirty();
+			}
 
 			ImGui::Text("Loaded: %s", component.IsLoaded ? "Yes" : "No");
-		});
+		}, dt);
 
 		// Rigidbody2DComponent
-		DrawComponentUI<Rigidbody2DComponent>("Rigidbody 2D", entity, [](auto& component)
+		DrawComponentUI<Rigidbody2DComponent>("Rigidbody 2D", entity, [dt](auto& component)
 		{
 			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
 			const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
@@ -339,39 +384,57 @@ namespace Yuicy {
 				{
 					bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
 					if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
+					{
 						component.Type = (Rigidbody2DComponent::BodyType)i;
+						if (dt) dt->MarkSceneDirty();
+					}
 					if (isSelected)
 						ImGui::SetItemDefaultFocus();
 				}
 				ImGui::EndCombo();
 			}
 
-			ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
-		});
+			if (ImGui::Checkbox("Fixed Rotation", &component.FixedRotation))
+				if (dt) dt->MarkSceneDirty();
+		}, dt);
 
 		// BoxCollider2DComponent
-		DrawComponentUI<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)
+		DrawComponentUI<BoxCollider2DComponent>("Box Collider 2D", entity, [dt](auto& component)
 		{
-			ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f);
-			ImGui::DragFloat2("Size", glm::value_ptr(component.Size), 0.01f);
-			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f);
-			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
-			ImGui::Checkbox("Is Trigger", &component.IsTrigger);
-		});
+			if (ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat2("Size", glm::value_ptr(component.Size), 0.01f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
+				if (dt) dt->MarkSceneDirty();
+		}, dt);
 
 		// CircleCollider2DComponent
-		DrawComponentUI<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
+		DrawComponentUI<CircleCollider2DComponent>("Circle Collider 2D", entity, [dt](auto& component)
 		{
-			ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f);
-			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f);
-			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f);
-			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
-			ImGui::Checkbox("Is Trigger", &component.IsTrigger);
-		});
+			if (ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f))
+				if (dt) dt->MarkSceneDirty();
+			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
+				if (dt) dt->MarkSceneDirty();
+		}, dt);
 	}
 
 }

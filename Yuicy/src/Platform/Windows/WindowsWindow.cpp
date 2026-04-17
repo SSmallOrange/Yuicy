@@ -283,6 +283,11 @@ namespace Yuicy {
 		_Data.EventCallback(event);
 	}
 
+	void WindowsWindow::CancelClose()
+	{
+		glfwSetWindowShouldClose(_Window, GLFW_FALSE);
+	}
+
 	void WindowsWindow::Minimize()
 	{
 		glfwIconifyWindow(_Window);

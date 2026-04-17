@@ -67,18 +67,23 @@ namespace Yuicy {
 			if (ImGui::BeginPopupContextWindow(nullptr, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
+				{
 					m_context->CreateEntity("Empty Entity");
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				}
 
 				if (ImGui::MenuItem("Create Camera"))
 				{
 					auto entity = m_context->CreateEntity("Camera");
 					entity.AddComponent<CameraComponent>();
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 				}
 
 				if (ImGui::MenuItem("Create Sprite"))
 				{
 					auto entity = m_context->CreateEntity("Sprite");
 					entity.AddComponent<SpriteRendererComponent>();
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 				}
 
 				ImGui::EndPopup();
@@ -115,7 +120,10 @@ namespace Yuicy {
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::MenuItem("Create Child Entity"))
+			{
 				m_context->CreateChildEntity(entity, "Child Entity");
+				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+			}
 
 			if (ImGui::MenuItem("Delete Entity"))
 				entityDeleted = true;
@@ -141,7 +149,10 @@ namespace Yuicy {
 				Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
 
 				if (droppedEntity && droppedEntity != entity)
+				{
 					m_context->ParentEntity(droppedEntity, entity);
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				}
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -164,6 +175,7 @@ namespace Yuicy {
 			if (selectedEntity == entity)
 				SetSelectedEntity({});
 			m_context->DestroyEntity(entity);
+			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 		}
 	}
 

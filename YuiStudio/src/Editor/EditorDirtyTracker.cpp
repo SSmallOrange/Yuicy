@@ -1,4 +1,5 @@
 #include "EditorDirtyTracker.h"
+#include "Yuicy/Project/Project.h"
 
 namespace Yuicy {
 
@@ -17,7 +18,10 @@ namespace Yuicy {
 	void EditorDirtyTracker::ClearSceneDirty()
 	{
 		if (m_context)
+		{
 			m_context->document.sceneDirty = false;
+			m_autoSaveTimer = 0.0f;
+		}
 	}
 
 	void EditorDirtyTracker::ClearProjectDirty()
@@ -38,10 +42,29 @@ namespace Yuicy {
 
 	void EditorDirtyTracker::OnUpdate(float deltaTime)
 	{
-		// TODO
-		// - 检查 AutoSave 定时器
-		// - 根据 ProjectConfig 的 EnableAutoSave / AutoSaveIntervalSeconds
-		// - 在安全时机（非 Gizmo 拖拽中）触发自动保存
+		if (!m_context || !m_context->runtime.IsEditing())
+			return;
+
+		if (!IsSceneDirty())
+			return;
+
+		auto project = Project::GetActive();
+		if (!project || !project->GetConfig().EnableAutoSave)
+			return;
+
+		m_autoSaveTimer += deltaTime;
+
+		float interval = static_cast<float>(project->GetConfig().AutoSaveIntervalSeconds);
+		if (m_autoSaveTimer < interval)
+			return;
+
+		// 安全时机检查，防止操作中保存
+		if (m_isSafeToAutoSave && !m_isSafeToAutoSave())
+			return;
+
+		m_autoSaveTimer = 0.0f;
+		if (m_autoSaveCallback)
+			m_autoSaveCallback();
 	}
 
 }
