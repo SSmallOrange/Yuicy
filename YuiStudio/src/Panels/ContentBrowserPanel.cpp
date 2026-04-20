@@ -1,8 +1,12 @@
 #include "ContentBrowserPanel.h"
 
-#include "imgui/imgui.h"
+#include "../Editor/EditorContext.h"
+#include "../Editor/EditorAssetWorkflow.h"
 
-#include <shellapi.h>
+#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
+
+#include "imgui/imgui.h"
 
 #include <algorithm>
 #include <array>
@@ -52,18 +56,6 @@ namespace Yuicy {
 			return CreateSolidColorTexture(fallbackColor);
 		}
 
-		void OpenInExplorer(const std::filesystem::path& path)
-		{
-			if (path.empty())
-				return;
-
-			std::error_code ec;
-			if (!std::filesystem::exists(path, ec) || ec)
-				return;
-
-			ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-		}
-
 		std::string ToLowerCopy(std::string value)
 		{
 			std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character)
@@ -95,6 +87,13 @@ namespace Yuicy {
 		m_backIcon = LoadIconTexture("assets/textures/Editor/Generic/Back.png", { 200, 200, 200, 255 });
 	}
 
+	void ContentBrowserPanel::ResetNavigation()
+	{
+		m_baseDirectory.clear();
+		m_currentDirectory.clear();
+		m_selectedPath.clear();
+	}
+
 	void ContentBrowserPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Content Browser");
@@ -113,6 +112,7 @@ namespace Yuicy {
 		{
 			m_baseDirectory = activeAssetDirectory;
 			m_currentDirectory = activeAssetDirectory;
+			m_selectedPath.clear();
 		}
 
 		if (std::error_code ec; m_currentDirectory.empty() || !std::filesystem::exists(m_currentDirectory, ec))
@@ -166,7 +166,10 @@ namespace Yuicy {
 			}
 
 			if (ImGui::MenuItem("Show in Explorer"))
-				OpenInExplorer(m_currentDirectory);
+			{
+				if (m_assetWorkflow)
+					m_assetWorkflow->RevealInExplorer(m_currentDirectory);
+			}
 
 			ImGui::EndPopup();
 		}
@@ -225,11 +228,50 @@ namespace Yuicy {
 
 			ImGui::PushID(filename.c_str());
 
+			// 选中项高亮
+			bool isSelected = (m_selectedPath == entryPath);
+			if (isSelected)
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.18f, 0.30f, 0.52f, 0.65f });
+
 			ImGui::ImageButton("##ContentBrowserItem", iconTextureID, ImVec2{ m_thumbnailSize, m_thumbnailSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-			if (isDirectory && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				m_currentDirectory /= entryPath.filename();
+			if (isSelected)
+				ImGui::PopStyleColor();
 
+			// 双击行为：目录→进入，文件→根据类型打开
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				if (isDirectory)
+				{
+					m_currentDirectory /= entryPath.filename();
+				}
+				else if (m_assetWorkflow)
+				{
+					m_assetWorkflow->OpenAsset(entryPath);
+				}
+			}
+			// 单击选择
+			else if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+			{
+				m_selectedPath = entryPath;
+
+				if (!isDirectory && m_context)
+				{
+					auto assetManager = Project::GetEditorAssetManager();
+					if (assetManager)
+					{
+						AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
+						m_context->selection.selectedAsset = handle;
+						m_context->selection.ClearEntitySelection();
+					}
+				}
+				else if (isDirectory && m_context)
+				{
+					m_context->selection.ClearAssetSelection();
+				}
+			}
+
+			// 文件拖拽
 			if (!isDirectory && ImGui::BeginDragDropSource())
 			{
 				const auto& nativePath = entryPath.native();
@@ -252,6 +294,14 @@ namespace Yuicy {
 		ImGui::Columns(1);
 		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(2);
+
+		// 点击空白区域取消选择
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered())
+		{
+			m_selectedPath.clear();
+			if (m_context)
+				m_context->selection.ClearAssetSelection();
+		}
 
 		ImGui::End();
 	}

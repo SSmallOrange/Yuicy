@@ -47,6 +47,10 @@ namespace Yuicy {
 		// CommandHistory → DirtyTracker 联动
 		m_commandHistory.SetOnCommandExecuted([this]() { m_dirtyTracker.MarkSceneDirty(); });
 
+		// 资源工作流
+		m_assetWorkflow.SetContext(&m_editorContext);
+		m_assetWorkflow.SetSceneController(&m_sceneController);
+
 		// 面板共享选择上下文
 		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
 		m_sceneHierarchyPanel.SetDirtyTracker(&m_dirtyTracker);
@@ -55,6 +59,9 @@ namespace Yuicy {
 		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
 		m_propertiesPanel.SetDirtyTracker(&m_dirtyTracker);
 		m_propertiesPanel.SetCommandHistory(&m_commandHistory);
+
+		m_contentBrowserPanel.SetContext(&m_editorContext);
+		m_contentBrowserPanel.SetAssetWorkflow(&m_assetWorkflow);
 
 		// 创建默认场景
 		m_sceneController.NewScene();

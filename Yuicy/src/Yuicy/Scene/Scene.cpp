@@ -605,7 +605,6 @@ namespace Yuicy {
 	void Scene::OnSimulationStop()
 	{
 		// Simulate 模式：清理物理世界，不销毁脚本
-		
 		DestroyPhysicsWorld();
 	}
 

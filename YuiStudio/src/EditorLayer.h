@@ -6,6 +6,7 @@
 #include "Editor/EditorSceneController.h"
 #include "Editor/EditorCommandHistory.h"
 #include "Editor/EditorDirtyTracker.h"
+#include "Editor/EditorAssetWorkflow.h"
 #include "Editor/EditorRenderPipeline.h"
 #include "Editor/EditorOverlayRenderer.h"
 
@@ -53,6 +54,8 @@ namespace Yuicy {
 		EditorCommandHistory m_commandHistory;
 		// 脏数据跟踪
 		EditorDirtyTracker m_dirtyTracker;
+		// 资源工作流
+		EditorAssetWorkflow m_assetWorkflow;
 
 		// 渲染管线
 		EditorRenderPipeline m_renderPipeline;
