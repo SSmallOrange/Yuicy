@@ -50,12 +50,17 @@ namespace Yuicy {
 		// 面板共享选择上下文
 		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
 		m_sceneHierarchyPanel.SetDirtyTracker(&m_dirtyTracker);
+		m_sceneHierarchyPanel.SetCommandHistory(&m_commandHistory);
 		
 		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
 		m_propertiesPanel.SetDirtyTracker(&m_dirtyTracker);
+		m_propertiesPanel.SetCommandHistory(&m_commandHistory);
 
 		// 创建默认场景
 		m_sceneController.NewScene();
+
+		// 编辑器不阻塞事件
+		Application::Get().GetImGuiLayer()->BlockEvents(false);
 	}
 
 	void EditorLayer::OnDetach()
@@ -392,19 +397,19 @@ namespace Yuicy {
 		dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& event)
 		{
 			if (m_pendingClose)
-				return false; // 允许关闭
+				return false;
 
 			if (m_dirtyTracker.IsSceneDirty())
 			{
 				m_showCloseConfirmDialog = true;
 				Application::Get().GetWindow().CancelClose();
-				return true; // 拦截关闭
+				return true;
 			}
 
 			return false;
 		});
 
-		// 文件操作快捷键
+		// 编辑器快捷键
 		dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& event)
 		{
 			return OnKeyPressed(event);
@@ -414,6 +419,10 @@ namespace Yuicy {
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
 	{
 		if (e.IsRepeat())
+			return false;
+
+		// 文字输入控件激活时不处理快捷键
+		if (ImGui::GetIO().WantTextInput)
 			return false;
 
 		bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
@@ -432,6 +441,7 @@ namespace Yuicy {
 			else if (ctrl) m_sceneController.SaveScene();
 			break;
 		case Key::Z:
+			YUICY_CORE_INFO("ctrl: {}, shift: {}", ctrl, shift);
 			if (ctrl && !shift) m_commandHistory.Undo();
 			break;
 		case Key::Y:

@@ -101,9 +101,6 @@ namespace Yuicy {
 		viewportState.focused = ImGui::IsWindowFocused();
 		viewportState.hovered = ImGui::IsWindowHovered();
 
-		// 当视口聚焦或悬停时，不阻塞鼠标/键盘事件
-		Application::Get().GetImGuiLayer()->BlockEvents(!viewportState.focused && !viewportState.hovered);
-
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		viewportState.size = { viewportPanelSize.x, viewportPanelSize.y };
 

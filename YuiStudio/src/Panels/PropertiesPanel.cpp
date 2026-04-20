@@ -4,6 +4,9 @@
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 
+#include "../Editor/Commands/AddComponentCommand.h"
+#include "../Editor/Commands/RemoveComponentCommand.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
@@ -110,7 +113,8 @@ namespace Yuicy {
 	// DrawComponent 模板
 	template<typename T, typename UIFunction>
 	static void DrawComponentUI(const std::string& name, Entity entity, UIFunction uiFunction,
-		EditorDirtyTracker* dirtyTracker = nullptr, bool canRemove = true)
+		EditorDirtyTracker* dirtyTracker = nullptr, EditorCommandHistory* commandHistory = nullptr,
+		bool canRemove = true)
 	{
 		if (!entity.HasComponent<T>())
 			return;
@@ -142,8 +146,16 @@ namespace Yuicy {
 			{
 				if (ImGui::MenuItem("Remove component"))
 				{
-					entity.RemoveComponent<T>();
-					if (dirtyTracker) dirtyTracker->MarkSceneDirty();
+					if (commandHistory)
+					{
+						UUID entityUUID = entity.GetUUID();
+						commandHistory->ExecuteCommandT<RemoveComponentCommand<T>>(entity.GetScene(), entityUUID);
+					}
+					else
+					{
+						entity.RemoveComponent<T>();
+						if (dirtyTracker) dirtyTracker->MarkSceneDirty();
+					}
 					ImGui::EndPopup();
 					if (open) ImGui::TreePop();
 					return;
@@ -168,8 +180,16 @@ namespace Yuicy {
 		{
 			if (ImGui::MenuItem(entryName.c_str()))
 			{
-				selectedEntity.AddComponent<T>();
-				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				if (m_commandHistory)
+				{
+					UUID entityUUID = selectedEntity.GetUUID();
+					m_commandHistory->ExecuteCommandT<AddComponentCommand<T>>(m_context.get(), entityUUID);
+				}
+				else
+				{
+					selectedEntity.AddComponent<T>();
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				}
 				ImGui::CloseCurrentPopup();
 			}
 		}
@@ -214,6 +234,7 @@ namespace Yuicy {
 		ImGui::PopItemWidth();
 
 		auto* dt = m_dirtyTracker;
+		auto* ch = m_commandHistory;
 
 		// TransformComponent
 		DrawComponentUI<TransformComponent>("Transform", entity, [this](auto& component) {
@@ -224,7 +245,7 @@ namespace Yuicy {
 			component.Rotation = glm::radians(rotation);
 
 			DrawVec3Control("Scale", component.Scale, 1.0f);
-		}, nullptr, false);
+		}, nullptr, nullptr, false);
 
 		// SpriteRendererComponent
 		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [dt](auto& component) {
@@ -324,7 +345,7 @@ namespace Yuicy {
 				if (dt) dt->MarkSceneDirty();
 			if (ImGui::DragInt("Sorting Order", &component.SortingOrder))
 				if (dt) dt->MarkSceneDirty();
-		}, dt);
+		}, dt, ch);
 
 		// CameraComponent
 		DrawComponentUI<CameraComponent>("Camera", entity, [dt](auto& component) {
@@ -355,7 +376,7 @@ namespace Yuicy {
 
 			if (ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio))
 				if (dt) dt->MarkSceneDirty();
-		}, dt);
+		}, dt, ch);
 
 		// LuaScriptComponent
 		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [dt](auto& component)
@@ -370,7 +391,7 @@ namespace Yuicy {
 			}
 
 			ImGui::Text("Loaded: %s", component.IsLoaded ? "Yes" : "No");
-		}, dt);
+		}, dt, ch);
 
 		// Rigidbody2DComponent
 		DrawComponentUI<Rigidbody2DComponent>("Rigidbody 2D", entity, [dt](auto& component)
@@ -396,7 +417,7 @@ namespace Yuicy {
 
 			if (ImGui::Checkbox("Fixed Rotation", &component.FixedRotation))
 				if (dt) dt->MarkSceneDirty();
-		}, dt);
+		}, dt, ch);
 
 		// BoxCollider2DComponent
 		DrawComponentUI<BoxCollider2DComponent>("Box Collider 2D", entity, [dt](auto& component)
@@ -415,7 +436,7 @@ namespace Yuicy {
 				if (dt) dt->MarkSceneDirty();
 			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
 				if (dt) dt->MarkSceneDirty();
-		}, dt);
+		}, dt, ch);
 
 		// CircleCollider2DComponent
 		DrawComponentUI<CircleCollider2DComponent>("Circle Collider 2D", entity, [dt](auto& component)
@@ -434,7 +455,7 @@ namespace Yuicy {
 				if (dt) dt->MarkSceneDirty();
 			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
 				if (dt) dt->MarkSceneDirty();
-		}, dt);
+		}, dt, ch);
 	}
 
 }

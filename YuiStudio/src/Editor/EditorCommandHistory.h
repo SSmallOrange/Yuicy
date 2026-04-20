@@ -20,6 +20,12 @@ namespace Yuicy {
 		// 执行命令并压入 Undo 栈
 		void ExecuteCommand(Scope<IEditorCommand> command);
 
+		template<typename T, typename... Arg>
+		void ExecuteCommandT(Arg&&... args)
+		{
+			ExecuteCommand(CreateScope<T>(std::forward<Arg>(args)...));
+		}
+
 		// 撤销
 		void Undo();
 

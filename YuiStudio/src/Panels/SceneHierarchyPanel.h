@@ -3,6 +3,7 @@
 #include "Yuicy.h"
 #include "../Editor/EditorSelectionContext.h"
 #include "../Editor/EditorDirtyTracker.h"
+#include "../Editor/EditorCommandHistory.h"
 
 namespace Yuicy {
 
@@ -16,6 +17,7 @@ namespace Yuicy {
 		void SetContext(const Ref<Scene>& scene);
 		void SetSelectionContext(EditorSelectionContext* selectionContext) { m_editorSelection = selectionContext; }
 		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; }
+		void SetCommandHistory(EditorCommandHistory* history) { m_commandHistory = history; }
 
 		void OnImGuiRender();
 
@@ -30,6 +32,7 @@ namespace Yuicy {
 		Ref<Scene> m_context;
 		EditorSelectionContext* m_editorSelection = nullptr;
 		EditorDirtyTracker* m_dirtyTracker = nullptr;
+		EditorCommandHistory* m_commandHistory = nullptr;
 	};
 
 }

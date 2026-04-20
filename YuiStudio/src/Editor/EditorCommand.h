@@ -20,7 +20,7 @@ namespace Yuicy {
 		// 命令名称（用于 UI 显示和调试）
 		virtual std::string GetName() const = 0;
 
-		// 命令类型标识（用于合并判断，相同 ID 的命令才可能合并）
+		// 命令类型标识
 		virtual std::string GetCommandID() const { return {}; }
 
 		// 尝试与下一个命令合并（如连续拖拽 Gizmo）

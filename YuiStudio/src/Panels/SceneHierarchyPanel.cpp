@@ -2,6 +2,10 @@
 
 #include "Yuicy/Scene/Components.h"
 
+#include "../Editor/Commands/CreateEntityCommand.h"
+#include "../Editor/Commands/DeleteEntityCommand.h"
+#include "../Editor/Commands/ReparentEntityCommand.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
@@ -68,12 +72,18 @@ namespace Yuicy {
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
 				{
-					m_context->CreateEntity("Empty Entity");
-					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+					if (m_commandHistory)
+						m_commandHistory->ExecuteCommandT<CreateEntityCommand>(m_context.get(), "Empty Entity");
+					else
+					{
+						m_context->CreateEntity("Empty Entity");
+						if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+					}
 				}
 
 				if (ImGui::MenuItem("Create Camera"))
 				{
+					// 先创建实体，再添加组件（组合操作，作为单次创建处理）
 					auto entity = m_context->CreateEntity("Camera");
 					entity.AddComponent<CameraComponent>();
 					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
@@ -87,6 +97,29 @@ namespace Yuicy {
 				}
 
 				ImGui::EndPopup();
+			}
+
+			// 拖拽到窗口空白区域脱离父级
+			ImGuiWindow* window = ImGui::GetCurrentWindow();
+			if (ImGui::BeginDragDropTargetCustom(window->ContentRegionRect, window->ID))
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_DND"))
+				{
+					UUID droppedUUID = *(const UUID*)payload->Data;
+					Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
+
+					if (droppedEntity && droppedEntity.GetParentUUID() != 0)
+					{
+						if (m_commandHistory)
+							m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, UUID(0));
+						else
+						{
+							m_context->UnparentEntity(droppedEntity);
+							if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+						}
+					}
+				}
+				ImGui::EndDragDropTarget();
 			}
 		}
 
@@ -121,8 +154,13 @@ namespace Yuicy {
 		{
 			if (ImGui::MenuItem("Create Child Entity"))
 			{
-				m_context->CreateChildEntity(entity, "Child Entity");
-				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				if (m_commandHistory)
+					m_commandHistory->ExecuteCommandT<CreateChildEntityCommand>(m_context.get(), entity.GetUUID(), "Child Entity");
+				else
+				{
+					m_context->CreateChildEntity(entity, "Child Entity");
+					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+				}
 			}
 
 			if (ImGui::MenuItem("Delete Entity"))
@@ -135,6 +173,7 @@ namespace Yuicy {
 		if (ImGui::BeginDragDropSource())
 		{
 			UUID uuid = entity.GetUUID();
+			YUICY_CORE_INFO("Begin droppedUUID: {}");
 			ImGui::SetDragDropPayload("ENTITY_DND", &uuid, sizeof(UUID));
 			ImGui::Text("%s", tag.c_str());
 			ImGui::EndDragDropSource();
@@ -147,11 +186,16 @@ namespace Yuicy {
 			{
 				UUID droppedUUID = *(const UUID*)payload->Data;
 				Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
-
+				YUICY_CORE_INFO("End droppedUUID: {}");
 				if (droppedEntity && droppedEntity != entity)
 				{
-					m_context->ParentEntity(droppedEntity, entity);
-					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+					if (m_commandHistory)
+						m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, entity.GetUUID());
+					else
+					{
+						m_context->ParentEntity(droppedEntity, entity);
+						if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+					}
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -174,8 +218,14 @@ namespace Yuicy {
 		{
 			if (selectedEntity == entity)
 				SetSelectedEntity({});
-			m_context->DestroyEntity(entity);
-			if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+
+			if (m_commandHistory)
+				m_commandHistory->ExecuteCommandT<DeleteEntityCommand>(m_context.get(), entity);
+			else
+			{
+				m_context->DestroyEntity(entity);
+				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+			}
 		}
 	}
 
