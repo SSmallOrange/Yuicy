@@ -38,7 +38,11 @@ namespace Yuicy {
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
+		void OnSimulationStart();
+		void OnSimulationStop();
+
 		void OnUpdateRuntime(Timestep ts);
+		void OnUpdateSimulation(Timestep ts, EditorCamera& camera);
 		void OnUpdateEditor(Timestep ts, EditorCamera& camera);
 
 		void OnUpdate(Timestep ts);
@@ -73,6 +77,11 @@ namespace Yuicy {
 		}
 
 	private:
+		// 物理系统
+		void InitializePhysicsWorld();
+		void DestroyPhysicsWorld();
+		void StepPhysicsWorld(Timestep ts);
+
 		// 脚本
 		void InitializeScripts();
 		void UpdateScripts(Timestep ts);

@@ -52,17 +52,32 @@ namespace Yuicy {
 
 	void EditorRenderPipeline::ExecuteScenePass(Timestep ts, EditorCamera& camera)
 	{
-		switch (m_context->runtime.mode)
+		auto& runtime = m_context->runtime;
+
+		// Pause / Step 时间控制
+		Timestep effectiveTs = ts;
+		if (runtime.IsRunning() && runtime.paused)
+		{
+			if (runtime.pendingStepFrames > 0)
+			{
+				runtime.pendingStepFrames--;
+			}
+			else
+			{
+				effectiveTs = Timestep(0.0f);
+			}
+		}
+
+		switch (runtime.mode)
 		{
 		case SceneMode::Edit:
 			m_context->activeScene->OnUpdateEditor(ts, camera);
 			break;
 		case SceneMode::Play:
-			m_context->activeScene->OnUpdateRuntime(ts);
+			m_context->activeScene->OnUpdateRuntime(effectiveTs);
 			break;
 		case SceneMode::Simulate:
-			// TODO: Simulate 模式更新
-			m_context->activeScene->OnUpdateEditor(ts, camera);
+			m_context->activeScene->OnUpdateSimulation(effectiveTs, camera);
 			break;
 		}
 	}

@@ -63,7 +63,11 @@ namespace Yuicy {
 
 		// 编辑器图标
 		Ref<Texture2D> m_playIcon;
+		Ref<Texture2D> m_simulateIcon;
 		Ref<Texture2D> m_stopIcon;
+		Ref<Texture2D> m_pauseStartIcon;
+		Ref<Texture2D> m_pauseStopIcon;
+		Ref<Texture2D> m_stepIcon;
 		Ref<Texture2D> m_overlayIcon;
 	};
 

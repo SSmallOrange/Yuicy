@@ -448,7 +448,7 @@ namespace Yuicy {
 			m_dirtyTracker->ClearProjectDirty();
 	}
 
-	// Play / Stop
+	// Play / Stop / Simulate
 	void EditorSceneController::OnScenePlay()
 	{
 		if (!m_context || !m_context->runtime.IsEditing())
@@ -461,6 +461,8 @@ namespace Yuicy {
 		}
 
 		m_context->runtime.mode = SceneMode::Play;
+		m_context->runtime.paused = false;
+		m_context->runtime.pendingStepFrames = 0;
 
 		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
 		auto& viewportState = m_context->viewport;
@@ -473,15 +475,45 @@ namespace Yuicy {
 		NotifySceneChanged();
 	}
 
-	void EditorSceneController::OnSceneStop()
+	void EditorSceneController::OnSceneSimulate()
 	{
-		if (!m_context || m_context->runtime.mode != SceneMode::Play)
+		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		if (m_context->activeScene)
-			m_context->activeScene->OnRuntimeStop();
+		m_context->runtime.mode = SceneMode::Simulate;
+		m_context->runtime.paused = false;
+		m_context->runtime.pendingStepFrames = 0;
+
+		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
+		auto& viewportState = m_context->viewport;
+		m_context->runtimeScene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
+		m_context->runtimeScene->OnSimulationStart();
+
+		m_context->activeScene = m_context->runtimeScene;
+		m_context->viewport.hoveredEntity = {};
+
+		NotifySceneChanged();
+	}
+
+	void EditorSceneController::OnSceneStop()
+	{
+		if (!m_context || m_context->runtime.IsEditing())
+			return;
+
+		if (m_context->runtime.mode == SceneMode::Play)
+		{
+			if (m_context->activeScene)
+				m_context->activeScene->OnRuntimeStop();
+		}
+		else if (m_context->runtime.mode == SceneMode::Simulate)
+		{
+			if (m_context->activeScene)
+				m_context->activeScene->OnSimulationStop();
+		}
 
 		m_context->runtime.mode = SceneMode::Edit;
+		m_context->runtime.paused = false;
+		m_context->runtime.pendingStepFrames = 0;
 		m_context->runtimeScene = nullptr;
 
 		m_context->activeScene = m_context->editorScene;
@@ -490,6 +522,24 @@ namespace Yuicy {
 		m_context->viewport.hoveredEntity = {};
 
 		NotifySceneChanged();
+	}
+
+	void EditorSceneController::OnScenePause()
+	{
+		if (!m_context || m_context->runtime.IsEditing())
+			return;
+
+		m_context->runtime.paused = !m_context->runtime.paused;
+	}
+
+	void EditorSceneController::OnSceneStep()
+	{
+		if (!m_context || m_context->runtime.IsEditing())
+			return;
+
+		// Step 只有在暂停状态下才生效
+		m_context->runtime.paused = true;
+		m_context->runtime.pendingStepFrames = 1;
 	}
 
 	// 文件对话框 (Win32)

@@ -17,9 +17,13 @@ namespace Yuicy {
 	{
 		m_editorCamera = EditorCamera(1280.0f / 720.0f, 5.0f);
 
-		m_playIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png", { 50, 200, 50, 255 });
-		m_stopIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png", { 200, 50, 50, 255 });
-		m_overlayIcon = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Generic/Gear.png", { 160, 160, 160, 255 });
+		m_playIcon			= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Play.png",  { 50, 200, 50, 255 });
+		m_simulateIcon		= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/debug.png", { 50, 150, 200, 255 });
+		m_stopIcon			= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Stop.png",  { 200, 50, 50, 255 });
+		m_pauseStartIcon    = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Pause-Stop.png", { 200, 200, 50, 255 });
+		m_pauseStopIcon     = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Pause-Start.png", { 200, 200, 50, 255 });
+		m_stepIcon			= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Step-Forward.png",  { 50, 200, 200, 255 });
+		m_overlayIcon		= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Generic/Gear.png",   { 160, 160, 160, 255 });
 	}
 
 	void EditorViewportPanel::OnSceneChanged()
@@ -229,13 +233,19 @@ namespace Yuicy {
 		if (viewportState.size.x <= 0.0f || viewportState.size.y <= 0.0f)
 			return;
 
-		const bool isPlaying = m_context->runtime.mode == SceneMode::Play;
-		Ref<Texture2D> icon = isPlaying ? m_stopIcon : m_playIcon;
+		auto& runtime = m_context->runtime;
+		bool isEditing = runtime.IsEditing();
+		bool isRunning = runtime.IsRunning();
 
 		const float edgeOffset = 8.0f;
 		const float iconSize = 24.0f;
-		const float windowWidth = iconSize + edgeOffset * 2.0f;
-		const float windowHeight = iconSize + edgeOffset;
+		const float buttonSpacing = 4.0f;
+
+		// Edit: [Play] [Simulate]  |  Running: [Stop] [Pause] [Step]
+		int buttonCount = isEditing ? 2 : 3;
+		float contentWidth = iconSize * buttonCount + buttonSpacing * (buttonCount - 1);
+		float windowWidth = contentWidth + edgeOffset * 2.0f;
+		float windowHeight = iconSize + edgeOffset;
 
 		float toolbarX = (viewportState.bounds[0].x + viewportState.bounds[1].x) * 0.5f;
 		ImGui::SetNextWindowPos(ImVec2(toolbarX - windowWidth * 0.5f, viewportState.bounds[0].y + edgeOffset));
@@ -245,32 +255,50 @@ namespace Yuicy {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(edgeOffset, edgeOffset * 0.5f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(buttonSpacing, 0.0f));
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
 		ImGui::Begin("##toolbar", nullptr,
 			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking
 			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		const ImVec4 tintNormal = ImVec4(1, 1, 1, 0.8f);
-		const ImVec4 tintHovered = ImVec4(1, 1, 1, 1.0f);
-
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.7f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
 
-		ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)icon->GetRendererID());
-		if (ImGui::ImageButton("##PlayStop", texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
+		auto drawToolbarButton = [&](const char* id, Ref<Texture2D> icon, auto onClickFn)
 		{
-			if (isPlaying)
-				m_sceneController->OnSceneStop();
-			else
-				m_sceneController->OnScenePlay();
+			ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)icon->GetRendererID());
+			if (ImGui::ImageButton(id, texID, ImVec2{ iconSize, iconSize }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
+				onClickFn();
+		};
+
+		if (isEditing)
+		{
+			// [Play] [Simulate]
+			drawToolbarButton("##Play", m_playIcon, [this]() { m_sceneController->OnScenePlay(); });
+			ImGui::SameLine();
+			drawToolbarButton("##Simulate", m_simulateIcon, [this]() { m_sceneController->OnSceneSimulate(); });
+		}
+		else
+		{
+			// [Stop] [Pause/Resume] [Step]
+			drawToolbarButton("##Stop", m_stopIcon, [this]() { m_sceneController->OnSceneStop(); });
+			ImGui::SameLine();
+
+			Ref<Texture2D> pauseIcon = runtime.paused ? m_pauseStopIcon : m_pauseStartIcon;
+			drawToolbarButton("##Pause", pauseIcon, [this]() { m_sceneController->OnScenePause(); });
+			ImGui::SameLine();
+
+			drawToolbarButton("##Step", m_stepIcon, [this]() { m_sceneController->OnSceneStep(); });
 		}
 
 		ImGui::PopStyleColor(2);
+		ImGui::PopStyleVar();  // FramePadding
 		ImGui::End();
 
 		ImGui::PopStyleColor();
-		ImGui::PopStyleVar(3);
+		ImGui::PopStyleVar(4);
 	}
 
 	void EditorViewportPanel::OnImGuiOverlaySettingsRender()

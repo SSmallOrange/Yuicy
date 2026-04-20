@@ -421,7 +421,7 @@ namespace Yuicy {
 		}
 	}
 
-	void Scene::OnRuntimeStart()
+	void Scene::InitializePhysicsWorld()
 	{
 		// 创建 Box2D 物理世界，设置重力
 		m_PhysicsWorld = new b2World({ 0.0f, -9.8f });
@@ -514,16 +514,10 @@ namespace Yuicy {
 				cc2d.RuntimeFixture = body->CreateFixture(&fixtureDef);
 			}
 		}
-
-		InitializeScripts();
-		InitializeLuaScripts();
 	}
 
-	void Scene::OnRuntimeStop()
+	void Scene::DestroyPhysicsWorld()
 	{
-		DestroyScripts();
-		DestroyLuaScripts();
-
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -552,45 +546,79 @@ namespace Yuicy {
 		m_PhysicsWorld = nullptr;
 	}
 
+	void Scene::StepPhysicsWorld(Timestep ts)
+	{
+		if (!m_PhysicsWorld)
+			return;
+
+		// 清空本帧碰撞事件
+		m_ContactListener->ClearContacts();
+
+		// Box2D迭代器参数
+		const int32_t velocityIterations = 6;
+		const int32_t positionIterations = 2;
+
+		// 使用帧时间作为物理步长
+		float physicsStep = std::min((float)ts, 1.0f / 30.0f);
+		// float physicsStep = 1 / (float)60;
+		// YUICY_CORE_INFO("dt = {:.4f}s, FPS = {:.0f}", (float)ts, 1.0f / (float)ts);
+		m_PhysicsWorld->Step(physicsStep, velocityIterations, positionIterations);
+
+		// 将物理模拟结果同步回 TransformComponent
+		auto view = m_Registry.view<Rigidbody2DComponent>();
+		for (auto e : view)
+		{
+			Entity entity = { e, this };
+			auto& transform = entity.GetComponent<TransformComponent>();
+			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+
+			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+			if (body)
+			{
+				const auto& position = body->GetPosition();
+				transform.Translation.x = position.x;
+				transform.Translation.y = position.y;
+				transform.Rotation.z = body->GetAngle();
+			}
+		}
+	}
+
+	void Scene::OnRuntimeStart()
+	{
+		InitializePhysicsWorld();
+		InitializeScripts();
+		InitializeLuaScripts();
+	}
+
+	void Scene::OnRuntimeStop()
+	{
+		DestroyScripts();
+		DestroyLuaScripts();
+		DestroyPhysicsWorld();
+	}
+
+	void Scene::OnSimulationStart()
+	{
+		InitializePhysicsWorld();
+	}
+
+	void Scene::OnSimulationStop()
+	{
+		// Simulate 模式：清理物理世界，不销毁脚本
+		
+		DestroyPhysicsWorld();
+	}
+
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
-		UpdateScripts(ts);		// 原生脚本更新
-		UpdateLuaScripts(ts);   // Lua脚本更新
+		UpdateScripts(ts);
+		UpdateLuaScripts(ts);
+		UpdateAnimations(ts);
 
-		UpdateAnimations(ts);   // 动画更新
+		StepPhysicsWorld(ts);
 
 		if (m_PhysicsWorld)
 		{
-			// 清空本帧碰撞事件
-			m_ContactListener->ClearContacts();
-
-			// Box2D迭代器参数
-			const int32_t velocityIterations = 6;
-			const int32_t positionIterations = 2;
-
-			// 使用帧时间作为物理步长
-			float physicsStep = std::min((float)ts, 1.0f / 30.0f);
-			// float physicsStep = 1 / (float)60;
-			// YUICY_CORE_INFO("dt = {:.4f}s, FPS = {:.0f}", (float)ts, 1.0f / (float)ts);
-			m_PhysicsWorld->Step(physicsStep, velocityIterations, positionIterations);
-
-			// 将物理模拟结果同步回 TransformComponent
-			auto view = m_Registry.view<Rigidbody2DComponent>();
-			for (auto e : view)
-			{
-				Entity entity = { e, this };
-				auto& transform = entity.GetComponent<TransformComponent>();
-				auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-
-				b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-				if (body)
-				{
-					const auto& position = body->GetPosition();
-					transform.Translation.x = position.x;
-					transform.Translation.y = position.y;
-					transform.Rotation.z = body->GetAngle();
-				}
-			}
 			// 原生脚本碰撞回调
 			ProcessCollisionCallbacks();
 			// Lua脚本碰撞回调
@@ -599,6 +627,14 @@ namespace Yuicy {
 
 		// 渲染场景
 		RenderScene();
+	}
+
+	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera)
+	{
+		// Simulate 模式：物理更新 + 编辑器相机渲染，不运行脚本
+		UpdateAnimations(ts);
+		StepPhysicsWorld(ts);
+		RenderScene(camera);
 	}
 
 	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera)

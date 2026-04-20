@@ -34,9 +34,12 @@ namespace Yuicy {
 		void OpenProject(const std::filesystem::path& filepath);
 		void SaveProject();
 
-		// Play / Stop
+		// Play / Stop / Simulate
 		void OnScenePlay();
+		void OnSceneSimulate();
 		void OnSceneStop();
+		void OnScenePause();
+		void OnSceneStep();
 
 		// 场景切换后的回调（用于 EditorLayer 通知面板更新等）
 		using SceneChangedCallback = std::function<void()>;
