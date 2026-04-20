@@ -44,7 +44,7 @@ namespace Yuicy {
 			{
 				auto& lsc = entity.GetComponent<LuaScriptComponent>();
 				LuaScriptComponent copy;
-				copy.ScriptPath = lsc.ScriptPath;
+				copy.ScriptHandle = lsc.ScriptHandle;
 				snapshot.luaScript = copy;
 			}
 			if (entity.HasComponent<Rigidbody2DComponent>())

@@ -115,7 +115,7 @@ namespace Yuicy {
 			out << YAML::BeginMap;
 
 			auto& luaScript = entity.GetComponent<LuaScriptComponent>();
-			out << YAML::Key << "ScriptPath" << YAML::Value << luaScript.ScriptPath;
+			out << YAML::Key << "ScriptHandle" << YAML::Value << (uint64_t)luaScript.ScriptHandle;
 
 			out << YAML::EndMap;
 		}
@@ -276,7 +276,9 @@ namespace Yuicy {
 			if (auto luaScriptComponent = entity["LuaScriptComponent"]; luaScriptComponent)
 			{
 				auto& luaScript = deserializedEntity.AddComponent<LuaScriptComponent>();
-				luaScript.ScriptPath = luaScriptComponent["ScriptPath"].as<std::string>("");
+
+				if (luaScriptComponent["ScriptHandle"])
+					luaScript.ScriptHandle = luaScriptComponent["ScriptHandle"].as<uint64_t>(0);
 			}
 
 			// Rigidbody2DComponent

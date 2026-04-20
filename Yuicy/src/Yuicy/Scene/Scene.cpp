@@ -4,6 +4,8 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Asset/AssetManager.h"
+#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
 #include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Renderer/RenderCommand.h"
@@ -821,34 +823,50 @@ namespace Yuicy {
 		for (auto e : view)
 		{
 			auto& lsc = view.get<LuaScriptComponent>(e);
-			if (!lsc.ScriptPath.empty() && !lsc.IsLoaded)
+			if (lsc.ScriptHandle == 0 || lsc.IsLoaded)
+				continue;
+
+			// ScriptHandle → 文件路径解析
+			std::string scriptPath;
+			auto assetManager = Project::GetEditorAssetManager();
+			if (assetManager)
 			{
-				lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(lsc.ScriptPath);
-				if (lsc.ScriptInstance.valid())
-				{
-					lsc.IsLoaded = true;
+				const auto& metadata = assetManager->GetMetadata(lsc.ScriptHandle);
+				if (metadata.IsValid())
+					scriptPath = metadata.filePath.string();
+			}
 
-					// 注入 Entity 对象
-					lsc.ScriptInstance["entity"] = Entity{ e, this };
+			if (scriptPath.empty())
+			{
+				YUICY_CORE_ERROR("[Scene] Failed to resolve script path for handle: {}", (uint64_t)lsc.ScriptHandle);
+				continue;
+			}
 
-					// 缓存函数
-					lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
-					lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
-					lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
-					lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
-					lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
+			lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(scriptPath);
+			if (lsc.ScriptInstance.valid())
+			{
+				lsc.IsLoaded = true;
 
-					lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
-					lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
+				// 注入 Entity 对象
+				lsc.ScriptInstance["entity"] = Entity{ e, this };
 
-					// 调用 OnCreate
-					if (lsc.OnCreateFunc.valid())
-						lsc.OnCreateFunc(lsc.ScriptInstance);
-				}
-				else
-				{
-					YUICY_CORE_ERROR("[Scene] Failed to load Lua script: {}", lsc.ScriptPath);
-				}
+				// 缓存函数
+				lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
+				lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
+				lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
+				lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
+				lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
+
+				lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
+				lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
+
+				// 调用 OnCreate
+				if (lsc.OnCreateFunc.valid())
+					lsc.OnCreateFunc(lsc.ScriptInstance);
+			}
+			else
+			{
+				YUICY_CORE_ERROR("[Scene] Failed to load Lua script: {}", scriptPath);
 			}
 		}
 	}
@@ -861,28 +879,40 @@ namespace Yuicy {
 			auto& lsc = view.get<LuaScriptComponent>(e);
 			
 			// 运行时初始化：处理新添加的脚本组件
-			if (!lsc.ScriptPath.empty() && !lsc.IsLoaded)
+			if (lsc.ScriptHandle != 0 && !lsc.IsLoaded)
 			{
-				lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(lsc.ScriptPath);
-				if (lsc.ScriptInstance.valid())
+				std::string scriptPath;
+				auto assetManager = Project::GetEditorAssetManager();
+				if (assetManager)
 				{
-					lsc.IsLoaded = true;
-					lsc.ScriptInstance["entity"] = Entity{ e, this };
-					
-					lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
-					lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
-					lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
-					lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
-					lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
-					lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
-					lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
-					
-					if (lsc.OnCreateFunc.valid())
-						lsc.OnCreateFunc(lsc.ScriptInstance);
+					const auto& metadata = assetManager->GetMetadata(lsc.ScriptHandle);
+					if (metadata.IsValid())
+						scriptPath = metadata.filePath.string();
 				}
-				else
+
+				if (!scriptPath.empty())
 				{
-					YUICY_CORE_ERROR("[Scene] Failed to load runtime Lua script: {}", lsc.ScriptPath);
+					lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(scriptPath);
+					if (lsc.ScriptInstance.valid())
+					{
+						lsc.IsLoaded = true;
+						lsc.ScriptInstance["entity"] = Entity{ e, this };
+						
+						lsc.OnCreateFunc = lsc.ScriptInstance["OnCreate"];
+						lsc.OnUpdateFunc = lsc.ScriptInstance["OnUpdate"];
+						lsc.OnDestroyFunc = lsc.ScriptInstance["OnDestroy"];
+						lsc.OnCollisionEnterFunc = lsc.ScriptInstance["OnCollisionEnter"];
+						lsc.OnCollisionExitFunc = lsc.ScriptInstance["OnCollisionExit"];
+						lsc.OnTriggerEnterFunc = lsc.ScriptInstance["OnTriggerEnter"];
+						lsc.OnTriggerExitFunc = lsc.ScriptInstance["OnTriggerExit"];
+						
+						if (lsc.OnCreateFunc.valid())
+							lsc.OnCreateFunc(lsc.ScriptInstance);
+					}
+					else
+					{
+						YUICY_CORE_ERROR("[Scene] Failed to load runtime Lua script: {}", scriptPath);
+					}
 				}
 			}
 			

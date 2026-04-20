@@ -153,7 +153,7 @@ namespace Yuicy {
 
 	struct LuaScriptComponent
 	{
-		std::string ScriptPath;
+		AssetHandle ScriptHandle = 0;
 		
 		// 脚本实例和回调函数
 		sol::table ScriptInstance;
@@ -169,9 +169,6 @@ namespace Yuicy {
 
 		LuaScriptComponent() = default;
 		LuaScriptComponent(const LuaScriptComponent&) = default;
-		LuaScriptComponent(const std::string& path)
-			: ScriptPath(path) {
-		}
 	};
 
 	// 动画片段

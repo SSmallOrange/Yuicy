@@ -8,6 +8,7 @@
 #include "Yuicy/Project/Project.h"
 
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 #include <algorithm>
 #include <array>
@@ -324,7 +325,7 @@ namespace Yuicy {
 					m_assetWorkflow->OpenAsset(entryPath);
 				}
 			}
-			// 单击选择
+			// 单击选择（非拖拽）
 			else if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 			{
 				m_selectedPath = entryPath;
@@ -336,13 +337,20 @@ namespace Yuicy {
 					{
 						AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
 						m_context->selection.selectedAsset = handle;
-						m_context->selection.ClearEntitySelection();
 					}
 				}
 				else if (isDirectory && m_context)
 				{
 					m_context->selection.ClearAssetSelection();
 				}
+			}
+
+			// 鼠标在条目上释放且未拖拽时，清除实体选中
+			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left)
+				&& !ImGui::IsDragDropPayloadBeingAccepted() && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+			{
+				if (!isDirectory && m_context)
+					m_context->selection.ClearEntitySelection();
 			}
 
 			// 文件拖拽

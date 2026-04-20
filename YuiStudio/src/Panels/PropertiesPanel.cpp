@@ -381,16 +381,82 @@ namespace Yuicy {
 		// LuaScriptComponent
 		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [dt](auto& component)
 		{
-			std::array<char, 256> scriptPathBuffer{};
-			std::memcpy(scriptPathBuffer.data(), component.ScriptPath.c_str(),
-					std::min(component.ScriptPath.size(), scriptPathBuffer.size() - 1));
-			if (ImGui::InputText("Script Path", scriptPathBuffer.data(), scriptPathBuffer.size()))
+			auto assetManager = Project::GetEditorAssetManager();
+
+			// 脚本名称显示
+			std::string scriptLabel = "None";
+			bool hasScript = false;
+			bool scriptMissing = false;
+
+			if (component.ScriptHandle != 0 && assetManager)
 			{
-				component.ScriptPath = scriptPathBuffer.data();
-				if (dt) dt->MarkSceneDirty();
+				const auto& metadata = assetManager->GetMetadata(component.ScriptHandle);
+				if (metadata.IsValid())
+				{
+					scriptLabel = metadata.filePath.filename().string();
+					hasScript = true;
+
+					// 检查文件是否存在
+					std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+					std::error_code ec;
+					if (!std::filesystem::exists(fullPath, ec))
+						scriptMissing = true;
+				}
+			else
+			{
+				scriptLabel = "Missing (invalid handle)";
+				scriptMissing = true;
+			}
 			}
 
+			// 丢失脚本红色高亮
+			if (scriptMissing)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+
+			ImGui::Text("Script: %s", scriptLabel.c_str());
+
+			if (scriptMissing)
+				ImGui::PopStyleColor();
+
+			// 拖拽接收区域
+			ImGui::Button(hasScript ? scriptLabel.c_str() : "Drop Script Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				{
+					const wchar_t* droppedPath = (const wchar_t*)payload->Data;
+					std::filesystem::path filepath = droppedPath;
+
+					if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::LuaScript)
+					{
+						AssetHandle handle = assetManager->ImportAsset(filepath);
+						if (handle != 0)
+						{
+							component.ScriptHandle = handle;
+							if (dt) dt->MarkSceneDirty();
+						}
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			// 清除按钮
+			if (hasScript)
+			{
+				ImGui::SameLine();
+				if (ImGui::SmallButton("X##ClearScript"))
+				{
+					component.ScriptHandle = 0;
+					component.IsLoaded = false;
+					if (dt) dt->MarkSceneDirty();
+				}
+			}
+
+			// 加载状态
 			ImGui::Text("Loaded: %s", component.IsLoaded ? "Yes" : "No");
+
+			if (scriptMissing)
+				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Script file is missing!");
 		}, dt, ch);
 
 		// Rigidbody2DComponent
