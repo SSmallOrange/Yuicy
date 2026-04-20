@@ -11,6 +11,7 @@ namespace Yuicy {
 		// 尝试与栈顶命令合并
 		if (!m_undoStack.empty() && m_undoStack.back()->TryMerge(*command))
 		{
+			NotifyCommandExecuted();
 			return;
 		}
 
@@ -19,6 +20,9 @@ namespace Yuicy {
 
 		// 执行新命令后清空 Redo 栈
 		m_redoStack.clear();
+
+		EnforceStackLimit();
+		NotifyCommandExecuted();
 	}
 
 	void EditorCommandHistory::Undo()
@@ -30,6 +34,8 @@ namespace Yuicy {
 		command->Undo();
 		m_redoStack.push_back(std::move(command));
 		m_undoStack.pop_back();
+
+		NotifyCommandExecuted();
 	}
 
 	void EditorCommandHistory::Redo()
@@ -41,6 +47,8 @@ namespace Yuicy {
 		command->Execute();
 		m_undoStack.push_back(std::move(command));
 		m_redoStack.pop_back();
+
+		NotifyCommandExecuted();
 	}
 
 	void EditorCommandHistory::Clear()
@@ -57,6 +65,18 @@ namespace Yuicy {
 	bool EditorCommandHistory::CanRedo() const
 	{
 		return !m_redoStack.empty();
+	}
+
+	void EditorCommandHistory::EnforceStackLimit()
+	{
+		while (m_undoStack.size() > m_maxStackSize)
+			m_undoStack.erase(m_undoStack.begin());
+	}
+
+	void EditorCommandHistory::NotifyCommandExecuted()
+	{
+		if (m_onCommandExecuted)
+			m_onCommandExecuted();
 	}
 
 }

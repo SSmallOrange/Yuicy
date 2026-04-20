@@ -6,7 +6,6 @@ namespace Yuicy {
 
 	// 编辑器命令基类
 	// 所有可撤销的编辑操作都继承此接口。
-	// TODO
 	class IEditorCommand
 	{
 	public:
@@ -20,6 +19,9 @@ namespace Yuicy {
 
 		// 命令名称（用于 UI 显示和调试）
 		virtual std::string GetName() const = 0;
+
+		// 命令类型标识（用于合并判断，相同 ID 的命令才可能合并）
+		virtual std::string GetCommandID() const { return {}; }
 
 		// 尝试与下一个命令合并（如连续拖拽 Gizmo）
 		// 返回 true 表示合并成功，不再单独入栈

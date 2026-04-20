@@ -31,6 +31,7 @@ namespace Yuicy {
 		m_viewportPanel.SetRenderPipeline(&m_renderPipeline);
 		m_viewportPanel.SetSceneController(&m_sceneController);
 		m_viewportPanel.SetDirtyTracker(&m_dirtyTracker);
+		m_viewportPanel.SetCommandHistory(&m_commandHistory);
 		m_viewportPanel.Init();
 
 		// 初始化编辑器服务
@@ -42,6 +43,9 @@ namespace Yuicy {
 		m_dirtyTracker.SetContext(&m_editorContext);
 		m_dirtyTracker.SetIsSafeToAutoSave([this]() { return !m_viewportPanel.IsGizmoInUse(); });
 		m_dirtyTracker.SetAutoSaveCallback([this]() { m_sceneController.SaveScene(); });
+
+		// CommandHistory → DirtyTracker 联动
+		m_commandHistory.SetOnCommandExecuted([this]() { m_dirtyTracker.MarkSceneDirty(); });
 
 		// 面板共享选择上下文
 		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
@@ -64,6 +68,9 @@ namespace Yuicy {
 		m_sceneHierarchyPanel.SetContext(m_editorContext.activeScene);
 		m_propertiesPanel.SetContext(m_editorContext.activeScene);
 		m_viewportPanel.OnSceneChanged();
+
+		// 场景切换后清空命令历史（旧命令引用旧场景对象）
+		m_commandHistory.Clear();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -423,6 +430,12 @@ namespace Yuicy {
 		case Key::S:
 			if (ctrl && shift) m_sceneController.SaveSceneAs();
 			else if (ctrl) m_sceneController.SaveScene();
+			break;
+		case Key::Z:
+			if (ctrl && !shift) m_commandHistory.Undo();
+			break;
+		case Key::Y:
+			if (ctrl) m_commandHistory.Redo();
 			break;
 		}
 

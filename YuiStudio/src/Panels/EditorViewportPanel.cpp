@@ -208,6 +208,14 @@ namespace Yuicy {
 		bool wasUsing = m_gizmoInUse;
 		m_gizmoInUse = ImGuizmo::IsUsing();
 
+		// Gizmo 拖拽开始：捕获初始 Transform 快照
+		if (m_gizmoInUse && !wasUsing)
+		{
+			m_gizmoOldTransform = selectedEntity.GetComponent<TransformComponent>();
+			m_gizmoSnapshotCaptured = true;
+		}
+
+		// Gizmo 拖拽中：应用 Transform 变换
 		if (m_gizmoInUse)
 		{
 			glm::mat4 localTransform = worldTransform;
@@ -221,9 +229,29 @@ namespace Yuicy {
 			selectedEntity.GetComponent<TransformComponent>().SetTransform(localTransform);
 		}
 
-		// Gizmo 拖拽结束时标脏
-		if (wasUsing && !m_gizmoInUse && m_dirtyTracker)
-			m_dirtyTracker->MarkSceneDirty();
+		// Gizmo 拖拽结束：提交 SetTransformCommand
+		if (wasUsing && !m_gizmoInUse && m_gizmoSnapshotCaptured)
+		{
+			m_gizmoSnapshotCaptured = false;
+
+			auto& tc = selectedEntity.GetComponent<TransformComponent>();
+			if (m_commandHistory)
+			{
+				UUID entityUUID = selectedEntity.GetUUID();
+				auto cmd = CreateScope<SetTransformCommand>(
+					m_context->activeScene.get(), entityUUID,
+					m_gizmoOldTransform.Translation, m_gizmoOldTransform.Rotation, m_gizmoOldTransform.Scale,
+					tc.Translation, tc.Rotation, tc.Scale
+				);
+				// Transform 已在拖拽中实时应用
+				// 直接压栈，跳过 Execute（会多执行一次，但是无害）
+				m_commandHistory->ExecuteCommand(std::move(cmd));
+			}
+			else if (m_dirtyTracker)
+			{
+				m_dirtyTracker->MarkSceneDirty();
+			}
+		}
 	}
 
 	void EditorViewportPanel::OnImGuiToolbarRender()

@@ -8,6 +8,8 @@
 #include "../Editor/EditorRenderPipeline.h"
 #include "../Editor/EditorSceneController.h"
 #include "../Editor/EditorDirtyTracker.h"
+#include "../Editor/EditorCommandHistory.h"
+#include "../Editor/Commands/SetTransformCommand.h"
 
 namespace Yuicy {
 
@@ -26,6 +28,7 @@ namespace Yuicy {
 		void SetRenderPipeline(EditorRenderPipeline* pipeline) { m_renderPipeline = pipeline; }
 		void SetSceneController(EditorSceneController* controller) { m_sceneController = controller; }
 		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; }
+		void SetCommandHistory(EditorCommandHistory* history) { m_commandHistory = history; }
 
 		void OnUpdate(Timestep ts);
 		void OnImGuiRender();
@@ -53,6 +56,11 @@ namespace Yuicy {
 		EditorRenderPipeline* m_renderPipeline = nullptr;
 		EditorSceneController* m_sceneController = nullptr;
 		EditorDirtyTracker* m_dirtyTracker = nullptr;
+		EditorCommandHistory* m_commandHistory = nullptr;
+
+		// Gizmo 拖拽快照（拖拽开始时记录初始 Transform）
+		bool m_gizmoSnapshotCaptured = false;
+		TransformComponent m_gizmoOldTransform;
 
 		// 编辑器相机
 		EditorCamera m_editorCamera;
