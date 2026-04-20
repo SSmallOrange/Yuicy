@@ -30,6 +30,16 @@ namespace Yuicy {
 		std::filesystem::path m_currentDirectory;
 		std::filesystem::path m_selectedPath;
 
+		// 重命名状态
+		std::filesystem::path m_renamingPath;
+		char m_renameBuffer[256] = {};
+		bool m_renameNeedsFocus = false;
+		bool m_renameWasActive = false;
+
+		// 删除确认状态
+		std::filesystem::path m_pendingDeletePath;
+		bool m_showDeleteConfirmDialog = false;
+
 		Ref<Texture2D> m_directoryIcon;
 		Ref<Texture2D> m_fileIcon;
 		Ref<Texture2D> m_backIcon;

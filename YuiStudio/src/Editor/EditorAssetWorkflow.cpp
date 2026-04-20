@@ -110,7 +110,7 @@ namespace Yuicy {
 			YUICY_CORE_ERROR("[AssetWorkflow] Failed to create script file: {}", filepath.string());
 			return false;
 		}
-
+		// TODO: 直接使用提前写好的脚本模板
 		file << "local " << filename << " = {}\n\n";
 		file << "function " << filename << ":OnCreate()\n\n";
 		file << "end\n\n";

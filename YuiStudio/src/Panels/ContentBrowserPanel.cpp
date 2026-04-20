@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstring>
 #include <system_error>
 #include <vector>
 
@@ -92,6 +93,8 @@ namespace Yuicy {
 		m_baseDirectory.clear();
 		m_currentDirectory.clear();
 		m_selectedPath.clear();
+		m_renamingPath.clear();
+		m_pendingDeletePath.clear();
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
@@ -156,12 +159,32 @@ namespace Yuicy {
 		ImGui::SetWindowFontScale(1.0f);
 		ImGui::Separator();
 
+		// 空白区域右键菜单
 		if (ImGui::BeginPopupContextWindow("ContentBrowserContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
+			if (ImGui::MenuItem("New Folder"))
+			{
+				if (m_assetWorkflow)
+					m_assetWorkflow->CreateFolder(m_currentDirectory, "New Folder");
+			}
+
+			if (ImGui::MenuItem("New Scene"))
+			{
+				if (m_assetWorkflow)
+					m_assetWorkflow->CreateSceneFile(m_currentDirectory, "NewScene");
+			}
+
+			if (ImGui::MenuItem("New Lua Script"))
+			{
+				if (m_assetWorkflow)
+					m_assetWorkflow->CreateLuaScriptFile(m_currentDirectory, "NewScript");
+			}
+
+			ImGui::Separator();
+
 			if (ImGui::MenuItem("Refresh"))
 			{
-				std::error_code refreshError;
-				if (!std::filesystem::exists(m_currentDirectory, refreshError) || refreshError)
+				if (std::error_code refreshError; !std::filesystem::exists(m_currentDirectory, refreshError) || refreshError)
 					m_currentDirectory = m_baseDirectory;
 			}
 
@@ -238,6 +261,84 @@ namespace Yuicy {
 			if (isSelected)
 				ImGui::PopStyleColor();
 
+			// 右键选中
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+			{
+				m_selectedPath = entryPath;
+
+				if (!isDirectory && m_context)
+				{
+					auto assetManager = Project::GetEditorAssetManager();
+					if (assetManager)
+					{
+						AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
+						m_context->selection.selectedAsset = handle;
+						m_context->selection.ClearEntitySelection();
+					}
+				}
+			}
+
+			// 文件/文件夹右键菜单
+			if (ImGui::BeginPopupContextItem("##ItemCtx"))
+			{
+				if (ImGui::MenuItem("Open"))
+				{
+					if (isDirectory)
+						m_currentDirectory /= entryPath.filename();
+					else if (m_assetWorkflow)
+						m_assetWorkflow->OpenAsset(entryPath);
+				}
+
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Rename", "F2"))
+				{
+					m_renamingPath = entryPath;
+					m_renameNeedsFocus = true;
+					m_renameWasActive = false;
+					std::memset(m_renameBuffer, 0, sizeof(m_renameBuffer));
+					std::memcpy(m_renameBuffer, filename.c_str(), std::min(filename.size(), sizeof(m_renameBuffer) - 1));
+				}
+
+				if (ImGui::MenuItem("Delete", "Del"))
+				{
+					m_pendingDeletePath = entryPath;
+					m_showDeleteConfirmDialog = true;
+				}
+
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Copy Path"))
+				{
+					if (m_assetWorkflow)
+						m_assetWorkflow->CopyPathToClipboard(entryPath);
+				}
+
+				if (ImGui::MenuItem("Show in Explorer"))
+				{
+					if (m_assetWorkflow)
+						m_assetWorkflow->RevealInExplorer(isDirectory ? entryPath : entryPath.parent_path());
+				}
+
+				if (!isDirectory)
+				{
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("Reimport"))
+					{
+						auto assetManager = Project::GetEditorAssetManager();
+						if (assetManager)
+						{
+							AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
+							if (handle != 0)
+								assetManager->ReloadData(handle);
+						}
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+
 			// 双击行为：目录→进入，文件→根据类型打开
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
@@ -283,9 +384,50 @@ namespace Yuicy {
 				ImGui::EndDragDropSource();
 			}
 
-			ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + cellSize);
-			ImGui::TextWrapped("%s", filename.c_str());
-			ImGui::PopTextWrapPos();
+			// 文件名渲染（含内联重命名）
+			if (m_renamingPath == entryPath)
+			{
+				if (m_renameNeedsFocus)
+				{
+					ImGui::SetKeyboardFocusHere();
+					m_renameNeedsFocus = false;
+				}
+
+				ImGui::SetNextItemWidth(cellSize);
+				bool enterPressed = ImGui::InputText("##Rename", m_renameBuffer, sizeof(m_renameBuffer),
+					ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+
+				bool isActive = ImGui::IsItemActive();
+
+				if (isActive)
+					m_renameWasActive = true;
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				{
+					m_renamingPath.clear();
+					m_renameWasActive = false;
+				}
+				else if (enterPressed || (m_renameWasActive && !isActive))
+				{
+					std::string newName(m_renameBuffer);
+					if (!newName.empty() && newName != filename)
+					{
+						if (m_assetWorkflow)
+							m_assetWorkflow->RenamePath(entryPath, newName);
+
+						if (m_selectedPath == entryPath)
+							m_selectedPath = entryPath.parent_path() / newName;
+					}
+					m_renamingPath.clear();
+					m_renameWasActive = false;
+				}
+			}
+			else
+			{
+				ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + cellSize);
+				ImGui::TextWrapped("%s", filename.c_str());
+				ImGui::PopTextWrapPos();
+			}
 
 			ImGui::NextColumn();
 			ImGui::PopID();
@@ -299,8 +441,79 @@ namespace Yuicy {
 		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered())
 		{
 			m_selectedPath.clear();
+			m_renamingPath.clear();
 			if (m_context)
 				m_context->selection.ClearAssetSelection();
+		}
+
+		// F2 快捷键触发重命名
+		if (ImGui::IsWindowFocused() && !m_selectedPath.empty() && m_renamingPath.empty()
+			&& ImGui::IsKeyPressed(ImGuiKey_F2))
+		{
+			m_renamingPath = m_selectedPath;
+			m_renameNeedsFocus = true;
+			m_renameWasActive = false;
+			std::string name = m_selectedPath.filename().string();
+			std::memset(m_renameBuffer, 0, sizeof(m_renameBuffer));
+			std::memcpy(m_renameBuffer, name.c_str(), std::min(name.size(), sizeof(m_renameBuffer) - 1));
+		}
+
+		// Delete 快捷键
+		if (ImGui::IsWindowFocused() && !m_selectedPath.empty() && m_renamingPath.empty()
+			&& ImGui::IsKeyPressed(ImGuiKey_Delete))
+		{
+			m_pendingDeletePath = m_selectedPath;
+			m_showDeleteConfirmDialog = true;
+		}
+
+		// 删除确认弹窗
+		if (m_showDeleteConfirmDialog)
+		{
+			ImGui::OpenPopup("Delete?##ContentBrowser");
+			m_showDeleteConfirmDialog = false;
+
+			ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		}
+
+		if (ImGui::BeginPopupModal("Delete?##ContentBrowser", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("Are you sure you want to delete:");
+			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "%s", m_pendingDeletePath.filename().string().c_str());
+			ImGui::Text("This action cannot be undone.");
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			float buttonWidth = 100.0f;
+			float totalWidth = buttonWidth * 2 + ImGui::GetStyle().ItemSpacing.x;
+			ImGui::SetCursorPosX((ImGui::GetWindowWidth() - totalWidth) * 0.5f);
+
+			if (ImGui::Button("Delete", ImVec2(buttonWidth, 0)))
+			{
+				if (m_assetWorkflow)
+					m_assetWorkflow->DeletePath(m_pendingDeletePath);
+
+				if (m_selectedPath == m_pendingDeletePath)
+				{
+					m_selectedPath.clear();
+					if (m_context)
+						m_context->selection.ClearAssetSelection();
+				}
+
+				m_pendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0)))
+			{
+				m_pendingDeletePath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
 		}
 
 		ImGui::End();
