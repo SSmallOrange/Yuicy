@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy.h"
+#include "Yuicy/Asset/AssetTypes.h"
 
 #include <filesystem>
 
@@ -23,12 +24,21 @@ namespace Yuicy {
 		void ResetNavigation();
 
 	private:
+		void DrawNavigationBar();
+		void DrawBreadcrumbs();
+		bool PassesFilter(const std::filesystem::directory_entry& entry) const;
+
+	private:
 		EditorContext* m_context = nullptr;
 		EditorAssetWorkflow* m_assetWorkflow = nullptr;
 
 		std::filesystem::path m_baseDirectory;
 		std::filesystem::path m_currentDirectory;
 		std::filesystem::path m_selectedPath;
+
+		// 搜索与过滤
+		char m_searchBuffer[256] = {};
+		AssetType m_filterType = AssetType::None;
 
 		// 重命名状态
 		std::filesystem::path m_renamingPath;
@@ -43,6 +53,7 @@ namespace Yuicy {
 		Ref<Texture2D> m_directoryIcon;
 		Ref<Texture2D> m_fileIcon;
 		Ref<Texture2D> m_backIcon;
+		Ref<Texture2D> m_clearIcon;
 
 		float m_thumbnailSize = 96.0f;
 		float m_padding = 16.0f;

@@ -3,6 +3,7 @@
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorAssetWorkflow.h"
 
+#include "Yuicy/Asset/AssetExtensions.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 
@@ -67,17 +68,6 @@ namespace Yuicy {
 			return value;
 		}
 
-		std::string GetDisplayPath(const ProjectConfig& config, const std::filesystem::path& baseDirectory, const std::filesystem::path& currentDirectory)
-		{
-			if (baseDirectory.empty() || currentDirectory.empty())
-				return config.AssetDirectory;
-
-			const std::filesystem::path relativePath = currentDirectory.lexically_normal().lexically_relative(baseDirectory.lexically_normal());
-			if (relativePath.empty() || relativePath == ".")
-				return config.AssetDirectory;
-
-			return config.AssetDirectory + "/" + relativePath.generic_string();
-		}
 
 	}
 
@@ -86,6 +76,7 @@ namespace Yuicy {
 		m_directoryIcon = LoadIconTexture("assets/textures/Editor/ContentBrowser/Folder.png", { 237, 190, 67, 255 });
 		m_fileIcon = LoadIconTexture("assets/textures/Editor/ContentBrowser/File.png", { 181, 187, 196, 255 });
 		m_backIcon = LoadIconTexture("assets/textures/Editor/Generic/Back.png", { 200, 200, 200, 255 });
+		m_clearIcon = LoadIconTexture("assets/textures/Editor/Window/Close.png", { 200, 200, 200, 255 });
 	}
 
 	void ContentBrowserPanel::ResetNavigation()
@@ -95,6 +86,8 @@ namespace Yuicy {
 		m_selectedPath.clear();
 		m_renamingPath.clear();
 		m_pendingDeletePath.clear();
+		std::memset(m_searchBuffer, 0, sizeof(m_searchBuffer));
+		m_filterType = AssetType::None;
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
@@ -129,34 +122,7 @@ namespace Yuicy {
 			return;
 		}
 
-		const float headerLineHeight = 18.0f;
-		const float defaultFontSize = ImGui::GetFontSize();
-		const float headerFontScale = defaultFontSize > 0.0f ? headerLineHeight / defaultFontSize : 1.0f;
-		ImGui::SetWindowFontScale(headerFontScale);
-
-		if (m_currentDirectory != m_baseDirectory)
-		{
-			ImTextureID backTexID = reinterpret_cast<ImTextureID>((uintptr_t)m_backIcon->GetRendererID());
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 0.0f, 0.0f });
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
-			if (ImGui::ImageButton("##BackBtn", backTexID, ImVec2{ headerLineHeight, headerLineHeight }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
-				m_currentDirectory = m_currentDirectory.parent_path();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleVar();
-
-			ImGui::SameLine();
-		}
-
-		const std::string currentPathLabel = GetDisplayPath(activeProject->GetConfig(), m_baseDirectory, m_currentDirectory);
-		std::vector<char> currentPathBuffer(currentPathLabel.begin(), currentPathLabel.end());
-		currentPathBuffer.push_back('\0');
-
-		// Render the current directory as a read-only field so it can be selected and copied.
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4.0f, 0.0f });
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		ImGui::InputText("##CurrentPath", currentPathBuffer.data(), currentPathBuffer.size(), ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_AutoSelectAll);
-		ImGui::PopStyleVar();
-		ImGui::SetWindowFontScale(1.0f);
+		DrawNavigationBar();
 		ImGui::Separator();
 
 		// 空白区域右键菜单
@@ -242,6 +208,9 @@ namespace Yuicy {
 
 		for (const auto& entry : directoryEntries)
 		{
+			if (!PassesFilter(entry))
+				continue;
+
 			std::error_code typeError;
 			const bool isDirectory = entry.is_directory(typeError);
 			const std::filesystem::path& entryPath = entry.path();
@@ -284,7 +253,10 @@ namespace Yuicy {
 				if (ImGui::MenuItem("Open"))
 				{
 					if (isDirectory)
+					{
 						m_currentDirectory /= entryPath.filename();
+						std::memset(m_searchBuffer, 0, sizeof(m_searchBuffer));
+					}
 					else if (m_assetWorkflow)
 						m_assetWorkflow->OpenAsset(entryPath);
 				}
@@ -345,6 +317,7 @@ namespace Yuicy {
 				if (isDirectory)
 				{
 					m_currentDirectory /= entryPath.filename();
+					std::memset(m_searchBuffer, 0, sizeof(m_searchBuffer));
 				}
 				else if (m_assetWorkflow)
 				{
@@ -517,6 +490,168 @@ namespace Yuicy {
 		}
 
 		ImGui::End();
+	}
+
+	void ContentBrowserPanel::DrawNavigationBar()
+	{
+		Ref<Project> activeProject = Project::GetActive();
+		if (!activeProject)
+			return;
+
+		// Row 1: Breadcrumbs
+		DrawBreadcrumbs();
+
+		// Row 2: Search + Type filter + Thumbnail slider
+		const float comboWidth = 100.0f;
+		const float sliderWidth = 80.0f;
+		const float clearIconSize = ImGui::GetFrameHeight();
+		const float spacing = ImGui::GetStyle().ItemSpacing.x;
+
+		const float availableWidth = ImGui::GetContentRegionAvail().x;
+		const float searchWidth = availableWidth - comboWidth - sliderWidth - clearIconSize - spacing * 4.0f;
+
+		// Search input
+		ImGui::SetNextItemWidth(searchWidth > 60.0f ? searchWidth : 60.0f);
+		ImGui::InputTextWithHint("##Search", "Search...", m_searchBuffer, sizeof(m_searchBuffer));
+
+		// Clear button
+		ImGui::SameLine();
+		ImTextureID clearTexID = reinterpret_cast<ImTextureID>((uintptr_t)m_clearIcon->GetRendererID());
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
+		if (ImGui::ImageButton("##ClearSearch", clearTexID, ImVec2{ clearIconSize * 0.7f, clearIconSize * 0.7f }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 }))
+			std::memset(m_searchBuffer, 0, sizeof(m_searchBuffer));
+		ImGui::PopStyleColor();
+
+		// Type filter combo
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(comboWidth);
+
+		const char* filterLabels[] = { "All Types", "Scene", "Texture", "Font", "Shader", "LuaScript" };
+		const AssetType filterTypes[] = { AssetType::None, AssetType::Scene, AssetType::Texture, AssetType::Font, AssetType::Shader, AssetType::LuaScript };
+		constexpr int filterCount = sizeof(filterTypes) / sizeof(filterTypes[0]);
+
+		int currentFilterIndex = 0;
+		for (int i = 0; i < filterCount; i++)
+		{
+			if (filterTypes[i] == m_filterType)
+			{
+				currentFilterIndex = i;
+				break;
+			}
+		}
+
+		if (ImGui::BeginCombo("##TypeFilter", filterLabels[currentFilterIndex]))
+		{
+			for (int i = 0; i < filterCount; i++)
+			{
+				bool isSelected = (currentFilterIndex == i);
+				if (ImGui::Selectable(filterLabels[i], isSelected))
+					m_filterType = filterTypes[i];
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		// 缩略图滑块
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(sliderWidth);
+		ImGui::SliderFloat("##ThumbnailSize", &m_thumbnailSize, 48.0f, 192.0f, "%.0f");
+	}
+
+	void ContentBrowserPanel::DrawBreadcrumbs()
+	{
+		Ref<Project> activeProject = Project::GetActive();
+		if (!activeProject)
+			return;
+
+		const std::filesystem::path normalizedBase = m_baseDirectory.lexically_normal();
+		const std::filesystem::path normalizedCurrent = m_currentDirectory.lexically_normal();
+		const std::filesystem::path relativePath = normalizedCurrent.lexically_relative(normalizedBase);
+
+		// 路径分段：根标签 + 每个相对组件
+		std::vector<std::pair<std::string, std::filesystem::path>> segments;
+
+		// 根段（资源目录名）
+		const std::string rootLabel = activeProject->GetConfig().AssetDirectory;
+		segments.emplace_back(rootLabel, normalizedBase);
+
+		// Sub-segments
+		if (!relativePath.empty() && relativePath != ".")
+		{
+			std::filesystem::path accumulated = normalizedBase;
+			for (const auto& component : relativePath)
+			{
+				accumulated /= component;
+				segments.emplace_back(component.string(), accumulated);
+			}
+		}
+
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.0f, 0.0f, 0.0f, 0.0f });
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4.0f, 2.0f });
+
+		for (size_t i = 0; i < segments.size(); i++)
+		{
+			if (i > 0)
+			{
+				ImGui::SameLine(0.0f, 2.0f);
+				ImGui::TextDisabled(">");
+				ImGui::SameLine(0.0f, 2.0f);
+			}
+
+			const bool isLast = (i == segments.size() - 1);
+			ImGui::PushID(static_cast<int>(i));
+
+			if (isLast)
+			{
+				ImGui::TextUnformatted(segments[i].first.c_str());
+			}
+			else
+			{
+				if (ImGui::SmallButton(segments[i].first.c_str()))
+				{
+					m_currentDirectory = segments[i].second;
+					std::memset(m_searchBuffer, 0, sizeof(m_searchBuffer));
+				}
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
+	}
+
+	bool ContentBrowserPanel::PassesFilter(const std::filesystem::directory_entry& entry) const
+	{
+		std::error_code ec;
+		const bool isDirectory = entry.is_directory(ec);
+		const std::string filename = entry.path().filename().string();
+
+		// 搜索过滤：文件名子串匹配（不区分大小写）
+		if (m_searchBuffer[0] != '\0')
+		{
+			const std::string lowerFilename = ToLowerCopy(filename);
+			const std::string lowerSearch = ToLowerCopy(std::string(m_searchBuffer));
+
+			if (lowerFilename.find(lowerSearch) == std::string::npos)
+				return false;
+		}
+
+		// 类型过滤：目录始终显示；文件必须匹配所选类型
+		if (m_filterType != AssetType::None && !isDirectory)
+		{
+			const std::string extension = entry.path().extension().string();
+			std::string lowerExt = extension;
+			std::transform(lowerExt.begin(), lowerExt.end(), lowerExt.begin(),
+				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+			const auto it = s_assetExtensionMap.find(lowerExt);
+			if (it == s_assetExtensionMap.end() || it->second != m_filterType)
+				return false;
+		}
+
+		return true;
 	}
 
 }
