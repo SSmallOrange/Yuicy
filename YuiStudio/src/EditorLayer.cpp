@@ -63,6 +63,9 @@ namespace Yuicy {
 		m_contentBrowserPanel.SetContext(&m_editorContext);
 		m_contentBrowserPanel.SetAssetWorkflow(&m_assetWorkflow);
 
+		m_assetInspectorPanel.SetContext(&m_editorContext);
+		m_assetInspectorPanel.SetAssetWorkflow(&m_assetWorkflow);
+
 		// 创建默认场景
 		m_sceneController.NewScene();
 
@@ -153,6 +156,9 @@ namespace Yuicy {
 
 		// Content Browser
 		m_contentBrowserPanel.OnImGuiRender();
+
+		// Asset Inspector
+		m_assetInspectorPanel.OnImGuiRender();
 
 		// SceneController 模态框
 		m_sceneController.OnImGuiRender();

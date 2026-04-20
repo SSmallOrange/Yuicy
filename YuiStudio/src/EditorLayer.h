@@ -14,6 +14,7 @@
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/PropertiesPanel.h"
+#include "Panels/AssetInspectorPanel.h"
 
 namespace Yuicy {
 
@@ -67,6 +68,7 @@ namespace Yuicy {
 		SceneHierarchyPanel m_sceneHierarchyPanel;
 		PropertiesPanel m_propertiesPanel;
 		ContentBrowserPanel m_contentBrowserPanel;
+		AssetInspectorPanel m_assetInspectorPanel;
 
 		bool m_titleBarHovered = false;
 
