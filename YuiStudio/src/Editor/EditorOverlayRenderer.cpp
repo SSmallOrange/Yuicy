@@ -192,8 +192,6 @@ namespace Yuicy {
 	// 相机可视范围绘制
 	void EditorOverlayRenderer::DrawCameraBounds(const Ref<Scene>& scene)
 	{
-		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
-
 		auto view = scene->GetAllEntitiesWith<TransformComponent, CameraComponent>();
 		for (auto entityHandle : view)
 		{
@@ -205,7 +203,6 @@ namespace Yuicy {
 			if (aspect <= 0.0f)
 				continue;
 
-			// orthoSize
 			TransformComponent worldTC = scene->GetWorldSpaceTransform(entity);
 			float boundsWidth  = orthoSize * aspect;
 			float boundsHeight = orthoSize;
@@ -214,8 +211,7 @@ namespace Yuicy {
 				* glm::toMat4(glm::quat(worldTC.Rotation))
 				* glm::scale(glm::mat4(1.0f), { boundsWidth, boundsHeight, 1.0f });
 
-			// 颜色：Primary / 非 Primary / 选中高亮
-			bool isSelected = (entity.GetUUID() == selectedUUID);
+			bool isSelected = m_context->selection.IsEntitySelected(entity.GetUUID());
 			glm::vec4 color;
 
 			if (cameraComp.Primary)
@@ -314,24 +310,21 @@ namespace Yuicy {
 		if (!m_context->selection.HasEntitySelection())
 			return;
 
-		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
-		if (selectedUUID == 0)
-			return;
-
-		Entity selectedEntity = scene->FindEntityByUUID(selectedUUID);
-		if (!selectedEntity || !selectedEntity.HasComponent<TransformComponent>())
-			return;
-
-		// 有 CameraComponent 的实体由 DrawCameraBounds 提供选中高亮
-		if (m_context->viewportSettings.showCameraBounds && selectedEntity.HasComponent<CameraComponent>())
-			return;
-
-		// 获取世界空间变换矩阵
-		glm::mat4 worldTransform = scene->GetWorldSpaceTransformMatrix(selectedEntity);
-
-		// 橙色选中框
 		glm::vec4 selectionColor = { 1.0f, 0.6f, 0.0f, 1.0f };
-		Renderer2D::DrawRect(worldTransform, selectionColor);
+
+		for (UUID entityUUID : m_context->selection.selectedEntities)
+		{
+			Entity entity = scene->FindEntityByUUID(entityUUID);
+			if (!entity || !entity.HasComponent<TransformComponent>())
+				continue;
+
+			// Camera 实体由 DrawCameraBounds 提供选中高亮
+			if (m_context->viewportSettings.showCameraBounds && entity.HasComponent<CameraComponent>())
+				continue;
+
+			glm::mat4 worldTransform = scene->GetWorldSpaceTransformMatrix(entity);
+			Renderer2D::DrawRect(worldTransform, selectionColor);
+		}
 	}
 
 	void EditorOverlayRenderer::DrawEntityPivot(const Ref<Scene>& scene)
@@ -368,8 +361,6 @@ namespace Yuicy {
 
 	void EditorOverlayRenderer::DrawRelationshipLines(const Ref<Scene>& scene)
 	{
-		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
-
 		glm::vec4 defaultColor  = { 0.6f, 0.6f, 0.6f, 0.4f };
 		glm::vec4 selectedColor = { 1.0f, 0.7f, 0.2f, 0.7f };
 
@@ -386,7 +377,7 @@ namespace Yuicy {
 			TransformComponent parentWorldTC = scene->GetWorldSpaceTransform(entity);
 			glm::vec3 parentPos = { parentWorldTC.Translation.x, parentWorldTC.Translation.y, z };
 
-			bool isSelected = (entity.GetUUID() == selectedUUID);
+			bool isSelected = m_context->selection.IsEntitySelected(entity.GetUUID());
 
 			for (UUID childUUID : children)
 			{
@@ -394,7 +385,7 @@ namespace Yuicy {
 				if (!childEntity || !childEntity.HasComponent<TransformComponent>())
 					continue;
 
-				bool childSelected = (childUUID == selectedUUID);
+				bool childSelected = m_context->selection.IsEntitySelected(childUUID);
 				glm::vec4 color = (isSelected || childSelected) ? selectedColor : defaultColor;
 
 				TransformComponent childWorldTC = scene->GetWorldSpaceTransform(childEntity);

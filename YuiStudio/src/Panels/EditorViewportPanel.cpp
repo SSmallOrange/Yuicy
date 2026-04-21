@@ -465,18 +465,41 @@ namespace Yuicy {
 			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
 			if (m_context->viewport.hovered && !altPressed)
 			{
-				// 写入共享选择上下文
+				bool ctrlPressed = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+				bool shiftPressed = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
 				Entity hovered = m_context->viewport.hoveredEntity;
 
 				if (hovered)
-					m_context->selection.SetSelectedEntity(hovered.GetUUID());
+				{
+					UUID hoveredUUID = hovered.GetUUID();
+
+					if (ctrlPressed)
+					{
+						// Ctrl 如果已经选择，则移除
+						m_context->selection.ToggleEntity(hoveredUUID);
+					}
+					else if (shiftPressed)
+					{
+						// Shift+Click：追加选择
+						m_context->selection.AddEntity(hoveredUUID);
+					}
+					else
+					{
+						// 普通点击：单选
+						m_context->selection.SetSelectedEntity(hoveredUUID);
+					}
+				}
 				else if (!ImGuizmo::IsOver())
+				{
 					m_context->selection.ClearEntitySelection();
+				}
 			}
 		}
 
 		return false;
 	}
+
 
 	bool EditorViewportPanel::OnKeyPressed(KeyPressedEvent& e)
 	{

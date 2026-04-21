@@ -36,7 +36,16 @@ namespace Yuicy {
 
 		Entity selectedEntity = GetSelectedEntity();
 		if (selectedEntity)
+		{
+			if (m_editorSelection && m_editorSelection->IsMultiSelection())
+			{
+				ImGui::TextColored(ImVec4(0.7f, 0.85f, 1.0f, 1.0f), "%d entities selected",
+					(int)m_editorSelection->GetSelectionCount());
+				ImGui::Separator();
+			}
+
 			DrawComponents(selectedEntity);
+		}
 
 		ImGui::End();
 	}

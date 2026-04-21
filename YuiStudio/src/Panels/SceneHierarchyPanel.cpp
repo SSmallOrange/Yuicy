@@ -2,6 +2,8 @@
 
 #include "SceneHierarchyPanel.h"
 
+#include "Yuicy/Core/Input.h"
+#include "Yuicy/Core/KeyCodes.h"
 #include "Yuicy/Scene/Components.h"
 
 #include "../Editor/EditorCommandHistory.h"
@@ -67,7 +69,12 @@ namespace Yuicy {
 
 			// 点击空白处取消选择
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
-				SetSelectedEntity({});
+			{
+				bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+				bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+				if (!ctrl && !shift)
+					SetSelectedEntity({});
+			}
 
 			// 右键空白处弹出菜单
 			if (ImGui::BeginPopupContextWindow(nullptr, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
@@ -135,11 +142,12 @@ namespace Yuicy {
 		auto& children = entity.Children();
 
 		Entity selectedEntity = GetSelectedEntity();
+		UUID entityUUID = entity.GetUUID();
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
 			| ImGuiTreeNodeFlags_SpanAvailWidth;
 
-		if (selectedEntity == entity)
+		if (m_editorSelection && m_editorSelection->IsEntitySelected(entityUUID))
 			flags |= ImGuiTreeNodeFlags_Selected;
 
 		if (children.empty())
@@ -148,7 +156,17 @@ namespace Yuicy {
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
 
 		if (ImGui::IsItemClicked())
-			SetSelectedEntity(entity);
+		{
+			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+			if (ctrl)
+				m_editorSelection->ToggleEntity(entityUUID);
+			else if (shift)
+				m_editorSelection->AddEntity(entityUUID);
+			else
+				SetSelectedEntity(entity);
+		}
 
 		// 右键菜单
 		bool entityDeleted = false;
