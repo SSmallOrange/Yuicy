@@ -384,6 +384,7 @@ namespace Yuicy {
 		ImGui::Checkbox("Grid", &settings.showGrid);
 		ImGui::Checkbox("Origin", &settings.showOrigin);
 		ImGui::Checkbox("Camera Bounds", &settings.showCameraBounds);
+		ImGui::Checkbox("Camera Safe Area", &settings.showCameraSafeArea);
 		ImGui::Checkbox("Colliders", &settings.showColliders);
 		ImGui::Checkbox("Selection Bounds", &settings.showSelectionBounds);
 		ImGui::Checkbox("Pivot", &settings.showPivot);

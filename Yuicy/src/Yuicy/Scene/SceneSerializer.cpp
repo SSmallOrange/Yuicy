@@ -104,6 +104,10 @@ namespace Yuicy {
 
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
+			out << YAML::Key << "DesignWidth" << YAML::Value << cameraComponent.DesignWidth;
+			out << YAML::Key << "DesignHeight" << YAML::Value << cameraComponent.DesignHeight;
+			out << YAML::Key << "ShowSafeArea" << YAML::Value << cameraComponent.ShowSafeArea;
+			out << YAML::Key << "SafeAreaMargin" << YAML::Value << cameraComponent.SafeAreaMargin;
 
 			out << YAML::EndMap;
 		}
@@ -116,6 +120,43 @@ namespace Yuicy {
 
 			auto& luaScript = entity.GetComponent<LuaScriptComponent>();
 			out << YAML::Key << "ScriptHandle" << YAML::Value << (uint64_t)luaScript.ScriptHandle;
+
+			out << YAML::EndMap;
+		}
+
+		// AnimationComponent
+		if (entity.HasComponent<AnimationComponent>())
+		{
+			out << YAML::Key << "AnimationComponent";
+			out << YAML::BeginMap;
+
+			auto& anim = entity.GetComponent<AnimationComponent>();
+			out << YAML::Key << "DefaultClip" << YAML::Value << anim.DefaultClipName;
+
+			out << YAML::Key << "Clips";
+			out << YAML::Value << YAML::BeginSeq;
+			for (auto& [name, clip] : anim.Clips)
+			{
+				out << YAML::BeginMap;
+				out << YAML::Key << "Name" << YAML::Value << clip.Name;
+				out << YAML::Key << "FrameDuration" << YAML::Value << clip.FrameDuration;
+				out << YAML::Key << "Loop" << YAML::Value << clip.Loop;
+
+				out << YAML::Key << "Frames";
+				out << YAML::Value << YAML::BeginSeq;
+				for (const auto& frame : clip.FrameDefinitions)
+				{
+					out << YAML::BeginMap;
+					out << YAML::Key << "TextureHandle" << YAML::Value << (uint64_t)frame.TextureHandle;
+					out << YAML::Key << "UVMin" << YAML::Value << frame.UVMin;
+					out << YAML::Key << "UVMax" << YAML::Value << frame.UVMax;
+					out << YAML::EndMap;
+				}
+				out << YAML::EndSeq;
+
+				out << YAML::EndMap;
+			}
+			out << YAML::EndSeq;
 
 			out << YAML::EndMap;
 		}
@@ -270,6 +311,17 @@ namespace Yuicy {
 
 				cc.Primary = cameraComponent["Primary"].as<bool>(true);
 				cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>(false);
+				cc.DesignWidth = cameraComponent["DesignWidth"].as<int>(1920);
+				cc.DesignHeight = cameraComponent["DesignHeight"].as<int>(1080);
+				cc.ShowSafeArea = cameraComponent["ShowSafeArea"].as<bool>(false);
+				cc.SafeAreaMargin = cameraComponent["SafeAreaMargin"].as<float>(0.05f);
+
+				// 固定宽高比：从设计分辨率计算并应用
+				if (cc.FixedAspectRatio && cc.DesignHeight > 0)
+				{
+					float fixedAspect = (float)cc.DesignWidth / (float)cc.DesignHeight;
+					cc.Camera.SetFixedAspectRatio(fixedAspect);
+				}
 			}
 
 			// LuaScriptComponent
@@ -279,6 +331,58 @@ namespace Yuicy {
 
 				if (luaScriptComponent["ScriptHandle"])
 					luaScript.ScriptHandle = luaScriptComponent["ScriptHandle"].as<uint64_t>(0);
+			}
+
+			// AnimationComponent
+			if (auto animationComponent = entity["AnimationComponent"]; animationComponent)
+			{
+				auto& anim = deserializedEntity.AddComponent<AnimationComponent>();
+				anim.DefaultClipName = animationComponent["DefaultClip"].as<std::string>("");
+
+				if (auto clipsNode = animationComponent["Clips"]; clipsNode)
+				{
+					for (auto clipNode : clipsNode)
+					{
+						AnimationClip clip;
+						clip.Name = clipNode["Name"].as<std::string>();
+						clip.FrameDuration = clipNode["FrameDuration"].as<float>(0.1f);
+						clip.Loop = clipNode["Loop"].as<bool>(true);
+
+						if (auto framesNode = clipNode["Frames"]; framesNode)
+						{
+							for (auto frameNode : framesNode)
+							{
+								AnimationFrameDefinition frameDef;
+								frameDef.TextureHandle = frameNode["TextureHandle"].as<uint64_t>(0);
+								frameDef.UVMin = frameNode["UVMin"].as<glm::vec2>(glm::vec2(0.0f));
+								frameDef.UVMax = frameNode["UVMax"].as<glm::vec2>(glm::vec2(1.0f));
+								clip.FrameDefinitions.push_back(frameDef);
+							}
+						}
+
+						// 解析帧定义到运行时 SubTexture2D
+						for (const auto& def : clip.FrameDefinitions)
+						{
+							if (def.TextureHandle != 0)
+							{
+								Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(def.TextureHandle);
+								if (texture)
+								{
+									clip.Frames.push_back(CreateRef<SubTexture2D>(texture, def.UVMin, def.UVMax));
+									continue;
+								}
+							}
+							clip.Frames.push_back(nullptr);
+						}
+
+						anim.Clips[clip.Name] = clip;
+					}
+				}
+
+				if (!anim.DefaultClipName.empty())
+					anim.State.CurrentClipName = anim.DefaultClipName;
+				else if (!anim.Clips.empty())
+					anim.State.CurrentClipName = anim.Clips.begin()->first;
 			}
 
 			// Rigidbody2DComponent

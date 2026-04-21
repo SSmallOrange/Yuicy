@@ -22,6 +22,8 @@ namespace Yuicy {
 		void SetOrthographicNearClip(float nearClip) { m_OrthographicNear = nearClip; RecalculateProjection(); }
 		float GetOrthographicFarClip() const { return m_OrthographicFar; }
 		void SetOrthographicFarClip(float farClip) { m_OrthographicFar = farClip; RecalculateProjection(); }
+
+		void SetFixedAspectRatio(float aspect) { m_AspectRatio = aspect; RecalculateProjection(); }
 	private:
 		void RecalculateProjection();
 	private:

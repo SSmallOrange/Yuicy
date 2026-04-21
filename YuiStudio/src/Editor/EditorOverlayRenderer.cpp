@@ -40,6 +40,9 @@ namespace Yuicy {
 		if (settings.showCameraBounds)
 			DrawCameraBounds(scene);
 
+		if (settings.showCameraSafeArea)
+			DrawCameraSafeArea(scene);
+
 		if (settings.showColliders)
 			DrawColliders(scene);
 
@@ -218,6 +221,41 @@ namespace Yuicy {
 				color = isSelected ? glm::vec4{ 0.0f, 0.85f, 1.0f, 0.9f } : glm::vec4{ 0.6f, 0.6f, 0.6f, 0.5f };
 
 			Renderer2D::DrawRect(boundsTransform, color);
+		}
+	}
+
+	// 相机安全框绘制
+	void EditorOverlayRenderer::DrawCameraSafeArea(const Ref<Scene>& scene)
+	{
+		auto view = scene->GetAllEntitiesWith<TransformComponent, CameraComponent>();
+		for (auto entityHandle : view)
+		{
+			Entity entity(entityHandle, scene.get());
+			auto& cameraComp = entity.GetComponent<CameraComponent>();
+
+			if (!cameraComp.ShowSafeArea)
+				continue;
+
+			float orthoSize = cameraComp.Camera.GetOrthographicSize();
+			float aspect = cameraComp.Camera.GetAspectRatio();
+			if (aspect <= 0.0f)
+				continue;
+
+			TransformComponent worldTC = scene->GetWorldSpaceTransform(entity);
+			float boundsWidth  = orthoSize * aspect;
+			float boundsHeight = orthoSize;
+
+			// 安全框内缩
+			float margin = glm::clamp(cameraComp.SafeAreaMargin, 0.0f, 0.45f);
+			float safeWidth  = boundsWidth  * (1.0f - margin * 2.0f);
+			float safeHeight = boundsHeight * (1.0f - margin * 2.0f);
+
+			glm::mat4 safeTransform = glm::translate(glm::mat4(1.0f), worldTC.Translation)
+				* glm::toMat4(glm::quat(worldTC.Rotation))
+				* glm::scale(glm::mat4(1.0f), { safeWidth, safeHeight, 1.0f });
+
+			glm::vec4 safeAreaColor = { 0.9f, 0.5f, 0.1f, 0.5f };
+			Renderer2D::DrawRect(safeTransform, safeAreaColor);
 		}
 	}
 

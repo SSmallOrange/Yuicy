@@ -18,6 +18,7 @@ namespace Yuicy {
 		bool showSelectionBounds   = true;
 		bool showPivot             = true;
 		bool showRelationshipLines = false;
+		bool showCameraSafeArea    = true;
 
 		// 网格参数
 		float gridMajorStep = 1.0f;

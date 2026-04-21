@@ -222,6 +222,7 @@ namespace Yuicy {
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DrawAddComponentEntry<SpriteRendererComponent>("Sprite Renderer");
+			DrawAddComponentEntry<AnimationComponent>("Animation");
 			DrawAddComponentEntry<CameraComponent>("Camera");
 			DrawAddComponentEntry<LuaScriptComponent>("Lua Script");
 			DrawAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
@@ -347,35 +348,14 @@ namespace Yuicy {
 				if (dt) dt->MarkSceneDirty();
 		}, dt, ch);
 
+		// AnimationComponent
+		DrawComponentUI<AnimationComponent>("Animation", entity, [this, dt](auto& component) {
+			m_animationEditor.Draw(component, dt);
+		}, dt, ch);
+
 		// CameraComponent
-		DrawComponentUI<CameraComponent>("Camera", entity, [dt](auto& component) {
-			auto& camera = component.Camera;
-			if (ImGui::Checkbox("Primary", &component.Primary))
-				if (dt) dt->MarkSceneDirty();
-
-			float orthoSize = camera.GetOrthographicSize();
-			if (ImGui::DragFloat("Orthographic Size", &orthoSize, 0.1f))
-			{
-				camera.SetOrthographicSize(orthoSize);
-				if (dt) dt->MarkSceneDirty();
-			}
-
-			float orthoNear = camera.GetOrthographicNearClip();
-			if (ImGui::DragFloat("Near Clip", &orthoNear, 0.1f))
-			{
-				camera.SetOrthographicNearClip(orthoNear);
-				if (dt) dt->MarkSceneDirty();
-			}
-
-			float orthoFar = camera.GetOrthographicFarClip();
-			if (ImGui::DragFloat("Far Clip", &orthoFar, 0.1f))
-			{
-				camera.SetOrthographicFarClip(orthoFar);
-				if (dt) dt->MarkSceneDirty();
-			}
-
-			if (ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio))
-				if (dt) dt->MarkSceneDirty();
+		DrawComponentUI<CameraComponent>("Camera", entity, [this, dt](auto& component) {
+			m_cameraEditor.Draw(component, dt);
 		}, dt, ch);
 
 		// LuaScriptComponent

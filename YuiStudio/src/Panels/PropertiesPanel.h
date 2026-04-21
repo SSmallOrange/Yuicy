@@ -4,6 +4,8 @@
 #include "../Editor/EditorSelectionContext.h"
 #include "../Editor/EditorDirtyTracker.h"
 #include "../Editor/EditorCommandHistory.h"
+#include "ComponentEditors/AnimationEditor.h"
+#include "ComponentEditors/CameraEditor.h"
 
 namespace Yuicy {
 
@@ -37,6 +39,10 @@ namespace Yuicy {
 		EditorSelectionContext* m_editorSelection = nullptr;
 		EditorDirtyTracker* m_dirtyTracker = nullptr;
 		EditorCommandHistory* m_commandHistory = nullptr;
+
+		// Component Editors
+		AnimationEditor m_animationEditor;
+		CameraEditor m_cameraEditor;
 	};
 
 }

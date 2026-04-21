@@ -126,6 +126,14 @@ namespace Yuicy {
 		bool Primary = true;
 		bool FixedAspectRatio = false;
 
+		// 设计分辨率（FixedAspectRatio 启用时驱动相机宽高比）
+		int DesignWidth = 1920;
+		int DesignHeight = 1080;
+
+		// 安全框（百分比内缩，用于标记内容安全区域）
+		bool ShowSafeArea = false;
+		float SafeAreaMargin = 0.05f;
+
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
 	};
@@ -171,13 +179,22 @@ namespace Yuicy {
 		LuaScriptComponent(const LuaScriptComponent&) = default;
 	};
 
+	// 动画帧定义
+	struct AnimationFrameDefinition
+	{
+		AssetHandle TextureHandle = 0;
+		glm::vec2 UVMin = { 0.0f, 0.0f };
+		glm::vec2 UVMax = { 1.0f, 1.0f };
+	};
+
 	// 动画片段
 	struct AnimationClip
 	{
-		std::string Name;                            // 动画名称
-		std::vector<Ref<SubTexture2D>> Frames;       // 动画帧序列
-		float FrameDuration = 0.1f;                  // 每帧持续时间（秒）
-		bool Loop = true;                            // 是否循环播放
+		std::string Name;                            			 // 动画名称
+		std::vector<AnimationFrameDefinition> FrameDefinitions;  // 可序列化帧描述
+		std::vector<Ref<SubTexture2D>> Frames;       			 // 运行时帧序列
+		float FrameDuration = 0.1f;                  			 // 每帧持续时间（秒）
+		bool Loop = true;                            			 // 是否循环播放
 
 		AnimationClip() = default;
 		AnimationClip(const std::string& name, float frameDuration = 0.1f, bool loop = true)
@@ -226,6 +243,7 @@ namespace Yuicy {
 	struct AnimationComponent
 	{
 		std::unordered_map<std::string, AnimationClip> Clips;  // 动画片段
+		std::string DefaultClipName;                           // 默认播放动画
 		AnimationState State;                                  // 当前播放状态
 
 		AnimationComponent() = default;
@@ -235,7 +253,8 @@ namespace Yuicy {
 		void AddClip(const AnimationClip& clip)
 		{
 			Clips[clip.Name] = clip;
-			// 如果是第一个剪辑，自动设为当前动画
+			if (DefaultClipName.empty())
+				DefaultClipName = clip.Name;
 			if (State.CurrentClipName.empty())
 				State.CurrentClipName = clip.Name;
 		}

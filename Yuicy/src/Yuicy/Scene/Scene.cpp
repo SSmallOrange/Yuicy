@@ -793,7 +793,14 @@ namespace Yuicy {
 		{
 			auto& cameraComponent = view.get<CameraComponent>(entity);
 			if (!cameraComponent.FixedAspectRatio)
+			{
 				cameraComponent.Camera.SetViewportSize(width, height);
+			}
+			else if (cameraComponent.DesignHeight > 0)  // 需要固定宽高比时采用设计宽高比
+			{
+				float fixedAspect = (float)cameraComponent.DesignWidth / (float)cameraComponent.DesignHeight;
+				cameraComponent.Camera.SetFixedAspectRatio(fixedAspect);
+			}
 		}
 	}
 

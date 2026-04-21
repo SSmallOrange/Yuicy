@@ -7,7 +7,7 @@ namespace Yuicy {
 	{
 		if (!command)
 			return;
-		YUICY_CORE_INFO("Command Name: {}", command->GetCommandID());
+		// YUICY_CORE_INFO("Command Name: {}", command->GetCommandID());
 		// 尝试与栈顶命令合并
 		if (!m_undoStack.empty() && m_undoStack.back()->TryMerge(*command))
 		{
