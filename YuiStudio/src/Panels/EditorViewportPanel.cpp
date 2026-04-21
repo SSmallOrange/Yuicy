@@ -54,14 +54,19 @@ namespace Yuicy {
 		{
 			uint32_t width = (uint32_t)viewportState.size.x;
 			uint32_t height = (uint32_t)viewportState.size.y;
-			// TODO: 考虑将视口大小抽象到上下文中
 			m_renderPipeline->OnViewportResize(width, height);
 			m_context->activeScene->OnViewportResize(width, height);
 			m_editorCamera.SetViewportSize(width, height);
 		}
 
-		// 编辑器相机更新
-		if (m_context->runtime.mode != SceneMode::Play && viewportState.focused)
+		// 传递视口相对鼠标位置给编辑器相机（用于缩放到鼠标 / MMB 平移）
+		auto [globalMouseX, globalMouseY] = ImGui::GetMousePos();
+		float viewportMouseX = globalMouseX - viewportState.bounds[0].x;
+		float viewportMouseY = globalMouseY - viewportState.bounds[0].y;
+		m_editorCamera.SetViewportMousePosition(viewportMouseX, viewportMouseY);
+
+		// 编辑器相机更新（悬停或正在 MMB 平移时允许更新）
+		if (m_context->runtime.mode != SceneMode::Play && (viewportState.hovered || m_editorCamera.IsPanning()))
 			m_editorCamera.OnUpdate(ts);
 
 		// 执行渲染管线
@@ -498,6 +503,21 @@ namespace Yuicy {
 		case Key::R:
 			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
+		case Key::F:
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			{
+				UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+				if (selectedUUID != 0)
+				{
+					Entity entity = m_context->activeScene->FindEntityByUUID(selectedUUID);
+					if (entity)
+					{
+						auto worldTransform = m_context->activeScene->GetWorldSpaceTransform(entity);
+						m_editorCamera.SetPosition({ worldTransform.Translation.x, worldTransform.Translation.y, 0.0f });
+					}
+				}
+			}
 			break;
 		}
 
