@@ -14,6 +14,10 @@
 #include "Yuicy/Events/Event.h"
 #include "Yuicy/Events/KeyEvent.h"
 #include "Yuicy/Events/MouseEvent.h"
+#include "Yuicy/Core/Input.h"
+#include "Yuicy/Core/KeyCodes.h"
+#include "Yuicy/Core/MouseCodes.h"
+#include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
 #include <algorithm>
@@ -71,6 +75,9 @@ namespace Yuicy {
 
 		// 执行渲染管线
 		m_renderPipeline->Execute(ts, m_editorCamera);
+
+		// 框选逻辑更新
+		UpdateBoxSelection();
 
 		// 鼠标拾取
 		UpdateMousePicking();
@@ -143,6 +150,10 @@ namespace Yuicy {
 
 		// Gizmo 绘制
 		OnImGuiDrawGizmos();
+
+		// 框选矩形 Overlay
+		if (m_isBoxSelecting)
+			DrawBoxSelectionOverlay();
 
 		ImGui::End(); // Viewport
 		ImGui::PopStyleVar();
@@ -492,7 +503,18 @@ namespace Yuicy {
 				}
 				else if (!ImGuizmo::IsOver())
 				{
-					m_context->selection.ClearEntitySelection();
+					// 点击空白处：启动潜在框选
+					auto& viewportState = m_context->viewport;
+					auto [mx, my] = ImGui::GetMousePos();
+					m_boxSelectStart = { mx - viewportState.bounds[0].x, my - viewportState.bounds[0].y };
+					m_boxSelectEnd = m_boxSelectStart;
+					m_boxSelectPending = true;
+					m_boxSelectAdditive = shiftPressed || ctrlPressed;
+
+					if (m_boxSelectAdditive)
+						m_boxSelectSnapshot = m_context->selection.selectedEntities;
+					else
+						m_boxSelectSnapshot.clear();
 				}
 			}
 		}
@@ -545,6 +567,110 @@ namespace Yuicy {
 		}
 
 		return false;
+	}
+
+	void EditorViewportPanel::UpdateBoxSelection()
+	{
+		if (!m_boxSelectPending && !m_isBoxSelecting)
+			return;
+
+		auto& viewportState = m_context->viewport;
+		auto [mx, my] = ImGui::GetMousePos();
+		float currentX = mx - viewportState.bounds[0].x;
+		float currentY = my - viewportState.bounds[0].y;
+
+		bool mouseHeld = Input::IsMouseButtonPressed(Mouse::ButtonLeft);
+
+		// 潜在框选阶段：等待拖拽阈值
+		if (m_boxSelectPending)
+		{
+			if (!mouseHeld)
+			{
+				// 释放但未拖拽 → 普通空白点击
+				if (!m_boxSelectAdditive)
+					m_context->selection.ClearEntitySelection();
+				m_boxSelectPending = false;
+				return;
+			}
+
+			// 检查拖拽距离阈值（3 像素）
+			float dx = currentX - m_boxSelectStart.x;
+			float dy = currentY - m_boxSelectStart.y;
+			if (dx * dx + dy * dy > 9.0f)
+			{
+				m_isBoxSelecting = true;
+				m_boxSelectPending = false;
+
+				// 非追加模式：清空当前选择
+				if (!m_boxSelectAdditive)
+					m_context->selection.ClearEntitySelection();
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		// 框选进行中
+		if (m_isBoxSelecting)
+		{
+			m_boxSelectEnd = { currentX, currentY };
+
+			if (!mouseHeld)
+			{
+				// 鼠标释放 → 结束框选
+				m_isBoxSelecting = false;
+				return;
+			}
+
+			// 视口坐标→世界坐标（Y 翻转）
+			float vpMinX = glm::min(m_boxSelectStart.x, m_boxSelectEnd.x);
+			float vpMaxX = glm::max(m_boxSelectStart.x, m_boxSelectEnd.x);
+			float vpMinY = glm::min(m_boxSelectStart.y, m_boxSelectEnd.y);
+			float vpMaxY = glm::max(m_boxSelectStart.y, m_boxSelectEnd.y);
+
+			glm::vec2 worldBL = m_editorCamera.ScreenToWorld(vpMinX, vpMaxY);
+			glm::vec2 worldTR = m_editorCamera.ScreenToWorld(vpMaxX, vpMinY);
+
+			// 从快照恢复（追加模式）或清空
+			m_context->selection.selectedEntities = m_boxSelectSnapshot;
+
+			// 遍历实体，将中心点在 AABB 内的实体加入选择
+			auto view = m_context->activeScene->GetAllEntitiesWith<TransformComponent>();
+			for (auto entityHandle : view)
+			{
+				Entity entity(entityHandle, m_context->activeScene.get());
+				TransformComponent worldTC = m_context->activeScene->GetWorldSpaceTransform(entity);
+
+				float ex = worldTC.Translation.x;
+				float ey = worldTC.Translation.y;
+
+				if (ex >= worldBL.x && ex <= worldTR.x && ey >= worldBL.y && ey <= worldTR.y)
+					m_context->selection.AddEntity(entity.GetUUID());
+			}
+		}
+	}
+
+	void EditorViewportPanel::DrawBoxSelectionOverlay()
+	{
+		auto& viewportState = m_context->viewport;
+
+		// 视口坐标转屏幕坐标
+		ImVec2 p1 = {
+			viewportState.bounds[0].x + m_boxSelectStart.x,
+			viewportState.bounds[0].y + m_boxSelectStart.y
+		};
+		ImVec2 p2 = {
+			viewportState.bounds[0].x + m_boxSelectEnd.x,
+			viewportState.bounds[0].y + m_boxSelectEnd.y
+		};
+
+		auto* drawList = ImGui::GetWindowDrawList();
+
+		// 半透明蓝色填充
+		drawList->AddRectFilled(p1, p2, IM_COL32(80, 140, 230, 40));
+		// 蓝色边框
+		drawList->AddRect(p1, p2, IM_COL32(80, 140, 230, 200), 0.0f, 0, 1.5f);
 	}
 
 }

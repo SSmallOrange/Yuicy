@@ -2,11 +2,14 @@
 
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Timestep.h"
+#include "Yuicy/Core/UUID.h"
 #include "Yuicy/ImGui/ImGuizmo.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Scene/Components.h"
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <vector>
 
 namespace Yuicy {
 
@@ -56,6 +59,10 @@ namespace Yuicy {
 		void DrawOverlaySettingsPopup();
 		void UpdateMousePicking();
 
+		// 框选
+		void UpdateBoxSelection();
+		void DrawBoxSelectionOverlay();
+
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 		bool OnKeyPressed(KeyPressedEvent& e);
 
@@ -75,6 +82,14 @@ namespace Yuicy {
 		// Gizmo
 		int m_gizmoType = -1;
 		bool m_gizmoInUse = false;
+
+		// 框选状态
+		bool m_boxSelectPending = false;   // 潜在框选（等待拖拽阈值）
+		bool m_isBoxSelecting = false;     // 正在框选
+		bool m_boxSelectAdditive = false;  // 追加模式（Shift/Ctrl）
+		glm::vec2 m_boxSelectStart = { 0.0f, 0.0f };  // 起始视口坐标
+		glm::vec2 m_boxSelectEnd = { 0.0f, 0.0f };    // 当前视口坐标
+		std::vector<UUID> m_boxSelectSnapshot;          // 追加模式下的选择快照
 
 		// 编辑器图标
 		Ref<Texture2D> m_playIcon;
