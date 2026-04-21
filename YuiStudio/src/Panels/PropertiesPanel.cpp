@@ -373,41 +373,15 @@ namespace Yuicy {
 		}, dt, ch);
 
 		// BoxCollider2DComponent
-		DrawComponentUI<BoxCollider2DComponent>("Box Collider 2D", entity, [dt](auto& component)
+		DrawComponentUI<BoxCollider2DComponent>("Box Collider 2D", entity, [this, dt](auto& component)
 		{
-			if (ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat2("Size", glm::value_ptr(component.Size), 0.01f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
-				if (dt) dt->MarkSceneDirty();
+			m_colliderEditor.DrawBoxCollider(component, dt);
 		}, dt, ch);
 
 		// CircleCollider2DComponent
-		DrawComponentUI<CircleCollider2DComponent>("Circle Collider 2D", entity, [dt](auto& component)
+		DrawComponentUI<CircleCollider2DComponent>("Circle Collider 2D", entity, [this, dt](auto& component)
 		{
-			if (ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.0f, 10.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 10.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f))
-				if (dt) dt->MarkSceneDirty();
-			if (ImGui::Checkbox("Is Trigger", &component.IsTrigger))
-				if (dt) dt->MarkSceneDirty();
+			m_colliderEditor.DrawCircleCollider(component, dt);
 		}, dt, ch);
 	}
 

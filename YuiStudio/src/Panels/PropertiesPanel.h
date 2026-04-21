@@ -4,6 +4,7 @@
 #include "ComponentEditors/AnimationEditor.h"
 #include "ComponentEditors/CameraEditor.h"
 #include "ComponentEditors/SpriteEditor.h"
+#include "ComponentEditors/ColliderEditor.h"
 
 #include <glm/fwd.hpp>
 #include <string>
@@ -51,6 +52,7 @@ namespace Yuicy {
 		AnimationEditor m_animationEditor;
 		CameraEditor m_cameraEditor;
 		SpriteEditor m_spriteEditor;
+		ColliderEditor m_colliderEditor;
 	};
 
 }

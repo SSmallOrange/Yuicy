@@ -3,6 +3,7 @@
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Assert.h"
 #include "Yuicy/Renderer/SortingLayerConfig.h"
+#include "Yuicy/Physics/CollisionLayerConfig.h"
 
 #include <filesystem>
 #include <string>
@@ -33,6 +34,9 @@ namespace Yuicy {
 
 		// Sorting Layer 配置
 		SortingLayerConfig SortingLayers;
+
+		// Collision Layer 配置
+		CollisionLayerConfig CollisionLayers;
 	};
 
 	class Project

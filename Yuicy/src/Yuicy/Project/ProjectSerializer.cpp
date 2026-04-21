@@ -40,6 +40,13 @@ namespace Yuicy {
 			}
 			out << YAML::EndSeq;
 
+			// Collision Layers
+			out << YAML::Key << "CollisionLayers";
+			out << YAML::Value << YAML::BeginSeq;
+			for (int i = 0; i < CollisionLayerConfig::MaxLayers; i++)
+				out << m_project->m_config.CollisionLayers.LayerNames[i];
+			out << YAML::EndSeq;
+
 			out << YAML::EndMap;
 		}
 		out << YAML::EndMap;
@@ -109,6 +116,13 @@ namespace Yuicy {
 				int order = layerNode["Order"].as<int>(0);
 				config.SortingLayers.Layers.push_back({ name, order });
 			}
+		}
+
+		// Collision Layers
+		if (auto collisionLayersNode = rootNode["CollisionLayers"]; collisionLayersNode && collisionLayersNode.IsSequence())
+		{
+			for (int i = 0; i < CollisionLayerConfig::MaxLayers && i < (int)collisionLayersNode.size(); i++)
+				config.CollisionLayers.LayerNames[i] = collisionLayersNode[i].as<std::string>("Layer " + std::to_string(i));
 		}
 
 		std::filesystem::path projectPath = filepath.lexically_normal();
