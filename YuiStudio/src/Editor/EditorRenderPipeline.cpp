@@ -75,7 +75,7 @@ namespace Yuicy {
 		auto entityFilter = [this](entt::entity e) -> bool {
 			Entity entity(e, m_context->activeScene.get());
 			if (entity && entity.HasComponent<IDComponent>())
-				return !m_context->IsEntityHidden(entity.GetUUID());
+				return !m_context->IsEntityHiddenInHierarchy(entity.GetUUID());
 			return true;
 		};
 

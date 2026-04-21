@@ -96,9 +96,25 @@ namespace Yuicy {
 			return it != entityMetadata.end() && it->second.hidden;
 		}
 
+		// 递归检查隐藏情况
+		bool IsEntityHiddenInHierarchy(UUID uuid) const
+		{
+			if (!activeScene) return false;
+			UUID current = uuid;
+			while (current != 0)
+			{
+				if (IsEntityHidden(current))
+					return true;
+				Entity entity = activeScene->FindEntityByUUID(current);
+				if (!entity) break;
+				current = entity.GetParentUUID();
+			}
+			return false;
+		}
+
 		bool IsEntitySelectable(UUID uuid) const
 		{
-			return !IsEntityLocked(uuid) && !IsEntityHidden(uuid);
+			return !IsEntityLocked(uuid) && !IsEntityHiddenInHierarchy(uuid);
 		}
 
 		void ToggleEntityLocked(UUID uuid)

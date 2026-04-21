@@ -102,25 +102,69 @@ namespace Yuicy {
 				ImGui::EndPopup();
 			}
 
-			// 拖拽到空白处 - Unparent
-			if (ImGui::BeginDragDropTarget())
+			// 拖拽到空白处 - Unparent（使用 InvisibleButton 确保空白区域可接收拖拽）
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_DND"))
+				ImVec2 remaining = ImGui::GetContentRegionAvail();
+				if (remaining.y > 0)
 				{
-					UUID droppedUUID = *(const UUID*)payload->Data;
-					Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
-					if (droppedEntity && droppedEntity.GetParentUUID() != 0)
+					ImGui::InvisibleButton("##blank_drop_area", ImVec2(-1, remaining.y));
+
+					// 点击空白 InvisibleButton 也清除选择
+					if (ImGui::IsItemClicked())
 					{
-						if (m_commandHistory)
-							m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, UUID(0));
-						else
+						bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+						bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+						if (!ctrl && !shift)
+							SetSelectedEntity({});
+					}
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_DND"))
 						{
-							m_context->UnparentEntity(droppedEntity);
-							if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+							UUID droppedUUID = *(const UUID*)payload->Data;
+
+							// 多选拖拽到空白处
+							bool isMultiDrag = m_editorSelection
+								&& m_editorSelection->IsMultiSelection()
+								&& m_editorSelection->IsEntitySelected(droppedUUID);
+
+							if (isMultiDrag)
+							{
+								auto entitiesToMove = m_editorSelection->selectedEntities;
+								for (UUID moveUUID : entitiesToMove)
+								{
+									Entity moveEntity = m_context->FindEntityByUUID(moveUUID);
+									if (moveEntity && moveEntity.GetParentUUID() != 0)
+									{
+										if (m_commandHistory)
+											m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), moveUUID, UUID(0));
+										else
+										{
+											m_context->UnparentEntity(moveEntity);
+											if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+										}
+									}
+								}
+							}
+							else
+							{
+								Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
+								if (droppedEntity && droppedEntity.GetParentUUID() != 0)
+								{
+									if (m_commandHistory)
+										m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, UUID(0));
+									else
+									{
+										m_context->UnparentEntity(droppedEntity);
+										if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+									}
+								}
+							}
 						}
+						ImGui::EndDragDropTarget();
 					}
 				}
-				ImGui::EndDragDropTarget();
 			}
 		}
 
@@ -138,7 +182,7 @@ namespace Yuicy {
 
 		// 获取锁定/隐藏状态
 		bool isLocked = m_editorContext && m_editorContext->IsEntityLocked(entityUUID);
-		bool isHidden = m_editorContext && m_editorContext->IsEntityHidden(entityUUID);
+		bool isHidden = m_editorContext && m_editorContext->IsEntityHiddenInHierarchy(entityUUID);
 
 		// 隐藏实体变暗
 		if (isHidden)
@@ -162,7 +206,7 @@ namespace Yuicy {
 		// 保存树节点点击状态
 		bool treeNodeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
 
-		// 右键菜单（此时 LastItem 仍是树节点）
+		// 右键菜单
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -183,12 +227,22 @@ namespace Yuicy {
 			ImGui::EndPopup();
 		}
 
-		// 拖拽排序：设置拖拽源（此时 LastItem 仍是树节点）
+		// 拖拽排序：设置拖拽源
 		if (ImGui::BeginDragDropSource())
 		{
 			UUID uuid = entity.GetUUID();
 			ImGui::SetDragDropPayload("ENTITY_DND", &uuid, sizeof(UUID));
-			ImGui::Text("%s", tag.c_str());
+
+			// 多选时显示数量
+			if (m_editorSelection && m_editorSelection->IsMultiSelection()
+				&& m_editorSelection->IsEntitySelected(entityUUID))
+			{
+				ImGui::Text("%s (+%d)", tag.c_str(), (int)m_editorSelection->GetSelectionCount() - 1);
+			}
+			else
+			{
+				ImGui::Text("%s", tag.c_str());
+			}
 			ImGui::EndDragDropSource();
 		}
 
@@ -198,15 +252,43 @@ namespace Yuicy {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_DND"))
 			{
 				UUID droppedUUID = *(const UUID*)payload->Data;
-				Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
-				if (droppedEntity && droppedEntity != entity)
+
+				// 如果被拖拽实体是多选的一部分，则 reparent 所有选中实体
+				bool isMultiDrag = m_editorSelection
+					&& m_editorSelection->IsMultiSelection()
+					&& m_editorSelection->IsEntitySelected(droppedUUID);
+
+				if (isMultiDrag)
 				{
-					if (m_commandHistory)
-						m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, entity.GetUUID());
-					else
+					// 收集所有需要 reparent 的实体
+					auto entitiesToMove = m_editorSelection->selectedEntities;
+					for (UUID moveUUID : entitiesToMove)
 					{
-						m_context->ParentEntity(droppedEntity, entity);
-						if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+						Entity moveEntity = m_context->FindEntityByUUID(moveUUID);
+						if (moveEntity && moveEntity != entity && !entity.IsDescendantOf(moveEntity))
+						{
+							if (m_commandHistory)
+								m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), moveUUID, entity.GetUUID());
+							else
+							{
+								m_context->ParentEntity(moveEntity, entity);
+								if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+							}
+						}
+					}
+				}
+				else
+				{
+					Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
+					if (droppedEntity && droppedEntity != entity)
+					{
+						if (m_commandHistory)
+							m_commandHistory->ExecuteCommandT<ReparentEntityCommand>(m_context.get(), droppedUUID, entity.GetUUID());
+						else
+						{
+							m_context->ParentEntity(droppedEntity, entity);
+							if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+						}
 					}
 				}
 			}
@@ -272,13 +354,15 @@ namespace Yuicy {
 		{
 			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
 			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+			bool alreadySelected = m_editorSelection && m_editorSelection->IsEntitySelected(entityUUID);
 
 			if (ctrl)
 				m_editorSelection->ToggleEntity(entityUUID);
 			else if (shift)
 				m_editorSelection->AddEntity(entityUUID);
-			else
+			else if (!alreadySelected)
 				SetSelectedEntity(entity);
+			// 已选中的实体不做处理，保留多选状态以支持多选拖拽
 		}
 
 		// 递归绘制子节点

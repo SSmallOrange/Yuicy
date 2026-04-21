@@ -271,7 +271,7 @@ namespace Yuicy {
 				Entity entity(entityHandle, scene.get());
 
 				// 跳过隐藏实体
-				if (m_context->IsEntityHidden(entity.GetUUID()))
+				if (m_context->IsEntityHiddenInHierarchy(entity.GetUUID()))
 					continue;
 
 				auto& bc = entity.GetComponent<BoxCollider2DComponent>();
@@ -294,7 +294,7 @@ namespace Yuicy {
 				Entity entity(entityHandle, scene.get());
 
 				// 跳过隐藏实体
-				if (m_context->IsEntityHidden(entity.GetUUID()))
+				if (m_context->IsEntityHiddenInHierarchy(entity.GetUUID()))
 					continue;
 
 				auto& cc = entity.GetComponent<CircleCollider2DComponent>();
