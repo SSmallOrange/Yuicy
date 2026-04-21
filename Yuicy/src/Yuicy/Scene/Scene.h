@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt.hpp>
+#include <functional>
 #include <unordered_map>
 
 #include "Yuicy/Core/UUID.h"
@@ -42,8 +43,8 @@ namespace Yuicy {
 		void OnSimulationStop();
 
 		void OnUpdateRuntime(Timestep ts);
-		void OnUpdateSimulation(Timestep ts, EditorCamera& camera);
-		void OnUpdateEditor(Timestep ts, EditorCamera& camera);
+		void OnUpdateSimulation(Timestep ts, EditorCamera& camera, std::function<bool(entt::entity)> entityFilter = nullptr);
+		void OnUpdateEditor(Timestep ts, EditorCamera& camera, std::function<bool(entt::entity)> entityFilter = nullptr);
 
 		void OnUpdate(Timestep ts);
 		void OnViewportResize(uint32_t width, uint32_t height);
@@ -98,7 +99,7 @@ namespace Yuicy {
 		void UpdateAnimations(Timestep ts);
 
 		void RenderScene();
-		void RenderScene(EditorCamera& camera);
+		void RenderScene(EditorCamera& camera, std::function<bool(entt::entity)> entityFilter = nullptr);
 
 	private:
 		entt::registry m_Registry;

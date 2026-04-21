@@ -54,8 +54,10 @@ namespace Yuicy {
 
 		// 面板共享选择上下文
 		m_sceneHierarchyPanel.SetSelectionContext(&m_editorContext.selection);
+		m_sceneHierarchyPanel.SetEditorContext(&m_editorContext);
 		m_sceneHierarchyPanel.SetDirtyTracker(&m_dirtyTracker);
 		m_sceneHierarchyPanel.SetCommandHistory(&m_commandHistory);
+		m_sceneHierarchyPanel.Init();
 		
 		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
 		m_propertiesPanel.SetDirtyTracker(&m_dirtyTracker);
@@ -87,6 +89,9 @@ namespace Yuicy {
 
 		// 场景切换后清空命令历史（旧命令引用旧场景对象）
 		m_commandHistory.Clear();
+
+		// 清空编辑器实体元数据
+		m_editorContext.ClearEntityMetadata();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)

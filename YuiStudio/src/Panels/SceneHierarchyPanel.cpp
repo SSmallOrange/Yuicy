@@ -7,17 +7,27 @@
 #include "Yuicy/Scene/Components.h"
 
 #include "../Editor/EditorCommandHistory.h"
+#include "../Editor/EditorContext.h"
 #include "../Editor/EditorDirtyTracker.h"
 #include "../Editor/EditorSelectionContext.h"
 #include "../Editor/Commands/CreateEntityCommand.h"
 #include "../Editor/Commands/DeleteEntityCommand.h"
 #include "../Editor/Commands/ReparentEntityCommand.h"
+#include "../Utils/EditorIconUtils.h"
 
 namespace Yuicy {
 
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
 	{
 		SetContext(scene);
+	}
+
+	void SceneHierarchyPanel::Init()
+	{
+		m_hideIcon = EditorIconUtils::LoadIconTexture(
+			"assets/textures/Editor/SceneHierarchyPanel/Hide.png", { 200, 200, 200, 255 });
+		m_lockIcon = EditorIconUtils::LoadIconTexture(
+			"assets/textures/Editor/SceneHierarchyPanel/lock.png", { 200, 200, 200, 255 });
 	}
 
 	void SceneHierarchyPanel::SetContext(const Ref<Scene>& scene)
@@ -41,34 +51,34 @@ namespace Yuicy {
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
-		if (!m_editorSelection)
-			return;
-
-		if (entity)
-			m_editorSelection->SetSelectedEntity(entity.GetUUID());
-		else
-			m_editorSelection->ClearEntitySelection();
+		if (m_editorSelection)
+		{
+			if (entity)
+				m_editorSelection->SetSelectedEntity(entity.GetUUID());
+			else
+				m_editorSelection->ClearEntitySelection();
+		}
 	}
 
 	void SceneHierarchyPanel::OnImGuiRender()
 	{
-		// 场景层级面板
+		if (!m_context)
+			return;
+
 		ImGui::Begin("Scene Hierarchy");
 
-		if (m_context)
 		{
-			// 遍历所有实体，只绘制根实体
-			auto view = m_context->GetAllEntitiesWith<IDComponent, RelationshipComponent>();
-			for (auto entityID : view)
+			// 遍历所有根实体
+			auto view = m_context->GetAllEntitiesWith<TagComponent, RelationshipComponent>();
+			for (auto entityHandle : view)
 			{
-				Entity entity{ entityID, m_context.get() };
-
+				Entity entity(entityHandle, m_context.get());
 				if (entity.GetParentUUID() == 0)
 					DrawEntityNode(entity);
 			}
 
 			// 点击空白处取消选择
-			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
 			{
 				bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
 				bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
@@ -89,34 +99,16 @@ namespace Yuicy {
 						if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 					}
 				}
-
-				if (ImGui::MenuItem("Create Camera"))
-				{
-					// 先创建实体，再添加组件（组合操作，作为单次创建处理）
-					auto entity = m_context->CreateEntity("Camera");
-					entity.AddComponent<CameraComponent>();
-					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
-				}
-
-				if (ImGui::MenuItem("Create Sprite"))
-				{
-					auto entity = m_context->CreateEntity("Sprite");
-					entity.AddComponent<SpriteRendererComponent>();
-					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
-				}
-
 				ImGui::EndPopup();
 			}
 
-			// 拖拽到窗口空白区域脱离父级
-			ImGuiWindow* window = ImGui::GetCurrentWindow();
-			if (ImGui::BeginDragDropTargetCustom(window->ContentRegionRect, window->ID))
+			// 拖拽到空白处 - Unparent
+			if (ImGui::BeginDragDropTarget())
 			{
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY_DND"))
 				{
 					UUID droppedUUID = *(const UUID*)payload->Data;
 					Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
-
 					if (droppedEntity && droppedEntity.GetParentUUID() != 0)
 					{
 						if (m_commandHistory)
@@ -144,8 +136,18 @@ namespace Yuicy {
 		Entity selectedEntity = GetSelectedEntity();
 		UUID entityUUID = entity.GetUUID();
 
+		// 获取锁定/隐藏状态
+		bool isLocked = m_editorContext && m_editorContext->IsEntityLocked(entityUUID);
+		bool isHidden = m_editorContext && m_editorContext->IsEntityHidden(entityUUID);
+
+		// 隐藏实体变暗
+		if (isHidden)
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
-			| ImGuiTreeNodeFlags_SpanAvailWidth;
+			| ImGuiTreeNodeFlags_SpanAvailWidth
+			| ImGuiTreeNodeFlags_AllowItemOverlap
+			| ImGuiTreeNodeFlags_FramePadding;
 
 		if (m_editorSelection && m_editorSelection->IsEntitySelected(entityUUID))
 			flags |= ImGuiTreeNodeFlags_Selected;
@@ -153,22 +155,14 @@ namespace Yuicy {
 		if (children.empty())
 			flags |= ImGuiTreeNodeFlags_Leaf;
 
-		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 3));
+		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, "%s", tag.c_str());
+		ImGui::PopStyleVar();
 
-		if (ImGui::IsItemClicked())
-		{
-			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		// 保存树节点点击状态
+		bool treeNodeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
 
-			if (ctrl)
-				m_editorSelection->ToggleEntity(entityUUID);
-			else if (shift)
-				m_editorSelection->AddEntity(entityUUID);
-			else
-				SetSelectedEntity(entity);
-		}
-
-		// 右键菜单
+		// 右键菜单（此时 LastItem 仍是树节点）
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -189,11 +183,10 @@ namespace Yuicy {
 			ImGui::EndPopup();
 		}
 
-		// 拖拽排序：设置拖拽源
+		// 拖拽排序：设置拖拽源（此时 LastItem 仍是树节点）
 		if (ImGui::BeginDragDropSource())
 		{
 			UUID uuid = entity.GetUUID();
-			YUICY_CORE_INFO("Begin droppedUUID: {}");
 			ImGui::SetDragDropPayload("ENTITY_DND", &uuid, sizeof(UUID));
 			ImGui::Text("%s", tag.c_str());
 			ImGui::EndDragDropSource();
@@ -206,7 +199,6 @@ namespace Yuicy {
 			{
 				UUID droppedUUID = *(const UUID*)payload->Data;
 				Entity droppedEntity = m_context->FindEntityByUUID(droppedUUID);
-				YUICY_CORE_INFO("End droppedUUID: {}");
 				if (droppedEntity && droppedEntity != entity)
 				{
 					if (m_commandHistory)
@@ -219,6 +211,74 @@ namespace Yuicy {
 				}
 			}
 			ImGui::EndDragDropTarget();
+		}
+
+		if (isHidden)
+			ImGui::PopStyleColor();
+
+		// 右侧锁定/隐藏图标按钮
+		bool hideToggled = false;
+		bool lockToggled = false;
+
+		if (m_editorContext && m_hideIcon && m_lockIcon)
+		{
+			float iconSize = ImGui::GetFrameHeight() * 0.7f;
+			float rowEndX = ImGui::GetWindowContentRegionMax().x;
+			float btnStep = iconSize + 6.0f;
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.5f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.2f, 0.5f));
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+
+			// 隐藏切换
+			ImGui::SameLine(rowEndX - btnStep * 2);
+			ImVec4 hideTint = isHidden
+				? ImVec4(1.0f, 0.4f, 0.4f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 0.3f);
+			ImGui::PushID((int)(uint64_t)entityUUID + 1);
+			if (ImGui::ImageButton(
+				reinterpret_cast<ImTextureID>((uint64_t)m_hideIcon->GetRendererID()),
+				ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0, 0, 0, 0), hideTint))
+			{
+				hideToggled = true;
+			}
+			ImGui::PopID();
+
+			// 锁定切换
+			ImGui::SameLine(rowEndX - btnStep);
+			ImVec4 lockTint = isLocked
+				? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 0.3f);
+			ImGui::PushID((int)(uint64_t)entityUUID + 2);
+			if (ImGui::ImageButton(
+				reinterpret_cast<ImTextureID>((uint64_t)m_lockIcon->GetRendererID()),
+				ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0, 0, 0, 0), lockTint))
+			{
+				lockToggled = true;
+			}
+			ImGui::PopID();
+
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor(3);
+		}
+
+		// 处理按钮动作
+		if (hideToggled)
+			m_editorContext->ToggleEntityHidden(entityUUID);
+		if (lockToggled)
+			m_editorContext->ToggleEntityLocked(entityUUID);
+
+		// 选择逻辑（仅在点击树节点区域、非按钮时触发）
+		if (treeNodeClicked && !hideToggled && !lockToggled)
+		{
+			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+			if (ctrl)
+				m_editorSelection->ToggleEntity(entityUUID);
+			else if (shift)
+				m_editorSelection->AddEntity(entityUUID);
+			else
+				SetSelectedEntity(entity);
 		}
 
 		// 递归绘制子节点

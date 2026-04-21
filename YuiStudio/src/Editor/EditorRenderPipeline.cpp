@@ -71,16 +71,24 @@ namespace Yuicy {
 			}
 		}
 
+		// 编辑器实体可见性过滤
+		auto entityFilter = [this](entt::entity e) -> bool {
+			Entity entity(e, m_context->activeScene.get());
+			if (entity && entity.HasComponent<IDComponent>())
+				return !m_context->IsEntityHidden(entity.GetUUID());
+			return true;
+		};
+
 		switch (runtime.mode)
 		{
 		case SceneMode::Edit:
-			m_context->activeScene->OnUpdateEditor(ts, camera);
+			m_context->activeScene->OnUpdateEditor(ts, camera, entityFilter);
 			break;
 		case SceneMode::Play:
 			m_context->activeScene->OnUpdateRuntime(effectiveTs);
 			break;
 		case SceneMode::Simulate:
-			m_context->activeScene->OnUpdateSimulation(effectiveTs, camera);
+			m_context->activeScene->OnUpdateSimulation(effectiveTs, camera, entityFilter);
 			break;
 		}
 	}

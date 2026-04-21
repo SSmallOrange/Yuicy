@@ -58,6 +58,13 @@ namespace Yuicy {
 		Entity hoveredEntity;
 	};
 
+	// 编辑器实体元数据（不污染运行时 ECS）
+	struct EditorEntityMetadata
+	{
+		bool locked = false;   // 锁定：不可选中、Gizmo 不可操作
+		bool hidden = false;   // 隐藏：不可选中
+	};
+
 	// 编辑器全局共享上下文，所有面板和服务从此处读写状态
  	struct EditorContext
 	{
@@ -73,6 +80,41 @@ namespace Yuicy {
 		EditorViewportState     viewport;
 		EditorViewportSettings  viewportSettings;
 		EditorSettings          settings;
+
+		// 实体编辑器元数据
+		std::unordered_map<UUID, EditorEntityMetadata> entityMetadata;
+
+		bool IsEntityLocked(UUID uuid) const
+		{
+			auto it = entityMetadata.find(uuid);
+			return it != entityMetadata.end() && it->second.locked;
+		}
+
+		bool IsEntityHidden(UUID uuid) const
+		{
+			auto it = entityMetadata.find(uuid);
+			return it != entityMetadata.end() && it->second.hidden;
+		}
+
+		bool IsEntitySelectable(UUID uuid) const
+		{
+			return !IsEntityLocked(uuid) && !IsEntityHidden(uuid);
+		}
+
+		void ToggleEntityLocked(UUID uuid)
+		{
+			entityMetadata[uuid].locked = !entityMetadata[uuid].locked;
+		}
+
+		void ToggleEntityHidden(UUID uuid)
+		{
+			entityMetadata[uuid].hidden = !entityMetadata[uuid].hidden;
+		}
+
+		void ClearEntityMetadata()
+		{
+			entityMetadata.clear();
+		}
 	};
 
 }

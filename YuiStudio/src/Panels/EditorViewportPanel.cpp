@@ -101,7 +101,13 @@ namespace Yuicy {
 			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
 		{
 			int pixelData = m_renderPipeline->ReadEntityIDAtPixel(mouseX, mouseY);
-			viewportState.hoveredEntity = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_context->activeScene.get());
+			Entity picked = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_context->activeScene.get());
+
+			// 过滤锁定/隐藏实体
+			if (picked && !m_context->IsEntitySelectable(picked.GetUUID()))
+				picked = {};
+
+			viewportState.hoveredEntity = picked;
 		}
 		else
 		{
@@ -173,6 +179,10 @@ namespace Yuicy {
 		// 从共享选择上下文解析选中实体
 		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
 		if (selectedUUID == 0 || m_gizmoType == -1)
+			return;
+
+		// 锁定实体不显示 Gizmo
+		if (m_context->IsEntityLocked(selectedUUID))
 			return;
 
 		Entity selectedEntity = m_context->activeScene->FindEntityByUUID(selectedUUID);
@@ -640,6 +650,11 @@ namespace Yuicy {
 			for (auto entityHandle : view)
 			{
 				Entity entity(entityHandle, m_context->activeScene.get());
+
+				// 跳过锁定/隐藏实体
+				if (!m_context->IsEntitySelectable(entity.GetUUID()))
+					continue;
+
 				TransformComponent worldTC = m_context->activeScene->GetWorldSpaceTransform(entity);
 
 				float ex = worldTC.Translation.x;

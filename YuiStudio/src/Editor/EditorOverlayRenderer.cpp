@@ -269,6 +269,11 @@ namespace Yuicy {
 			for (auto entityHandle : view)
 			{
 				Entity entity(entityHandle, scene.get());
+
+				// 跳过隐藏实体
+				if (m_context->IsEntityHidden(entity.GetUUID()))
+					continue;
+
 				auto& bc = entity.GetComponent<BoxCollider2DComponent>();
 
 				glm::mat4 worldTransform = scene->GetWorldSpaceTransformMatrix(entity);
@@ -287,6 +292,11 @@ namespace Yuicy {
 			for (auto entityHandle : view)
 			{
 				Entity entity(entityHandle, scene.get());
+
+				// 跳过隐藏实体
+				if (m_context->IsEntityHidden(entity.GetUUID()))
+					continue;
+
 				auto& cc = entity.GetComponent<CircleCollider2DComponent>();
 
 				TransformComponent worldTC = scene->GetWorldSpaceTransform(entity);

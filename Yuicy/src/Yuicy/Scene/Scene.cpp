@@ -630,18 +630,18 @@ namespace Yuicy {
 		RenderScene();
 	}
 
-	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera)
+	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera, std::function<bool(entt::entity)> entityFilter)
 	{
 		// Simulate 模式：物理更新 + 编辑器相机渲染，不运行脚本
 		UpdateAnimations(ts);
 		StepPhysicsWorld(ts);
-		RenderScene(camera);
+		RenderScene(camera, entityFilter);
 	}
 
-	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera)
+	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera, std::function<bool(entt::entity)> entityFilter)
 	{
 		// 编辑器模式：使用独立的 EditorCamera 渲染，不进行物理模拟
-		RenderScene(camera);
+		RenderScene(camera, entityFilter);
 	}
 
 	void Scene::OnUpdate(Timestep ts)
@@ -730,7 +730,7 @@ namespace Yuicy {
 		}
 	}
 
-	void Scene::RenderScene(EditorCamera& camera)
+	void Scene::RenderScene(EditorCamera& camera, std::function<bool(entt::entity)> entityFilter)
 	{
 		// 禁用2D渲染的深度测试
 		RenderCommand::SetDepthTest(false);
@@ -750,6 +750,10 @@ namespace Yuicy {
 
 		for (auto entity : group)
 		{
+			// 编辑器过滤
+			if (entityFilter && !entityFilter(entity))
+				continue;
+
 			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
 		}
