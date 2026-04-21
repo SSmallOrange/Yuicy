@@ -2,6 +2,7 @@ workspace "Yuicy"
     architecture "x64"
     startproject "YuiStudio"
     configurations { "Debug", "Release" }
+    flags { "MultiProcessorCompile" }
 
 outputdir = "%{cfg.buildcfg}-x64"
 rundir    = "%{wks.location}bin\\" .. outputdir .. "\\Sandbox"
@@ -131,6 +132,8 @@ project "YuiStudio"
     staticruntime "On"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("bin/int/" .. outputdir .. "/%{prj.name}")
+    pchheader "pch.h"
+    pchsource "YuiStudio/src/pch.cpp"
     files { 
         "YuiStudio/src/**.h", 
         "YuiStudio/src/**.hpp", 
@@ -138,6 +141,7 @@ project "YuiStudio"
         "YuiStudio/assets/**.*"
     }
     includedirs { 
+        "YuiStudio/src",
         "Yuicy/src", 
         "Yuicy/thirdparty/spdlog/include", 
         "Yuicy/thirdparty/GLFW/include",

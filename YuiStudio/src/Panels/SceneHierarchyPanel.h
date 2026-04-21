@@ -1,11 +1,14 @@
 #pragma once
 
-#include "Yuicy.h"
-#include "../Editor/EditorSelectionContext.h"
-#include "../Editor/EditorDirtyTracker.h"
-#include "../Editor/EditorCommandHistory.h"
+#include "Yuicy/Core/Base.h"
 
 namespace Yuicy {
+
+	class Scene;
+	class Entity;
+	struct EditorSelectionContext;
+	class EditorDirtyTracker;
+	class EditorCommandHistory;
 
 	// 场景层级面板
 	class SceneHierarchyPanel

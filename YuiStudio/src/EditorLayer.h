@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Yuicy.h"
+#include "Yuicy/Core/Layer.h"
 
 #include "Editor/EditorContext.h"
 #include "Editor/EditorSceneController.h"
@@ -17,6 +17,8 @@
 #include "Panels/AssetInspectorPanel.h"
 
 namespace Yuicy {
+
+	class KeyPressedEvent;
 
 	class EditorLayer : public Layer
 	{

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "EditorContext.h"
-
 #include <filesystem>
+#include <string>
 
 namespace Yuicy {
 
+	struct EditorContext;
 	class EditorSceneController;
 
 	// 编辑器资源工作流服务

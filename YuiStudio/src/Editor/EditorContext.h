@@ -4,7 +4,6 @@
 #include "Yuicy/Core/UUID.h"
 #include "Yuicy/Scene/Scene.h"
 #include "Yuicy/Scene/Entity.h"
-#include "Yuicy/Project/Project.h"
 
 #include "EditorSelectionContext.h"
 #include "EditorViewportSettings.h"

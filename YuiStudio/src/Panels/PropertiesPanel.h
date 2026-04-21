@@ -1,14 +1,20 @@
 #pragma once
 
-#include "Yuicy.h"
-#include "../Editor/EditorSelectionContext.h"
-#include "../Editor/EditorDirtyTracker.h"
-#include "../Editor/EditorCommandHistory.h"
+#include "Yuicy/Core/Base.h"
 #include "ComponentEditors/AnimationEditor.h"
 #include "ComponentEditors/CameraEditor.h"
 #include "ComponentEditors/SpriteEditor.h"
 
+#include <glm/fwd.hpp>
+#include <string>
+
 namespace Yuicy {
+
+	class Scene;
+	class Entity;
+	struct EditorSelectionContext;
+	class EditorDirtyTracker;
+	class EditorCommandHistory;
 
 	// Properties 面板
 	// 负责显示和编辑选中实体的组件

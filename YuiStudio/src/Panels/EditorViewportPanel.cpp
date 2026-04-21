@@ -1,10 +1,19 @@
+#include "pch.h"
+
 #include "EditorViewportPanel.h"
+
+#include "../Editor/Commands/SetTransformCommand.h"
+#include "../Editor/EditorCommandHistory.h"
+#include "../Editor/EditorContext.h"
+#include "../Editor/EditorDirtyTracker.h"
+#include "../Editor/EditorRenderPipeline.h"
+#include "../Editor/EditorSceneController.h"
 
 #include "../Utils/EditorIconUtils.h"
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
-
+#include "Yuicy/Events/Event.h"
+#include "Yuicy/Events/KeyEvent.h"
+#include "Yuicy/Events/MouseEvent.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
 #include <algorithm>

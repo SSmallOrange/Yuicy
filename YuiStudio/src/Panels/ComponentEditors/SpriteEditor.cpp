@@ -1,10 +1,12 @@
+#include "pch.h"
+
 #include "SpriteEditor.h"
+#include "../../Editor/EditorDirtyTracker.h"
 
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
-
-#include "imgui/imgui.h"
+#include "Yuicy/Scene/Components.h"
 
 #include <filesystem>
 #include <glm/gtc/type_ptr.hpp>

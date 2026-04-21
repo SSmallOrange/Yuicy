@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Yuicy.h"
+#include "Yuicy/Core/Log.h"
+#include "Yuicy/Renderer/Texture.h"
 
 #include <array>
 #include <cstdint>

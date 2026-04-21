@@ -1,13 +1,15 @@
+#include "pch.h"
+
 #include "SceneHierarchyPanel.h"
 
 #include "Yuicy/Scene/Components.h"
 
+#include "../Editor/EditorCommandHistory.h"
+#include "../Editor/EditorDirtyTracker.h"
+#include "../Editor/EditorSelectionContext.h"
 #include "../Editor/Commands/CreateEntityCommand.h"
 #include "../Editor/Commands/DeleteEntityCommand.h"
 #include "../Editor/Commands/ReparentEntityCommand.h"
-
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
 
 namespace Yuicy {
 

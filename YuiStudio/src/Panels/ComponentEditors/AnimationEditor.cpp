@@ -1,12 +1,14 @@
+#include "pch.h"
+
 #include "AnimationEditor.h"
+#include "../../Editor/EditorDirtyTracker.h"
 #include "../../Utils/EditorIconUtils.h"
 
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Scene/Components.h"
 #include "Yuicy/Renderer/SubTexture.h"
-
-#include "imgui/imgui.h"
 
 #include <filesystem>
 #include <algorithm>

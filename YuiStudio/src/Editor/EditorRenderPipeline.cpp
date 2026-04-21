@@ -1,4 +1,7 @@
+#include "pch.h"
+
 #include "EditorRenderPipeline.h"
+#include "EditorContext.h"
 #include "EditorOverlayRenderer.h"
 
 #include "Yuicy/Renderer/Renderer2D.h"

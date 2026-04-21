@@ -1,13 +1,17 @@
 #pragma once
 
-#include "EditorContext.h"
-#include "Yuicy/Renderer/Framebuffer.h"
-#include "Yuicy/Renderer/EditorCamera.h"
+#include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Timestep.h"
+
+#include <cstdint>
 
 namespace Yuicy {
 
+	struct EditorContext;
 	class EditorOverlayRenderer;
+	class EditorCamera;
+	class Framebuffer;
+	struct FramebufferSpecification;
 
 	// 编辑器渲染管线
 	// 负责调度 Background Overlay → Scene Pass → Foreground Overlay，管理帧缓冲。

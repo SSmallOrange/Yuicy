@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "AssetInspectorPanel.h"
 
 #include "../Editor/EditorContext.h"
@@ -7,8 +9,6 @@
 #include "Yuicy/Asset/AssetTypes.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Project/Project.h"
-
-#include "imgui/imgui.h"
 
 #include <filesystem>
 

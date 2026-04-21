@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Yuicy.h"
 #include "Yuicy/Core/EntryPoint.h"
 

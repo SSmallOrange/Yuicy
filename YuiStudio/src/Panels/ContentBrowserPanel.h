@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Yuicy.h"
+#include "Yuicy/Core/Base.h"
 #include "Yuicy/Asset/AssetTypes.h"
 
 #include <filesystem>
@@ -9,6 +9,7 @@ namespace Yuicy {
 
 	struct EditorContext;
 	class EditorAssetWorkflow;
+	class Texture2D;
 
 	class ContentBrowserPanel
 	{

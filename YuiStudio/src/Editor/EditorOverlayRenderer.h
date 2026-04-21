@@ -1,10 +1,12 @@
 #pragma once
 
-#include "EditorContext.h"
-#include "Yuicy/Renderer/EditorCamera.h"
-#include "Yuicy/Scene/Scene.h"
+#include "Yuicy/Core/Base.h"
 
 namespace Yuicy {
+
+	struct EditorContext;
+	class EditorCamera;
+	class Scene;
 
 	// 编辑器 Overlay 渲染器
 	// 只负责绘制编辑器辅助可视化信息，不做业务决策。

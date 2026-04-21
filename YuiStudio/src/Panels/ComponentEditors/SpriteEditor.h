@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Yuicy/Scene/Components.h"
-#include "../../Editor/EditorDirtyTracker.h"
-
 namespace Yuicy {
+
+	struct SpriteRendererComponent;
+	class EditorDirtyTracker;
 
 	class SpriteEditor
 	{

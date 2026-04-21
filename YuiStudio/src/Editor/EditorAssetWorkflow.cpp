@@ -1,4 +1,7 @@
+#include "pch.h"
+
 #include "EditorAssetWorkflow.h"
+#include "EditorContext.h"
 #include "EditorSceneController.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"

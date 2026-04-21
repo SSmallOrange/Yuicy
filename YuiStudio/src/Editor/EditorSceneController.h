@@ -1,15 +1,13 @@
 #pragma once
 
-#include "EditorContext.h"
-#include "EditorDirtyTracker.h"
-#include "Yuicy/Renderer/EditorCamera.h"
-
-#include <string>
+#include <filesystem>
 #include <functional>
+#include <string>
 
 namespace Yuicy {
 
-	class SceneHierarchyPanel;
+	struct EditorContext;
+	class EditorDirtyTracker;
 
 	// 编辑器场景/项目生命周期管理器
 	class EditorSceneController

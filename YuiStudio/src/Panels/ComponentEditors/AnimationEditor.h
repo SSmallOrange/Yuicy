@@ -1,9 +1,15 @@
 #pragma once
 
-#include "Yuicy/Scene/Components.h"
-#include "../../Editor/EditorDirtyTracker.h"
+#include "Yuicy/Core/Base.h"
+#include "Yuicy/Asset/Asset.h"
+
+#include <string>
 
 namespace Yuicy {
+
+	struct AnimationComponent;
+	class EditorDirtyTracker;
+	class Texture2D;
 
 	class AnimationEditor
 	{

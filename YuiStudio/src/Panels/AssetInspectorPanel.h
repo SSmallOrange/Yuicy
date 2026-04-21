@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Yuicy.h"
 #include "Yuicy/Asset/AssetMetadata.h"
 
 namespace Yuicy {

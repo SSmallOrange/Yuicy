@@ -1,17 +1,24 @@
 #pragma once
 
-#include "Yuicy.h"
+#include "Yuicy/Core/Base.h"
+#include "Yuicy/Core/Timestep.h"
 #include "Yuicy/ImGui/ImGuizmo.h"
 #include "Yuicy/Renderer/EditorCamera.h"
+#include "Yuicy/Scene/Components.h"
 
-#include "../Editor/EditorContext.h"
-#include "../Editor/EditorRenderPipeline.h"
-#include "../Editor/EditorSceneController.h"
-#include "../Editor/EditorDirtyTracker.h"
-#include "../Editor/EditorCommandHistory.h"
-#include "../Editor/Commands/SetTransformCommand.h"
+#include <glm/vec3.hpp>
 
 namespace Yuicy {
+
+	struct EditorContext;
+	class EditorRenderPipeline;
+	class EditorSceneController;
+	class EditorDirtyTracker;
+	class EditorCommandHistory;
+	class Event;
+	class MouseButtonPressedEvent;
+	class KeyPressedEvent;
+	class Texture2D;
 
 	// 编辑器视口面板
 	// 管理 Viewport UI、Framebuffer 尺寸同步、拖拽接收、

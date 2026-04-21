@@ -1,4 +1,8 @@
+#include "pch.h"
+
 #include "EditorSceneController.h"
+#include "EditorContext.h"
+#include "EditorDirtyTracker.h"
 
 #include "Yuicy/Scene/SceneSerializer.h"
 #include "Yuicy/Project/Project.h"

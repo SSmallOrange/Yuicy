@@ -1,10 +1,10 @@
 #pragma once
 
-#include "EditorContext.h"
-
 #include <functional>
 
 namespace Yuicy {
+
+	struct EditorContext;
 
 	// 编辑器脏状态追踪器
 	class EditorDirtyTracker

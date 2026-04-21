@@ -1,4 +1,7 @@
+#include "pch.h"
+
 #include "EditorDirtyTracker.h"
+#include "EditorContext.h"
 #include "Yuicy/Project/Project.h"
 
 namespace Yuicy {

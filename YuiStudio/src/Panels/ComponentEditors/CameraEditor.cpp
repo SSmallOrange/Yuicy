@@ -1,6 +1,9 @@
-#include "CameraEditor.h"
+#include "pch.h"
 
-#include "imgui/imgui.h"
+#include "CameraEditor.h"
+#include "../../Editor/EditorDirtyTracker.h"
+
+#include "Yuicy/Scene/Components.h"
 
 #include <algorithm>
 

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Yuicy/Core/Log.h"
 #include "EditorCommandHistory.h"
 

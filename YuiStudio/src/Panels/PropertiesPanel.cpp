@@ -1,14 +1,16 @@
+#include "pch.h"
+
 #include "PropertiesPanel.h"
 
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 
+#include "../Editor/EditorCommandHistory.h"
+#include "../Editor/EditorDirtyTracker.h"
+#include "../Editor/EditorSelectionContext.h"
 #include "../Editor/Commands/AddComponentCommand.h"
 #include "../Editor/Commands/RemoveComponentCommand.h"
-
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
