@@ -2,6 +2,7 @@
 
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/Assert.h"
+#include "Yuicy/Renderer/SortingLayerConfig.h"
 
 #include <filesystem>
 #include <string>
@@ -29,6 +30,9 @@ namespace Yuicy {
 
 		std::string ProjectFileName;
 		std::string ProjectDirectory;
+
+		// Sorting Layer 配置
+		SortingLayerConfig SortingLayers;
 	};
 
 	class Project

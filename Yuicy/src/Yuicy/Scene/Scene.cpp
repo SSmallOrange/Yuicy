@@ -692,8 +692,12 @@ namespace Yuicy {
 				renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
 			}
 
-			std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {
-				return d.Sprite->SortingOrder;
+			const auto& sortingLayers = Project::GetActive()->GetConfig().SortingLayers;
+			std::ranges::sort(renderQueue, [&sortingLayers](const SpriteRenderData& a, const SpriteRenderData& b) {
+				int layerA = sortingLayers.GetLayerOrder(a.Sprite->SortingLayer);
+				int layerB = sortingLayers.GetLayerOrder(b.Sprite->SortingLayer);
+				if (layerA != layerB) return layerA < layerB;
+				return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
 			});
 
 			for (const auto& data : renderQueue)
@@ -750,8 +754,12 @@ namespace Yuicy {
 			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
 		}
 
-		std::ranges::sort(renderQueue, {}, [](const SpriteRenderData& d) {
-			return d.Sprite->SortingOrder;
+		const auto& sortingLayers = Project::GetActive()->GetConfig().SortingLayers;
+		std::ranges::sort(renderQueue, [&sortingLayers](const SpriteRenderData& a, const SpriteRenderData& b) {
+			int layerA = sortingLayers.GetLayerOrder(a.Sprite->SortingLayer);
+			int layerB = sortingLayers.GetLayerOrder(b.Sprite->SortingLayer);
+			if (layerA != layerB) return layerA < layerB;
+			return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
 		});
 
 		for (const auto& data : renderQueue)

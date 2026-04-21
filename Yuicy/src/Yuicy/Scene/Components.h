@@ -106,6 +106,7 @@ namespace Yuicy {
 		bool FlipY = false;
 
 		// 渲染排序
+		std::string SortingLayer = "Default";
 		int SortingOrder = 0;
 
 		SpriteRendererComponent() = default;

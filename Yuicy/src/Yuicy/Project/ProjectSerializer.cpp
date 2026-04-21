@@ -28,6 +28,18 @@ namespace Yuicy {
 			out << YAML::Key << "AutoSave" << YAML::Value << m_project->m_config.EnableAutoSave;
 			out << YAML::Key << "AutoSaveInterval" << YAML::Value << m_project->m_config.AutoSaveIntervalSeconds;
 
+			// Sorting Layers
+			out << YAML::Key << "SortingLayers";
+			out << YAML::Value << YAML::BeginSeq;
+			for (const auto& layer : m_project->m_config.SortingLayers.Layers)
+			{
+				out << YAML::BeginMap;
+				out << YAML::Key << "Name" << YAML::Value << layer.Name;
+				out << YAML::Key << "Order" << YAML::Value << layer.Order;
+				out << YAML::EndMap;
+			}
+			out << YAML::EndSeq;
+
 			out << YAML::EndMap;
 		}
 		out << YAML::EndMap;
@@ -86,6 +98,18 @@ namespace Yuicy {
 		config.StartScene = rootNode["StartScene"].as<std::string>("");
 		config.EnableAutoSave = rootNode["AutoSave"].as<bool>(false);
 		config.AutoSaveIntervalSeconds = rootNode["AutoSaveInterval"].as<int>(300);
+
+		// Sorting Layers
+		if (auto sortingLayersNode = rootNode["SortingLayers"]; sortingLayersNode && sortingLayersNode.IsSequence())
+		{
+			config.SortingLayers.Layers.clear();
+			for (auto layerNode : sortingLayersNode)
+			{
+				std::string name = layerNode["Name"].as<std::string>("Default");
+				int order = layerNode["Order"].as<int>(0);
+				config.SortingLayers.Layers.push_back({ name, order });
+			}
+		}
 
 		std::filesystem::path projectPath = filepath.lexically_normal();
 		config.ProjectFileName = projectPath.filename().string();

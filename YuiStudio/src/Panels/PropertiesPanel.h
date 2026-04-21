@@ -6,6 +6,7 @@
 #include "../Editor/EditorCommandHistory.h"
 #include "ComponentEditors/AnimationEditor.h"
 #include "ComponentEditors/CameraEditor.h"
+#include "ComponentEditors/SpriteEditor.h"
 
 namespace Yuicy {
 
@@ -43,6 +44,7 @@ namespace Yuicy {
 		// Component Editors
 		AnimationEditor m_animationEditor;
 		CameraEditor m_cameraEditor;
+		SpriteEditor m_spriteEditor;
 	};
 
 }

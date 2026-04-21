@@ -81,6 +81,7 @@ namespace Yuicy {
 			out << YAML::Key << "TilingFactor" << YAML::Value << sprite.TilingFactor;
 			out << YAML::Key << "FlipX" << YAML::Value << sprite.FlipX;
 			out << YAML::Key << "FlipY" << YAML::Value << sprite.FlipY;
+			out << YAML::Key << "SortingLayer" << YAML::Value << sprite.SortingLayer;
 			out << YAML::Key << "SortingOrder" << YAML::Value << sprite.SortingOrder;
 
 			out << YAML::EndMap;
@@ -293,6 +294,7 @@ namespace Yuicy {
 				sprite.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>(1.0f);
 				sprite.FlipX = spriteRendererComponent["FlipX"].as<bool>(false);
 				sprite.FlipY = spriteRendererComponent["FlipY"].as<bool>(false);
+				sprite.SortingLayer = spriteRendererComponent["SortingLayer"].as<std::string>("Default");
 				sprite.SortingOrder = spriteRendererComponent["SortingOrder"].as<int>(0);
 			}
 

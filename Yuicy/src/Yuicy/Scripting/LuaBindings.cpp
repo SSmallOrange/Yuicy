@@ -212,6 +212,7 @@ namespace Yuicy {
 				"TilingFactor", &SpriteRendererComponent::TilingFactor,
 				"FlipX", &SpriteRendererComponent::FlipX,
 				"FlipY", &SpriteRendererComponent::FlipY,
+				"SortingLayer", &SpriteRendererComponent::SortingLayer,
 				"SortingOrder", &SpriteRendererComponent::SortingOrder
 			);
 
