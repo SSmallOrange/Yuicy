@@ -3,8 +3,6 @@
 #include "EditorLayer.h"
 
 #include "Yuicy/Events/KeyEvent.h"
-#include "Editor/Commands/CreateEntityCommand.h"
-#include "Editor/Commands/CreateTilemapEntityCommand.h"
 
 #include <string>
 
@@ -70,6 +68,10 @@ namespace Yuicy {
 
 		m_assetInspectorPanel.SetContext(&m_editorContext);
 		m_assetInspectorPanel.SetAssetWorkflow(&m_assetWorkflow);
+
+		m_menuBar.SetContext(&m_editorContext);
+		m_menuBar.SetSceneController(&m_sceneController);
+		m_menuBar.SetCommandHistory(&m_commandHistory);
 
 		// 创建默认场景
 		m_sceneController.NewScene();
@@ -245,24 +247,6 @@ namespace Yuicy {
 		ImGui::End();
 	}
 
-	void EditorLayer::CreateEmptyEntityFromMenu()
-	{
-		if (!m_editorContext.activeScene)
-			return;
-
-		m_commandHistory.ExecuteCommand(
-			CreateScope<CreateEntityCommand>(m_editorContext.activeScene.get(), "Empty Entity", &m_editorContext.selection));
-	}
-
-	void EditorLayer::CreateRectangularTilemapFromMenu()
-	{
-		if (!m_editorContext.activeScene)
-			return;
-
-		m_commandHistory.ExecuteCommand(
-			CreateScope<CreateTilemapEntityCommand>(m_editorContext.activeScene.get(), &m_editorContext.selection));
-	}
-
 	// 标题栏
 	float EditorLayer::UIDrawTitlebar()
 	{
@@ -283,12 +267,7 @@ namespace Yuicy {
 
 		// 菜单栏
 		float dragZoneWidth = windowWidth - totalButtonsWidth;
-		ImGuiStyle& style = ImGui::GetStyle();
-		const char* menuBarLabels[] = { "File", "GameObject" };
-		float menuBarWidth = 12.0f;
-		for (const char* label : menuBarLabels)
-			menuBarWidth += ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
-		menuBarWidth = std::min(menuBarWidth, dragZoneWidth);
+		float menuBarWidth = m_menuBar.GetPreferredWidth(dragZoneWidth);
 
 		ImGui::SetCursorPos(ImVec2(windowPadding.x + 6.0f, 2.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
@@ -297,63 +276,7 @@ namespace Yuicy {
 			     | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNavFocus);
 		ImGui::PopStyleVar();
 
-		if (ImGui::BeginMenuBar())
-		{
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("New Project..."))
-					m_sceneController.NewProject();
-
-				if (ImGui::MenuItem("Open Project..."))
-					m_sceneController.OpenProjectDialog();
-
-				if (ImGui::MenuItem("Save Project"))
-					m_sceneController.SaveProject();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-					m_sceneController.NewScene();
-
-				if (ImGui::MenuItem("Open Scene...", "Ctrl+O"))
-					m_sceneController.OpenSceneDialog();
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-					m_sceneController.SaveScene();
-
-				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
-					m_sceneController.SaveSceneAs();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Exit"))
-					Application::Get().GetWindow().Close();
-
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("GameObject"))
-			{
-				if (ImGui::MenuItem("Create Empty"))
-					CreateEmptyEntityFromMenu();
-
-				if (ImGui::BeginMenu("2D Object"))
-				{
-					if (ImGui::BeginMenu("Tilemap"))
-					{
-						if (ImGui::MenuItem("Rectangular"))
-							CreateRectangularTilemapFromMenu();
-
-						ImGui::EndMenu();
-					}
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenuBar();
-		}
+		m_menuBar.OnImGuiRender();
 		bool menuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 		ImGui::EndChild();
 

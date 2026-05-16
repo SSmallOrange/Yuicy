@@ -15,6 +15,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/PropertiesPanel.h"
 #include "Panels/AssetInspectorPanel.h"
+#include "Panels/EditorMenuBar.h"
 
 namespace Yuicy {
 
@@ -40,8 +41,6 @@ namespace Yuicy {
 
 		// 自定义标题栏
 		float UIDrawTitlebar();
-		void CreateEmptyEntityFromMenu();
-		void CreateRectangularTilemapFromMenu();
 
 		// 场景切换后刷新面板
 		void OnSceneChanged();
@@ -73,6 +72,7 @@ namespace Yuicy {
 		PropertiesPanel m_propertiesPanel;
 		ContentBrowserPanel m_contentBrowserPanel;
 		AssetInspectorPanel m_assetInspectorPanel;
+		EditorMenuBar m_menuBar;
 
 		bool m_titleBarHovered = false;
 
