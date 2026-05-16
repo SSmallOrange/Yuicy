@@ -263,12 +263,19 @@ namespace Yuicy {
 
 		// 菜单栏
 		float dragZoneWidth = windowWidth - totalButtonsWidth;
+		ImGuiStyle& style = ImGui::GetStyle();
+		const char* menuBarLabels[] = { "File" };
+		float menuBarWidth = 12.0f;
+		for (const char* label : menuBarLabels)
+			menuBarWidth += ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
+		menuBarWidth = std::min(menuBarWidth, dragZoneWidth);
 
 		ImGui::SetCursorPos(ImVec2(windowPadding.x + 6.0f, 2.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
-		ImGui::BeginChild("##menuBarChild", ImVec2(dragZoneWidth * 0.5f, titlebarHeight - 4.0f),
+		ImGui::BeginChild("##menuBarChild", ImVec2(menuBarWidth, titlebarHeight - 4.0f),
 			false, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBackground
 			     | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNavFocus);
+		ImGui::PopStyleVar();
 
 		if (ImGui::BeginMenuBar())
 		{
@@ -306,9 +313,8 @@ namespace Yuicy {
 			}
 			ImGui::EndMenuBar();
 		}
-		bool menuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+		bool menuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 		ImGui::EndChild();
-		ImGui::PopStyleVar();
 
 		// 标题栏悬停判断
 		{
