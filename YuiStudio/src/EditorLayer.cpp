@@ -86,6 +86,8 @@ namespace Yuicy {
 
 	void EditorLayer::OnSceneChanged()
 	{
+		m_editorContext.ValidateTilemapState();
+
 		// 场景切换后更新面板上下文
 		m_sceneHierarchyPanel.SetContext(m_editorContext.activeScene);
 		m_propertiesPanel.SetContext(m_editorContext.activeScene);
@@ -100,6 +102,8 @@ namespace Yuicy {
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
+		m_editorContext.ValidateTilemapState();
+
 		m_viewportPanel.OnUpdate(ts);
 		m_dirtyTracker.OnUpdate(ts);
 	}

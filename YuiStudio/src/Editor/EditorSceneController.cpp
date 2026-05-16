@@ -181,6 +181,7 @@ namespace Yuicy {
 		m_context->document.currentScenePath = std::filesystem::path{};
 		m_context->viewport.hoveredEntity = {};
 		m_context->selection.ClearEntitySelection();
+		m_context->ClearTilemapSceneState();
 
 		if (m_dirtyTracker)
 			m_dirtyTracker->ClearSceneDirty();
@@ -231,6 +232,7 @@ namespace Yuicy {
 		m_context->document.currentScenePath = filepath.lexically_normal();
 		m_context->viewport.hoveredEntity = {};
 		m_context->selection.ClearEntitySelection();
+		m_context->ClearTilemapSceneState();
 
 		if (m_dirtyTracker)
 			m_dirtyTracker->ClearSceneDirty();
@@ -467,6 +469,8 @@ namespace Yuicy {
 		m_context->runtime.mode = SceneMode::Play;
 		m_context->runtime.paused = false;
 		m_context->runtime.pendingStepFrames = 0;
+		m_context->EndTilemapBrushStroke();
+		m_context->m_tilemap.ClearHover();
 
 		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
 		auto& viewportState = m_context->viewport;
@@ -487,6 +491,8 @@ namespace Yuicy {
 		m_context->runtime.mode = SceneMode::Simulate;
 		m_context->runtime.paused = false;
 		m_context->runtime.pendingStepFrames = 0;
+		m_context->EndTilemapBrushStroke();
+		m_context->m_tilemap.ClearHover();
 
 		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
 		auto& viewportState = m_context->viewport;
@@ -519,6 +525,8 @@ namespace Yuicy {
 		m_context->runtime.paused = false;
 		m_context->runtime.pendingStepFrames = 0;
 		m_context->runtimeScene = nullptr;
+		m_context->EndTilemapBrushStroke();
+		m_context->m_tilemap.ClearHover();
 
 		m_context->activeScene = m_context->editorScene;
 		auto& viewportState = m_context->viewport;

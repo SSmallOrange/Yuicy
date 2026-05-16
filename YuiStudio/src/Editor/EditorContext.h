@@ -2,8 +2,10 @@
 
 #include "Yuicy/Core/Base.h"
 #include "Yuicy/Core/UUID.h"
+#include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Scene/Scene.h"
 #include "Yuicy/Scene/Entity.h"
+#include "Yuicy/Tilemap/TilemapTypes.h"
 
 #include "EditorSelectionContext.h"
 #include "EditorViewportSettings.h"
@@ -58,6 +60,48 @@ namespace Yuicy {
 		Entity hoveredEntity;
 	};
 
+	enum class TilemapTool
+	{
+		Select = 0,
+		Move,
+		Paint,
+		Erase,
+		BoxFill,
+		FloodFill,
+		Picker
+	};
+
+	// Tilemap 创作工具共享状态
+	struct EditorTilemapState
+	{
+		AssetHandle m_activePalette = 0;
+		AssetHandle m_activeTile = 0;
+		UUID m_activeTilemapEntity = 0;
+		TilemapTool m_activeTool = TilemapTool::Paint;
+		GridPosition m_hoveredCell;
+		bool m_hasHoveredCell = false;
+		bool m_showGridOverlay = true;
+		bool m_isPainting = false;
+
+		void ClearHover()
+		{
+			m_hoveredCell = {};
+			m_hasHoveredCell = false;
+		}
+
+		void EndBrushStroke()
+		{
+			m_isPainting = false;
+		}
+
+		void ClearSceneState()
+		{
+			m_activeTilemapEntity = 0;
+			ClearHover();
+			EndBrushStroke();
+		}
+	};
+
 	// 编辑器实体元数据（不污染运行时 ECS）
 	struct EditorEntityMetadata
 	{
@@ -80,6 +124,7 @@ namespace Yuicy {
 		EditorViewportState     viewport;
 		EditorViewportSettings  viewportSettings;
 		EditorSettings          settings;
+		EditorTilemapState      tilemap;
 
 		// 实体编辑器元数据
 		std::unordered_map<UUID, EditorEntityMetadata> entityMetadata;
@@ -130,6 +175,32 @@ namespace Yuicy {
 		void ClearEntityMetadata()
 		{
 			entityMetadata.clear();
+		}
+
+		void ClearTilemapSceneState()
+		{
+			tilemap.ClearSceneState();
+		}
+
+		void EndTilemapBrushStroke()
+		{
+			tilemap.EndBrushStroke();
+		}
+
+		void ValidateTilemapState()
+		{
+			if (!activeScene)
+			{
+				tilemap.ClearSceneState();
+				return;
+			}
+
+			if (tilemap.m_activeTilemapEntity == 0)
+				return;
+
+			Entity activeTilemapEntity = activeScene->FindEntityByUUID(tilemap.m_activeTilemapEntity);
+			if (!activeTilemapEntity || !activeTilemapEntity.HasComponent<TilemapComponent>())
+				tilemap.ClearSceneState();
 		}
 	};
 
