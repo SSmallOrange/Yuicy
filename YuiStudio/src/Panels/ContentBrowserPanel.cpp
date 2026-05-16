@@ -335,7 +335,7 @@ namespace Yuicy {
 						{
 							if (ImGui::MenuItem("Sprite"))
 							{
-								AssetHandle textureHandle = assetManager ? assetManager->ImportAsset(entryPath) : 0;
+								AssetHandle textureHandle = assetManager ? assetManager->ImportAsset(entryPath) : AssetHandle(0);
 								if (textureHandle != 0)
 									m_assetWorkflow->CreateSpriteFile(entryPath.parent_path(), entryPath.stem().string(), textureHandle);
 							}

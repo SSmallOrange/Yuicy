@@ -27,6 +27,9 @@ namespace Yuicy {
 		void DrawScriptInspector(const AssetMetadata& metadata);
 		void DrawShaderInspector(const AssetMetadata& metadata);
 		void DrawFontInspector(const AssetMetadata& metadata);
+		void DrawSpriteInspector(const AssetMetadata& metadata);
+		void DrawTileInspector(const AssetMetadata& metadata);
+		void DrawTilePaletteInspector(const AssetMetadata& metadata);
 
 	private:
 		EditorContext* m_context = nullptr;
