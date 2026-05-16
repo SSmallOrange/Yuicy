@@ -21,7 +21,9 @@ namespace Yuicy {
 		Texture,	// .png, .jpg, .jpeg
 		Font,       // .ttf, .otf
 		Shader,     // .glsl
-		LuaScript	// .lua
+		LuaScript,	// .lua
+		Sprite,     // .ysprite
+		Tile        // .ytile
 		// ...
 	};
 
@@ -35,6 +37,8 @@ namespace Yuicy {
 			if (assetType == "Font")       return AssetType::Font;
 			if (assetType == "Shader")     return AssetType::Shader;
 			if (assetType == "LuaScript")  return AssetType::LuaScript;
+			if (assetType == "Sprite")     return AssetType::Sprite;
+			if (assetType == "Tile")       return AssetType::Tile;
 
 			return AssetType::None;
 		}
@@ -49,6 +53,8 @@ namespace Yuicy {
 				case AssetType::Font:       return "Font";
 				case AssetType::Shader:     return "Shader";
 				case AssetType::LuaScript:  return "LuaScript";
+				case AssetType::Sprite:     return "Sprite";
+				case AssetType::Tile:       return "Tile";
 			}
 
 			YUICY_CORE_ASSERT(false, "Unknown Asset Type");

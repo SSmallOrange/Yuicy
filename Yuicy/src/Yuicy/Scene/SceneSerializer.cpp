@@ -87,6 +87,77 @@ namespace Yuicy {
 			out << YAML::EndMap;
 		}
 
+		// GridComponent
+		if (entity.HasComponent<GridComponent>())
+		{
+			out << YAML::Key << "GridComponent";
+			out << YAML::BeginMap;
+
+			auto& grid = entity.GetComponent<GridComponent>();
+			out << YAML::Key << "Layout" << YAML::Value << TilemapUtils::GridLayoutToString(grid.m_layout);
+			out << YAML::Key << "CellSize" << YAML::Value << grid.m_cellSize;
+			out << YAML::Key << "CellGap" << YAML::Value << grid.m_cellGap;
+			out << YAML::Key << "CellSwizzle" << YAML::Value << TilemapUtils::GridCellSwizzleToString(grid.m_cellSwizzle);
+
+			out << YAML::EndMap;
+		}
+
+		// TilemapRendererComponent
+		if (entity.HasComponent<TilemapRendererComponent>())
+		{
+			out << YAML::Key << "TilemapRendererComponent";
+			out << YAML::BeginMap;
+
+			auto& renderer = entity.GetComponent<TilemapRendererComponent>();
+			out << YAML::Key << "RenderMode" << YAML::Value << TilemapUtils::TilemapRenderModeToString(renderer.m_mode);
+			out << YAML::Key << "SortingLayer" << YAML::Value << renderer.m_sortingLayer;
+			out << YAML::Key << "SortingOrder" << YAML::Value << renderer.m_sortingOrder;
+			out << YAML::Key << "MaskInteractionEnabled" << YAML::Value << renderer.m_maskInteractionEnabled;
+
+			out << YAML::EndMap;
+		}
+
+		// TilemapComponent
+		if (entity.HasComponent<TilemapComponent>())
+		{
+			out << YAML::Key << "TilemapComponent";
+			out << YAML::BeginMap;
+
+			auto& tilemap = entity.GetComponent<TilemapComponent>();
+			out << YAML::Key << "TileAnchor" << YAML::Value << tilemap.m_tileAnchor;
+			out << YAML::Key << "Color" << YAML::Value << tilemap.m_color;
+			out << YAML::Key << "ChunkSize" << YAML::Value << tilemap.m_chunkSize;
+
+			out << YAML::Key << "Cells";
+			out << YAML::Value << YAML::BeginSeq;
+
+			std::vector<GridPosition> sortedCells;
+			sortedCells.reserve(tilemap.m_cells.size());
+			for (const auto& [position, cell] : tilemap.m_cells)
+				sortedCells.push_back(position);
+
+			std::ranges::sort(sortedCells, [](const GridPosition& a, const GridPosition& b) {
+				return a < b;
+			});
+
+			for (const GridPosition& position : sortedCells)
+			{
+				const TileCell* cell = tilemap.GetTile(position);
+				if (!cell || cell->m_tileHandle == 0)
+					continue;
+
+				out << YAML::BeginMap;
+				out << YAML::Key << "Position" << YAML::Value << YAML::Flow << YAML::BeginSeq << position.m_x << position.m_y << position.m_z << YAML::EndSeq;
+				out << YAML::Key << "TileHandle" << YAML::Value << (uint64_t)cell->m_tileHandle;
+				out << YAML::Key << "Color" << YAML::Value << cell->m_color;
+				out << YAML::Key << "TransformFlags" << YAML::Value << cell->m_transformFlags;
+				out << YAML::EndMap;
+			}
+
+			out << YAML::EndSeq;
+			out << YAML::EndMap;
+		}
+
 		// CameraComponent
 		if (entity.HasComponent<CameraComponent>())
 		{
@@ -296,6 +367,57 @@ namespace Yuicy {
 				sprite.FlipY = spriteRendererComponent["FlipY"].as<bool>(false);
 				sprite.SortingLayer = spriteRendererComponent["SortingLayer"].as<std::string>("Default");
 				sprite.SortingOrder = spriteRendererComponent["SortingOrder"].as<int>(0);
+			}
+
+			// GridComponent
+			if (auto gridComponent = entity["GridComponent"]; gridComponent)
+			{
+				auto& grid = deserializedEntity.AddComponent<GridComponent>();
+				grid.m_layout = TilemapUtils::GridLayoutFromString(gridComponent["Layout"].as<std::string>("Rectangular"));
+				grid.m_cellSize = gridComponent["CellSize"].as<glm::vec2>(glm::vec2(1.0f));
+				grid.m_cellGap = gridComponent["CellGap"].as<glm::vec2>(glm::vec2(0.0f));
+				grid.m_cellSwizzle = TilemapUtils::GridCellSwizzleFromString(gridComponent["CellSwizzle"].as<std::string>("XYZ"));
+			}
+
+			// TilemapRendererComponent
+			if (auto tilemapRendererComponent = entity["TilemapRendererComponent"]; tilemapRendererComponent)
+			{
+				auto& renderer = deserializedEntity.AddComponent<TilemapRendererComponent>();
+				renderer.m_mode = TilemapUtils::TilemapRenderModeFromString(tilemapRendererComponent["RenderMode"].as<std::string>("Chunk"));
+				renderer.m_sortingLayer = tilemapRendererComponent["SortingLayer"].as<std::string>("Default");
+				renderer.m_sortingOrder = tilemapRendererComponent["SortingOrder"].as<int>(0);
+				renderer.m_maskInteractionEnabled = tilemapRendererComponent["MaskInteractionEnabled"].as<bool>(false);
+			}
+
+			// TilemapComponent
+			if (auto tilemapComponent = entity["TilemapComponent"]; tilemapComponent)
+			{
+				auto& tilemap = deserializedEntity.AddComponent<TilemapComponent>();
+				tilemap.m_tileAnchor = tilemapComponent["TileAnchor"].as<glm::vec3>(glm::vec3(0.5f, 0.5f, 0.0f));
+				tilemap.m_color = tilemapComponent["Color"].as<glm::vec4>(glm::vec4(1.0f));
+				tilemap.m_chunkSize = tilemapComponent["ChunkSize"].as<int>(32);
+
+				if (auto cellsNode = tilemapComponent["Cells"]; cellsNode)
+				{
+					for (auto cellNode : cellsNode)
+					{
+						auto positionNode = cellNode["Position"];
+						if (!positionNode || !positionNode.IsSequence() || positionNode.size() < 2)
+							continue;
+
+						GridPosition position;
+						position.m_x = positionNode[0].as<int>(0);
+						position.m_y = positionNode[1].as<int>(0);
+						position.m_z = positionNode.size() > 2 ? positionNode[2].as<int>(0) : 0;
+
+						TileCell cell;
+						cell.m_tileHandle = cellNode["TileHandle"].as<uint64_t>(0);
+						cell.m_color = cellNode["Color"].as<glm::vec4>(glm::vec4(1.0f));
+						cell.m_transformFlags = cellNode["TransformFlags"].as<uint32_t>(0);
+
+						tilemap.SetTile(position, cell);
+					}
+				}
 			}
 
 			// CameraComponent

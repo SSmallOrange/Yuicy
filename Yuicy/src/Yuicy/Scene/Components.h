@@ -10,6 +10,7 @@
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Renderer/SubTexture.h"
 #include "Yuicy/Scene/SceneCamera.h"
+#include "Yuicy/Tilemap/TilemapTypes.h"
 
 #define SOL_ALL_SAFETIES_ON 1
 #include <sol/sol.hpp>
@@ -119,6 +120,88 @@ namespace Yuicy {
 		SpriteRendererComponent(AssetHandle textureHandle)
 			: TextureHandle(textureHandle) {
 		}
+	};
+
+	struct GridComponent
+	{
+		GridLayout m_layout = GridLayout::Rectangular;
+		glm::vec2 m_cellSize = { 1.0f, 1.0f };
+		glm::vec2 m_cellGap = { 0.0f, 0.0f };
+		GridCellSwizzle m_cellSwizzle = GridCellSwizzle::XYZ;
+
+		GridComponent() = default;
+		GridComponent(const GridComponent&) = default;
+	};
+
+	struct TilemapComponent
+	{
+		glm::vec3 m_tileAnchor = { 0.5f, 0.5f, 0.0f };
+		glm::vec4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		int m_chunkSize = 32;
+		std::unordered_map<GridPosition, TileCell, GridPositionHash> m_cells;
+
+		TilemapComponent() = default;
+		TilemapComponent(const TilemapComponent&) = default;
+
+		bool HasTile(const GridPosition& position) const
+		{
+			return m_cells.find(position) != m_cells.end();
+		}
+
+		TileCell* GetTile(const GridPosition& position)
+		{
+			auto it = m_cells.find(position);
+			return it == m_cells.end() ? nullptr : &it->second;
+		}
+
+		const TileCell* GetTile(const GridPosition& position) const
+		{
+			auto it = m_cells.find(position);
+			return it == m_cells.end() ? nullptr : &it->second;
+		}
+
+		void SetTile(const GridPosition& position, AssetHandle tile)
+		{
+			if (tile == 0)
+			{
+				EraseTile(position);
+				return;
+			}
+
+			m_cells[position].m_tileHandle = tile;
+		}
+
+		void SetTile(const GridPosition& position, const TileCell& cell)
+		{
+			if (cell.m_tileHandle == 0)
+			{
+				EraseTile(position);
+				return;
+			}
+
+			m_cells[position] = cell;
+		}
+
+		void EraseTile(const GridPosition& position)
+		{
+			m_cells.erase(position);
+		}
+
+		void ClearAllTiles()
+		{
+			m_cells.clear();
+		}
+	};
+
+	struct TilemapRendererComponent
+	{
+		TilemapRenderMode m_mode = TilemapRenderMode::Chunk;
+		std::string m_sortingLayer = "Default";
+		int m_sortingOrder = 0;
+		bool m_maskInteractionEnabled = false;
+
+		TilemapRendererComponent() = default;
+		TilemapRendererComponent(const TilemapRendererComponent&) = default;
 	};
 
 	struct CameraComponent
