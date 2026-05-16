@@ -100,6 +100,7 @@ namespace Yuicy {
 
 		void RenderScene();
 		void RenderScene(EditorCamera& camera, std::function<bool(entt::entity)> entityFilter = nullptr);
+		void SubmitSceneRenderables(const std::function<bool(entt::entity)>& entityFilter);
 
 	private:
 		entt::registry m_Registry;

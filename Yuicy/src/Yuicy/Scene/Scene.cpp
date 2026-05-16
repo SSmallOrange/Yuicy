@@ -702,85 +702,7 @@ namespace Yuicy {
 			RenderCommand::SetDepthTest(false);
 
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
-
-			struct RenderData
-			{
-				enum class Type { Sprite, Tilemap };
-
-				Type m_renderType = Type::Sprite;
-				glm::mat4 m_transform;
-				SpriteRendererComponent* m_sprite = nullptr;
-				TilemapComponent* m_tilemap = nullptr;
-				TilemapRendererComponent* m_tilemapRenderer = nullptr;
-				GridComponent m_grid;
-				int m_entityId = -1;
-			};
-			std::vector<RenderData> renderQueue;
-
-			auto spriteGroup = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-			auto tilemapGroup = m_Registry.group<TransformComponent>(entt::get<TilemapComponent, TilemapRendererComponent>);
-			renderQueue.reserve(spriteGroup.size() + tilemapGroup.size());
-
-			for (auto entity : spriteGroup)
-			{
-				auto [transform, sprite] = spriteGroup.get<TransformComponent, SpriteRendererComponent>(entity);
-				renderQueue.push_back({ RenderData::Type::Sprite, GetWorldSpaceTransformMatrix({ entity, this }), &sprite, nullptr, nullptr, {}, (int)entity });
-			}
-
-			for (auto entity : tilemapGroup)
-			{
-				auto [transform, tilemap, renderer] = tilemapGroup.get<TransformComponent, TilemapComponent, TilemapRendererComponent>(entity);
-				Entity tilemapEntity = { entity, this };
-				renderQueue.push_back({ RenderData::Type::Tilemap, GetWorldSpaceTransformMatrix(tilemapEntity), nullptr, &tilemap, &renderer, ResolveGridForTilemap(tilemapEntity), (int)entity });
-			}
-
-			const auto& sortingLayers = GetActiveSortingLayers();
-			auto getSortingLayer = [](const RenderData& data) -> const std::string& {
-				return data.m_renderType == RenderData::Type::Sprite ? data.m_sprite->SortingLayer : data.m_tilemapRenderer->m_sortingLayer;
-			};
-			auto getSortingOrder = [](const RenderData& data) {
-				return data.m_renderType == RenderData::Type::Sprite ? data.m_sprite->SortingOrder : data.m_tilemapRenderer->m_sortingOrder;
-			};
-
-			std::ranges::sort(renderQueue, [&sortingLayers, &getSortingLayer, &getSortingOrder](const RenderData& a, const RenderData& b) {
-				int layerA = sortingLayers.GetLayerOrder(getSortingLayer(a));
-				int layerB = sortingLayers.GetLayerOrder(getSortingLayer(b));
-				if (layerA != layerB) return layerA < layerB;
-				int orderA = getSortingOrder(a);
-				int orderB = getSortingOrder(b);
-				if (orderA != orderB) return orderA < orderB;
-				return a.m_entityId < b.m_entityId;
-			});
-
-			for (const auto& data : renderQueue)
-			{
-				if (data.m_renderType == RenderData::Type::Tilemap)
-				{
-					TilemapRenderer2D::DrawTilemap(data.m_transform, data.m_grid, *data.m_tilemap, *data.m_tilemapRenderer, {}, data.m_entityId);
-					continue;
-				}
-
-				const auto& sprite = *data.m_sprite;
-
-				if (sprite.SubTexture)
-				{
-					Renderer2D::DrawSprite(data.m_transform,
-						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.m_entityId);
-				}
-				else if (sprite.TextureHandle != 0)
-				{
-					Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle);
-					if (texture)
-						Renderer2D::DrawSprite(data.m_transform,
-							texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.m_entityId);
-					else
-						Renderer2D::DrawQuad(data.m_transform, sprite.Color, data.m_entityId);
-				}
-				else
-				{
-					Renderer2D::DrawQuad(data.m_transform, sprite.Color, data.m_entityId);
-				}
-			}
+			SubmitSceneRenderables(nullptr);
 
 			Renderer2D::EndScene();
 
@@ -794,7 +716,14 @@ namespace Yuicy {
 		RenderCommand::SetDepthTest(false);
 
 		Renderer2D::BeginScene(camera);
+		SubmitSceneRenderables(entityFilter);
+		Renderer2D::EndScene();
 
+		RenderCommand::SetDepthTest(true);
+	}
+
+	void Scene::SubmitSceneRenderables(const std::function<bool(entt::entity)>& entityFilter)
+	{
 		struct RenderData
 		{
 			enum class Type { Sprite, Tilemap };
@@ -815,7 +744,6 @@ namespace Yuicy {
 
 		for (auto entity : spriteGroup)
 		{
-			// 编辑器过滤
 			if (entityFilter && !entityFilter(entity))
 				continue;
 
@@ -880,10 +808,6 @@ namespace Yuicy {
 				Renderer2D::DrawQuad(data.m_transform, sprite.Color, data.m_entityId);
 			}
 		}
-
-		Renderer2D::EndScene();
-
-		RenderCommand::SetDepthTest(true);
 	}
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)

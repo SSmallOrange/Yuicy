@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <functional>
 
+#include <map>
+#include <ranges>
 #include <string>
 #include <sstream>
 #include <array>
