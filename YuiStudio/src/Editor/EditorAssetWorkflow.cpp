@@ -12,8 +12,74 @@
 
 #include <shellapi.h>
 #include <fstream>
+#include <sstream>
+#include <system_error>
 
 namespace Yuicy {
+
+	namespace {
+
+		std::string ResolveAssetStem(const std::string& name, const std::string& fallbackName)
+		{
+			if (name.empty())
+				return fallbackName;
+
+			std::filesystem::path namePath(name);
+			std::string stem = namePath.stem().string();
+			return stem.empty() ? fallbackName : stem;
+		}
+
+		std::filesystem::path MakeUniqueAssetPath(const std::filesystem::path& directory, const std::string& name,
+			const std::string& extension, const std::string& fallbackName)
+		{
+			const std::string stem = ResolveAssetStem(name, fallbackName);
+
+			for (uint32_t index = 0;; index++)
+			{
+				std::string filename = stem;
+				if (index > 0)
+					filename += " " + std::to_string(index);
+
+				std::filesystem::path filepath = directory / (filename + extension);
+				std::error_code ec;
+				if (!std::filesystem::exists(filepath, ec) && !ec)
+					return filepath;
+			}
+		}
+
+		bool IsValidAssetDirectory(const std::filesystem::path& directory)
+		{
+			std::error_code ec;
+			if (directory.empty() || !std::filesystem::exists(directory, ec) || ec)
+				return false;
+
+			return std::filesystem::is_directory(directory, ec) && !ec;
+		}
+
+		bool WriteTextFile(const std::filesystem::path& filepath, const std::string& content)
+		{
+			std::ofstream file(filepath, std::ios::out | std::ios::trunc);
+			if (!file.is_open())
+			{
+				YUICY_CORE_ERROR("[AssetWorkflow] Failed to create asset file: {}", filepath.string());
+				return false;
+			}
+
+			file << content;
+			file.close();
+
+			if (!file.good())
+			{
+				std::error_code ec;
+				std::filesystem::remove(filepath, ec);
+				YUICY_CORE_ERROR("[AssetWorkflow] Failed to write asset file: {}", filepath.string());
+				return false;
+			}
+
+			return true;
+		}
+
+	}
 
 	void EditorAssetWorkflow::OpenAsset(const std::filesystem::path& filepath)
 	{
@@ -129,6 +195,189 @@ namespace Yuicy {
 			assetManager->ImportAsset(filepath);
 
 		YUICY_CORE_INFO("[AssetWorkflow] Created Lua script: {}", filepath.string());
+		return true;
+	}
+
+	AssetHandle EditorAssetWorkflow::CreateSpriteFile(const std::filesystem::path& directory, const std::string& name, AssetHandle textureHandle)
+	{
+		if (!IsValidAssetDirectory(directory))
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Invalid asset directory for Sprite: {}", directory.string());
+			return 0;
+		}
+
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager)
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Cannot create Sprite without active asset manager.");
+			return 0;
+		}
+
+		std::filesystem::path filepath = MakeUniqueAssetPath(directory, name, ".ysprite", "New Sprite");
+
+		std::ostringstream content;
+		content << "Sprite:\n";
+		content << "  TextureHandle: " << (uint64_t)textureHandle << "\n";
+		content << "  UVMin: [0.0, 0.0]\n";
+		content << "  UVMax: [1.0, 1.0]\n";
+		content << "  Pivot: [0.5, 0.5]\n";
+		content << "  Border: [0.0, 0.0, 0.0, 0.0]\n";
+		content << "  PixelsPerUnit: 100.0\n";
+
+		if (!WriteTextFile(filepath, content.str()))
+			return 0;
+
+		AssetHandle handle = assetManager->ImportAsset(filepath);
+		if (handle == 0)
+		{
+			std::error_code ec;
+			std::filesystem::remove(filepath, ec);
+			YUICY_CORE_ERROR("[AssetWorkflow] Failed to import Sprite asset: {}", filepath.string());
+			return 0;
+		}
+
+		if (m_context)
+		{
+			m_context->selection.selectedAsset = handle;
+			m_context->selection.ClearEntitySelection();
+		}
+
+		YUICY_CORE_INFO("[AssetWorkflow] Created Sprite: {}", filepath.string());
+		return handle;
+	}
+
+	AssetHandle EditorAssetWorkflow::CreateTileFile(const std::filesystem::path& directory, const std::string& name, AssetHandle spriteHandle)
+	{
+		if (!IsValidAssetDirectory(directory))
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Invalid asset directory for Tile: {}", directory.string());
+			return 0;
+		}
+
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager)
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Cannot create Tile without active asset manager.");
+			return 0;
+		}
+
+		std::filesystem::path filepath = MakeUniqueAssetPath(directory, name, ".ytile", "New Tile");
+
+		std::ostringstream content;
+		content << "Tile:\n";
+		content << "  SpriteHandle: " << (uint64_t)spriteHandle << "\n";
+		content << "  Color: [1.0, 1.0, 1.0, 1.0]\n";
+		content << "  ColliderType: None\n";
+		content << "  Flags: 0\n";
+
+		if (!WriteTextFile(filepath, content.str()))
+			return 0;
+
+		AssetHandle handle = assetManager->ImportAsset(filepath);
+		if (handle == 0)
+		{
+			std::error_code ec;
+			std::filesystem::remove(filepath, ec);
+			YUICY_CORE_ERROR("[AssetWorkflow] Failed to import Tile asset: {}", filepath.string());
+			return 0;
+		}
+
+		if (m_context)
+		{
+			m_context->selection.selectedAsset = handle;
+			m_context->selection.ClearEntitySelection();
+		}
+
+		YUICY_CORE_INFO("[AssetWorkflow] Created Tile: {}", filepath.string());
+		return handle;
+	}
+
+	AssetHandle EditorAssetWorkflow::CreateTilePaletteFile(const std::filesystem::path& directory, const std::string& name)
+	{
+		if (!IsValidAssetDirectory(directory))
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Invalid asset directory for Tile Palette: {}", directory.string());
+			return 0;
+		}
+
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager)
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Cannot create Tile Palette without active asset manager.");
+			return 0;
+		}
+
+		std::filesystem::path filepath = MakeUniqueAssetPath(directory, name, ".ypalette", "New Palette");
+		std::string paletteName = filepath.stem().string();
+
+		std::ostringstream content;
+		content << "TilePalette:\n";
+		content << "  Name: " << paletteName << "\n";
+		content << "  Layout: Rectangular\n";
+		content << "  CellSize: [1.0, 1.0]\n";
+		content << "  CellGap: [0.0, 0.0]\n";
+		content << "  Cells: []\n";
+
+		if (!WriteTextFile(filepath, content.str()))
+			return 0;
+
+		AssetHandle handle = assetManager->ImportAsset(filepath);
+		if (handle == 0)
+		{
+			std::error_code ec;
+			std::filesystem::remove(filepath, ec);
+			YUICY_CORE_ERROR("[AssetWorkflow] Failed to import Tile Palette asset: {}", filepath.string());
+			return 0;
+		}
+
+		if (m_context)
+		{
+			m_context->selection.selectedAsset = handle;
+			m_context->selection.ClearEntitySelection();
+		}
+
+		YUICY_CORE_INFO("[AssetWorkflow] Created Tile Palette: {}", filepath.string());
+		return handle;
+	}
+
+	bool EditorAssetWorkflow::CreateSpriteAndTileFromTexture(const std::filesystem::path& texturePath,
+		const std::filesystem::path& outputDirectory)
+	{
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager)
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Cannot create Tile from Texture without active asset manager.");
+			return false;
+		}
+
+		if (assetManager->GetAssetTypeFromPath(texturePath) != AssetType::Texture)
+		{
+			YUICY_CORE_WARN("[AssetWorkflow] Path is not a Texture asset: {}", texturePath.string());
+			return false;
+		}
+
+		AssetHandle textureHandle = assetManager->ImportAsset(texturePath);
+		if (textureHandle == 0)
+		{
+			YUICY_CORE_ERROR("[AssetWorkflow] Failed to import source Texture: {}", texturePath.string());
+			return false;
+		}
+
+		std::filesystem::path targetDirectory = outputDirectory.empty() ? texturePath.parent_path() : outputDirectory;
+		std::string baseName = texturePath.stem().string();
+
+		AssetHandle spriteHandle = CreateSpriteFile(targetDirectory, baseName, textureHandle);
+		if (spriteHandle == 0)
+			return false;
+
+		AssetHandle tileHandle = CreateTileFile(targetDirectory, baseName, spriteHandle);
+		if (tileHandle == 0)
+		{
+			std::filesystem::path spritePath = assetManager->GetFileSystemPath(spriteHandle);
+			DeletePath(spritePath);
+			return false;
+		}
+
 		return true;
 	}
 

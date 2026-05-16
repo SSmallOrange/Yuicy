@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Yuicy/Asset/Asset.h"
+
 #include <filesystem>
 #include <string>
 
@@ -27,6 +29,10 @@ namespace Yuicy {
 		bool CreateFolder(const std::filesystem::path& parentDir, const std::string& name);
 		bool CreateSceneFile(const std::filesystem::path& directory, const std::string& name);
 		bool CreateLuaScriptFile(const std::filesystem::path& directory, const std::string& name);
+		AssetHandle CreateSpriteFile(const std::filesystem::path& directory, const std::string& name, AssetHandle textureHandle = 0);
+		AssetHandle CreateTileFile(const std::filesystem::path& directory, const std::string& name, AssetHandle spriteHandle = 0);
+		AssetHandle CreateTilePaletteFile(const std::filesystem::path& directory, const std::string& name);
+		bool CreateSpriteAndTileFromTexture(const std::filesystem::path& texturePath, const std::filesystem::path& outputDirectory);
 		bool DeletePath(const std::filesystem::path& path);
 		bool RenamePath(const std::filesystem::path& oldPath, const std::string& newName);
 		void CopyPathToClipboard(const std::filesystem::path& path);

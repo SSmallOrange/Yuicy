@@ -147,6 +147,34 @@ namespace Yuicy {
 					m_assetWorkflow->CreateLuaScriptFile(m_currentDirectory, "NewScript");
 			}
 
+			if (ImGui::BeginMenu("Create"))
+			{
+				if (ImGui::BeginMenu("2D"))
+				{
+					if (ImGui::MenuItem("Sprite"))
+					{
+						if (m_assetWorkflow)
+							m_assetWorkflow->CreateSpriteFile(m_currentDirectory, "New Sprite");
+					}
+
+					if (ImGui::MenuItem("Tile"))
+					{
+						if (m_assetWorkflow)
+							m_assetWorkflow->CreateTileFile(m_currentDirectory, "New Tile");
+					}
+
+					if (ImGui::MenuItem("Tile Palette"))
+					{
+						if (m_assetWorkflow)
+							m_assetWorkflow->CreateTilePaletteFile(m_currentDirectory, "New Palette");
+					}
+
+					ImGui::EndMenu();
+				}
+
+				ImGui::EndMenu();
+			}
+
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Refresh"))
@@ -296,10 +324,33 @@ namespace Yuicy {
 				if (!isDirectory)
 				{
 					ImGui::Separator();
+					AssetType assetType = AssetType::None;
+					auto assetManager = Project::GetEditorAssetManager();
+					if (assetManager)
+						assetType = assetManager->GetAssetTypeFromPath(entryPath);
+
+					if (assetType == AssetType::Texture && m_assetWorkflow)
+					{
+						if (ImGui::BeginMenu("Create"))
+						{
+							if (ImGui::MenuItem("Sprite"))
+							{
+								AssetHandle textureHandle = assetManager ? assetManager->ImportAsset(entryPath) : 0;
+								if (textureHandle != 0)
+									m_assetWorkflow->CreateSpriteFile(entryPath.parent_path(), entryPath.stem().string(), textureHandle);
+							}
+
+							if (ImGui::MenuItem("Sprite + Tile"))
+								m_assetWorkflow->CreateSpriteAndTileFromTexture(entryPath, entryPath.parent_path());
+
+							ImGui::EndMenu();
+						}
+
+						ImGui::Separator();
+					}
 
 					if (ImGui::MenuItem("Reimport"))
 					{
-						auto assetManager = Project::GetEditorAssetManager();
 						if (assetManager)
 						{
 							AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
@@ -534,8 +585,18 @@ namespace Yuicy {
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(comboWidth);
 
-		const char* filterLabels[] = { "All Types", "Scene", "Texture", "Font", "Shader", "LuaScript" };
-		const AssetType filterTypes[] = { AssetType::None, AssetType::Scene, AssetType::Texture, AssetType::Font, AssetType::Shader, AssetType::LuaScript };
+		const char* filterLabels[] = { "All Types", "Scene", "Texture", "Font", "Shader", "LuaScript", "Sprite", "Tile", "Tile Palette" };
+		const AssetType filterTypes[] = {
+			AssetType::None,
+			AssetType::Scene,
+			AssetType::Texture,
+			AssetType::Font,
+			AssetType::Shader,
+			AssetType::LuaScript,
+			AssetType::Sprite,
+			AssetType::Tile,
+			AssetType::TilePalette
+		};
 		constexpr int filterCount = sizeof(filterTypes) / sizeof(filterTypes[0]);
 
 		int currentFilterIndex = 0;
