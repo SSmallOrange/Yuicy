@@ -40,6 +40,8 @@ namespace Yuicy {
 
 		// 自定义标题栏
 		float UIDrawTitlebar();
+		void CreateEmptyEntityFromMenu();
+		void CreateRectangularTilemapFromMenu();
 
 		// 场景切换后刷新面板
 		void OnSceneChanged();

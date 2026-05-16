@@ -729,53 +729,50 @@ namespace Yuicy {
 			enum class Type { Sprite, Tilemap };
 
 			Type m_renderType = Type::Sprite;
+			entt::entity m_entity = entt::null;
 			glm::mat4 m_transform;
-			SpriteRendererComponent* m_sprite = nullptr;
-			TilemapComponent* m_tilemap = nullptr;
-			TilemapRendererComponent* m_tilemapRenderer = nullptr;
 			GridComponent m_grid;
+			int m_sortingLayerOrder = 0;
+			int m_sortingOrder = 0;
 			int m_entityId = -1;
 		};
 		std::vector<RenderData> renderQueue;
 
-		auto spriteGroup = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-		auto tilemapGroup = m_Registry.group<TransformComponent>(entt::get<TilemapComponent, TilemapRendererComponent>);
-		renderQueue.reserve(spriteGroup.size() + tilemapGroup.size());
-
-		for (auto entity : spriteGroup)
-		{
-			if (entityFilter && !entityFilter(entity))
-				continue;
-
-			auto [transform, sprite] = spriteGroup.get<TransformComponent, SpriteRendererComponent>(entity);
-			renderQueue.push_back({ RenderData::Type::Sprite, GetWorldSpaceTransformMatrix({ entity, this }), &sprite, nullptr, nullptr, {}, (int)entity });
-		}
-
-		for (auto entity : tilemapGroup)
-		{
-			if (entityFilter && !entityFilter(entity))
-				continue;
-
-			auto [transform, tilemap, renderer] = tilemapGroup.get<TransformComponent, TilemapComponent, TilemapRendererComponent>(entity);
-			Entity tilemapEntity = { entity, this };
-			renderQueue.push_back({ RenderData::Type::Tilemap, GetWorldSpaceTransformMatrix(tilemapEntity), nullptr, &tilemap, &renderer, ResolveGridForTilemap(tilemapEntity), (int)entity });
-		}
+		auto spriteView = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+		auto tilemapView = m_Registry.view<TransformComponent, TilemapComponent, TilemapRendererComponent>();
 
 		const auto& sortingLayers = GetActiveSortingLayers();
-		auto getSortingLayer = [](const RenderData& data) -> const std::string& {
-			return data.m_renderType == RenderData::Type::Sprite ? data.m_sprite->SortingLayer : data.m_tilemapRenderer->m_sortingLayer;
-		};
-		auto getSortingOrder = [](const RenderData& data) {
-			return data.m_renderType == RenderData::Type::Sprite ? data.m_sprite->SortingOrder : data.m_tilemapRenderer->m_sortingOrder;
-		};
 
-		std::ranges::sort(renderQueue, [&sortingLayers, &getSortingLayer, &getSortingOrder](const RenderData& a, const RenderData& b) {
-			int layerA = sortingLayers.GetLayerOrder(getSortingLayer(a));
-			int layerB = sortingLayers.GetLayerOrder(getSortingLayer(b));
-			if (layerA != layerB) return layerA < layerB;
-			int orderA = getSortingOrder(a);
-			int orderB = getSortingOrder(b);
-			if (orderA != orderB) return orderA < orderB;
+		for (auto entity : spriteView)
+		{
+			if (entityFilter && !entityFilter(entity))
+				continue;
+
+			const auto& sprite = spriteView.get<SpriteRendererComponent>(entity);
+			int sortingLayerOrder = sortingLayers.GetLayerOrder(sprite.SortingLayer);
+			renderQueue.push_back({RenderData::Type::Sprite, entity, GetWorldSpaceTransformMatrix({ entity, this }),
+				{}, sortingLayerOrder, sprite.SortingOrder, (int)entity
+			});
+		}
+
+		for (auto entity : tilemapView)
+		{
+			if (entityFilter && !entityFilter(entity))
+				continue;
+
+			const auto& renderer = tilemapView.get<TilemapRendererComponent>(entity);
+			Entity tilemapEntity = { entity, this };
+			int sortingLayerOrder = sortingLayers.GetLayerOrder(renderer.m_sortingLayer);
+			renderQueue.push_back({RenderData::Type::Tilemap, entity, GetWorldSpaceTransformMatrix(tilemapEntity),
+				ResolveGridForTilemap(tilemapEntity), sortingLayerOrder, renderer.m_sortingOrder, (int)entity
+			});
+		}
+
+		std::ranges::sort(renderQueue, [](const RenderData& a, const RenderData& b) {
+			if (a.m_sortingLayerOrder != b.m_sortingLayerOrder)
+				return a.m_sortingLayerOrder < b.m_sortingLayerOrder;
+			if (a.m_sortingOrder != b.m_sortingOrder)
+				return a.m_sortingOrder < b.m_sortingOrder;
 			return a.m_entityId < b.m_entityId;
 		});
 
@@ -783,11 +780,19 @@ namespace Yuicy {
 		{
 			if (data.m_renderType == RenderData::Type::Tilemap)
 			{
-				TilemapRenderer2D::DrawTilemap(data.m_transform, data.m_grid, *data.m_tilemap, *data.m_tilemapRenderer, {}, data.m_entityId);
+				if (!m_Registry.valid(data.m_entity) || !m_Registry.all_of<TilemapComponent, TilemapRendererComponent>(data.m_entity))
+					continue;
+
+				auto& tilemap = m_Registry.get<TilemapComponent>(data.m_entity);
+				auto& renderer = m_Registry.get<TilemapRendererComponent>(data.m_entity);
+				TilemapRenderer2D::DrawTilemap(data.m_transform, data.m_grid, tilemap, renderer, {}, data.m_entityId);
 				continue;
 			}
 
-			const auto& sprite = *data.m_sprite;
+			if (!m_Registry.valid(data.m_entity) || !m_Registry.all_of<SpriteRendererComponent>(data.m_entity))
+				continue;
+
+			const auto& sprite = m_Registry.get<SpriteRendererComponent>(data.m_entity);
 
 			if (sprite.SubTexture)
 			{

@@ -27,6 +27,9 @@ namespace Yuicy {
 		std::optional<BoxCollider2DComponent> boxCollider;
 		std::optional<CircleCollider2DComponent> circleCollider;
 		std::optional<AnimationComponent> animation;
+		std::optional<GridComponent> grid;
+		std::optional<TilemapComponent> tilemap;
+		std::optional<TilemapRendererComponent> tilemapRenderer;
 
 		static EntitySnapshot Capture(Entity entity)
 		{
@@ -67,6 +70,12 @@ namespace Yuicy {
 			}
 			if (entity.HasComponent<AnimationComponent>())
 				snapshot.animation = entity.GetComponent<AnimationComponent>();
+			if (entity.HasComponent<GridComponent>())
+				snapshot.grid = entity.GetComponent<GridComponent>();
+			if (entity.HasComponent<TilemapComponent>())
+				snapshot.tilemap = entity.GetComponent<TilemapComponent>();
+			if (entity.HasComponent<TilemapRendererComponent>())
+				snapshot.tilemapRenderer = entity.GetComponent<TilemapRendererComponent>();
 
 			return snapshot;
 		}
@@ -102,6 +111,9 @@ namespace Yuicy {
 			if (boxCollider)	entity.AddComponent<BoxCollider2DComponent>(*boxCollider);
 			if (circleCollider)	entity.AddComponent<CircleCollider2DComponent>(*circleCollider);
 			if (animation)		entity.AddComponent<AnimationComponent>(*animation);
+			if (grid)			entity.AddComponent<GridComponent>(*grid);
+			if (tilemap)		entity.AddComponent<TilemapComponent>(*tilemap);
+			if (tilemapRenderer) entity.AddComponent<TilemapRendererComponent>(*tilemapRenderer);
 
 			return entity;
 		}
