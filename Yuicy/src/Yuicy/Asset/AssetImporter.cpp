@@ -7,11 +7,15 @@
 #include "Yuicy/Scene/SceneSerializer.h"
 #include "Yuicy/Sprite/SpriteAsset.h"
 #include "Yuicy/Tilemap/Tile.h"
+#include "Yuicy/Tilemap/TilePalette.h"
 #include "Yuicy/Utilities/YAMLSerializationHelpers.h"
 
 #include "yaml-cpp/yaml.h"
 
+#include <algorithm>
 #include <fstream>
+#include <utility>
+#include <vector>
 
 namespace Yuicy {
 	// TextureAssetSerializer
@@ -171,6 +175,101 @@ namespace Yuicy {
 		}
 	};
 
+	// TilePaletteAssetSerializer
+	class TilePaletteAssetSerializer : public AssetSerializer
+	{
+	public:
+		virtual void Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset) const override
+		{
+			auto palette = std::dynamic_pointer_cast<TilePaletteAsset>(asset);
+			if (!palette)
+				return;
+
+			std::vector<std::pair<GridPosition, AssetHandle>> sortedCells;
+			sortedCells.reserve(palette->m_cells.size());
+			for (const auto& [position, tileHandle] : palette->m_cells)
+				sortedCells.emplace_back(position, tileHandle);
+
+			std::sort(sortedCells.begin(), sortedCells.end(), [](const auto& lhs, const auto& rhs)
+			{
+				return lhs.first < rhs.first;
+			});
+
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "TilePalette";
+			out << YAML::BeginMap;
+			out << YAML::Key << "Name" << YAML::Value << palette->m_name;
+			out << YAML::Key << "Layout" << YAML::Value << TilemapUtils::GridLayoutToString(palette->m_layout);
+			out << YAML::Key << "CellSize" << YAML::Value << palette->m_cellSize;
+			out << YAML::Key << "CellGap" << YAML::Value << palette->m_cellGap;
+			out << YAML::Key << "Cells" << YAML::Value << YAML::BeginSeq;
+
+			for (const auto& [position, tileHandle] : sortedCells)
+			{
+				out << YAML::BeginMap;
+				out << YAML::Key << "Position" << YAML::Value << YAML::Flow
+					<< YAML::BeginSeq << position.m_x << position.m_y << position.m_z << YAML::EndSeq;
+				out << YAML::Key << "TileHandle" << YAML::Value << (uint64_t)tileHandle;
+				out << YAML::EndMap;
+			}
+
+			out << YAML::EndSeq;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+
+			auto absolutePath = Project::GetActiveAssetDirectory() / metadata.filePath;
+			std::ofstream fout(absolutePath);
+			fout << out.c_str();
+		}
+
+		virtual bool TryLoadData(const AssetMetadata& metadata, Ref<Asset>& asset) const override
+		{
+			auto absolutePath = Project::GetActiveAssetDirectory() / metadata.filePath;
+			std::ifstream stream(absolutePath);
+			if (!stream.is_open())
+			{
+				YUICY_CORE_ERROR("TilePaletteAssetSerializer: Failed to open tile palette asset: {0}", absolutePath.string());
+				return false;
+			}
+
+			std::stringstream strStream;
+			strStream << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(strStream.str());
+			YAML::Node paletteNode = data["TilePalette"] ? data["TilePalette"] : data;
+
+			auto palette = CreateRef<TilePaletteAsset>();
+			palette->handle = metadata.handle;
+			palette->m_name = paletteNode["Name"].as<std::string>(metadata.filePath.stem().string());
+			palette->m_layout = TilemapUtils::GridLayoutFromString(paletteNode["Layout"].as<std::string>("Rectangular"));
+			palette->m_cellSize = paletteNode["CellSize"].as<glm::vec2>(glm::vec2(1.0f));
+			palette->m_cellGap = paletteNode["CellGap"].as<glm::vec2>(glm::vec2(0.0f));
+
+			if (auto cells = paletteNode["Cells"]; cells && cells.IsSequence())
+			{
+				for (const auto& cellNode : cells)
+				{
+					auto positionNode = cellNode["Position"];
+					if (!positionNode || !positionNode.IsSequence() || positionNode.size() < 2)
+						continue;
+
+					GridPosition position;
+					position.m_x = positionNode[0].as<int>();
+					position.m_y = positionNode[1].as<int>();
+					position.m_z = positionNode.size() > 2 ? positionNode[2].as<int>() : 0;
+
+					AssetHandle tileHandle = cellNode["TileHandle"].as<uint64_t>(0);
+					if (tileHandle != 0)
+						palette->SetTile(position, tileHandle);
+				}
+			}
+
+			asset = palette;
+			return true;
+		}
+	};
+
 	// FontAssetSerializer
 	class FontAssetSerializer : public AssetSerializer
 	{
@@ -242,6 +341,7 @@ namespace Yuicy {
 		s_serializers[AssetType::LuaScript] = CreateScope<LuaScriptAssetSerializer>();
 		s_serializers[AssetType::Sprite]    = CreateScope<SpriteAssetSerializer>();
 		s_serializers[AssetType::Tile]      = CreateScope<TileAssetSerializer>();
+		s_serializers[AssetType::TilePalette] = CreateScope<TilePaletteAssetSerializer>();
 	}
 
 	void AssetImporter::Serialize(const AssetMetadata& metadata, const Ref<Asset>& asset)

@@ -27,8 +27,9 @@ namespace Yuicy {
 		{ ".lua",  AssetType::LuaScript },
 
 		// Tilemap assets
-		{ ".ysprite", AssetType::Sprite },
-		{ ".ytile",   AssetType::Tile },
+		{ ".ysprite",  AssetType::Sprite },
+		{ ".ytile",    AssetType::Tile },
+		{ ".ypalette", AssetType::TilePalette },
 	};
 
 }

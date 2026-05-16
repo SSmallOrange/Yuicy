@@ -39,6 +39,16 @@
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/AssetTypes.h"
 
+// Sprite
+#include "Yuicy/Sprite/SpriteAsset.h"
+
+// Tilemap
+#include "Yuicy/Tilemap/TilemapTypes.h"
+#include "Yuicy/Tilemap/GridLayoutUtility.h"
+#include "Yuicy/Tilemap/Tile.h"
+#include "Yuicy/Tilemap/TilePalette.h"
+#include "Yuicy/Tilemap/TilemapRenderer2D.h"
+
 // Project
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Project/ProjectSerializer.h"

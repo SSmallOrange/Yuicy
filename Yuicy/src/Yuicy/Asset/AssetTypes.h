@@ -23,7 +23,8 @@ namespace Yuicy {
 		Shader,     // .glsl
 		LuaScript,	// .lua
 		Sprite,     // .ysprite
-		Tile        // .ytile
+		Tile,       // .ytile
+		TilePalette // .ypalette
 		// ...
 	};
 
@@ -39,6 +40,7 @@ namespace Yuicy {
 			if (assetType == "LuaScript")  return AssetType::LuaScript;
 			if (assetType == "Sprite")     return AssetType::Sprite;
 			if (assetType == "Tile")       return AssetType::Tile;
+			if (assetType == "TilePalette") return AssetType::TilePalette;
 
 			return AssetType::None;
 		}
@@ -55,6 +57,7 @@ namespace Yuicy {
 				case AssetType::LuaScript:  return "LuaScript";
 				case AssetType::Sprite:     return "Sprite";
 				case AssetType::Tile:       return "Tile";
+				case AssetType::TilePalette: return "TilePalette";
 			}
 
 			YUICY_CORE_ASSERT(false, "Unknown Asset Type");
