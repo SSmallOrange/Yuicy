@@ -1,15 +1,24 @@
 #pragma once
 
+#include "Editor/Commands/PaintTileBatchCommand.h"
+
 #include "Yuicy/Core/Timestep.h"
+
+#include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace Yuicy {
 
 	struct EditorContext;
+	struct TilemapComponent;
+	enum class TilemapTool;
 	class EditorCommandHistory;
 	class EditorDirtyTracker;
 	class EditorCamera;
 	class Entity;
 	class Event;
+	class KeyPressedEvent;
 	class MouseButtonPressedEvent;
 	class MouseButtonReleasedEvent;
 	class MouseMovedEvent;
@@ -45,14 +54,25 @@ namespace Yuicy {
 		bool CanUseActiveTool() const;
 		bool RequiresActiveTile() const;
 		bool IsStrokeTool() const;
+		bool IsPaintStrokeTool() const;
 		Entity GetActiveTilemapEntity() const;
 		Entity GetGridEntity(Entity tilemapEntity) const;
 		bool UpdateHoveredCell();
+		void BeginStroke();
+		bool ApplyStrokeAtHoveredCell();
+		void RecordTileChange(Entity tilemapEntity, const GridPosition& position, const std::optional<TileCell>& after);
+		void RemoveStrokeChange(size_t index);
+		std::optional<TileCell> GetCellSnapshot(const TilemapComponent& tilemap, const GridPosition& position) const;
+		bool TileCellsEqual(const TileCell& lhs, const TileCell& rhs) const;
+		bool TileCellOptionalsEqual(const std::optional<TileCell>& lhs, const std::optional<TileCell>& rhs) const;
+		void ApplyTileCell(TilemapComponent& tilemap, const GridPosition& position, const std::optional<TileCell>& cell);
 
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 		bool OnMouseButtonReleased(MouseButtonReleasedEvent& e);
 		bool OnMouseMoved(MouseMovedEvent& e);
-		void EndStroke();
+		bool OnKeyPressed(KeyPressedEvent& e);
+		void FinishStroke(bool submitCommand);
+		void ClearStrokeState();
 
 	private:
 		EditorContext* m_context = nullptr;
@@ -61,6 +81,11 @@ namespace Yuicy {
 		EditorCamera* m_editorCamera = nullptr;
 
 		bool m_consumingStroke = false;
+		UUID m_strokeTilemapEntity = 0;
+		TilemapTool m_strokeTool = {};
+		AssetHandle m_strokeTile = 0;
+		std::vector<TileChange> m_strokeChanges;
+		std::unordered_map<GridPosition, size_t, GridPositionHash> m_strokeChangeIndices;
 	};
 
 }
