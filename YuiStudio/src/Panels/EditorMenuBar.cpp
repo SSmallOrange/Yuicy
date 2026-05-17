@@ -14,7 +14,7 @@ namespace Yuicy {
 
 	namespace {
 
-		constexpr const char* s_menuLabels[] = { "File", "GameObject" };
+		constexpr const char* s_menuLabels[] = { "File", "GameObject", "Window" };
 
 	}
 
@@ -36,6 +36,7 @@ namespace Yuicy {
 
 		DrawFileMenu();
 		DrawGameObjectMenu();
+		DrawWindowMenu();
 
 		ImGui::EndMenuBar();
 	}
@@ -92,6 +93,30 @@ namespace Yuicy {
 					CreateRectangularTilemap();
 
 				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMenu();
+	}
+
+	void EditorMenuBar::DrawWindowMenu()
+	{
+		if (!ImGui::BeginMenu("Window"))
+			return;
+
+		if (ImGui::BeginMenu("2D"))
+		{
+			if (m_tilePalettePanelOpen)
+			{
+				ImGui::MenuItem("Tile Palette", nullptr, m_tilePalettePanelOpen);
+			}
+			else
+			{
+				ImGui::BeginDisabled();
+				ImGui::MenuItem("Tile Palette");
+				ImGui::EndDisabled();
 			}
 
 			ImGui::EndMenu();

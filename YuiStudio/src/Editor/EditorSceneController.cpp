@@ -470,7 +470,7 @@ namespace Yuicy {
 		m_context->runtime.paused = false;
 		m_context->runtime.pendingStepFrames = 0;
 		m_context->EndTilemapBrushStroke();
-		m_context->m_tilemap.ClearHover();
+		m_context->tilemap.ClearHover();
 
 		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
 		auto& viewportState = m_context->viewport;
@@ -492,7 +492,7 @@ namespace Yuicy {
 		m_context->runtime.paused = false;
 		m_context->runtime.pendingStepFrames = 0;
 		m_context->EndTilemapBrushStroke();
-		m_context->m_tilemap.ClearHover();
+		m_context->tilemap.ClearHover();
 
 		m_context->runtimeScene = Scene::Copy(m_context->editorScene);
 		auto& viewportState = m_context->viewport;
@@ -526,7 +526,7 @@ namespace Yuicy {
 		m_context->runtime.pendingStepFrames = 0;
 		m_context->runtimeScene = nullptr;
 		m_context->EndTilemapBrushStroke();
-		m_context->m_tilemap.ClearHover();
+		m_context->tilemap.ClearHover();
 
 		m_context->activeScene = m_context->editorScene;
 		auto& viewportState = m_context->viewport;

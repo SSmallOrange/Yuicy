@@ -69,9 +69,14 @@ namespace Yuicy {
 		m_assetInspectorPanel.SetContext(&m_editorContext);
 		m_assetInspectorPanel.SetAssetWorkflow(&m_assetWorkflow);
 
+		m_tilePalettePanel.SetContext(&m_editorContext);
+		m_tilePalettePanel.SetAssetWorkflow(&m_assetWorkflow);
+		m_tilePalettePanel.SetDirtyTracker(&m_dirtyTracker);
+
 		m_menuBar.SetContext(&m_editorContext);
 		m_menuBar.SetSceneController(&m_sceneController);
 		m_menuBar.SetCommandHistory(&m_commandHistory);
+		m_menuBar.SetTilePalettePanelOpen(&m_showTilePalettePanel);
 
 		// 创建默认场景
 		m_sceneController.NewScene();
@@ -173,6 +178,9 @@ namespace Yuicy {
 
 		// Asset Inspector
 		m_assetInspectorPanel.OnImGuiRender();
+
+		// Tile Palette
+		m_tilePalettePanel.OnImGuiRender(&m_showTilePalettePanel);
 
 		// SceneController 模态框
 		m_sceneController.OnImGuiRender();

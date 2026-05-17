@@ -16,6 +16,7 @@
 #include "Panels/PropertiesPanel.h"
 #include "Panels/AssetInspectorPanel.h"
 #include "Panels/EditorMenuBar.h"
+#include "Panels/TilePalettePanel.h"
 
 namespace Yuicy {
 
@@ -73,8 +74,10 @@ namespace Yuicy {
 		ContentBrowserPanel m_contentBrowserPanel;
 		AssetInspectorPanel m_assetInspectorPanel;
 		EditorMenuBar m_menuBar;
+		TilePalettePanel m_tilePalettePanel;
 
 		bool m_titleBarHovered = false;
+		bool m_showTilePalettePanel = false;
 
 		// 窗口关闭控制
 		bool m_showCloseConfirmDialog = false;

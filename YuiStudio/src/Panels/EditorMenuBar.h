@@ -12,6 +12,7 @@ namespace Yuicy {
 		void SetContext(EditorContext* context) { m_context = context; }
 		void SetSceneController(EditorSceneController* sceneController) { m_sceneController = sceneController; }
 		void SetCommandHistory(EditorCommandHistory* commandHistory) { m_commandHistory = commandHistory; }
+		void SetTilePalettePanelOpen(bool* open) { m_tilePalettePanelOpen = open; }
 
 		float GetPreferredWidth(float maxWidth) const;
 		void OnImGuiRender();
@@ -19,6 +20,7 @@ namespace Yuicy {
 	private:
 		void DrawFileMenu();
 		void DrawGameObjectMenu();
+		void DrawWindowMenu();
 
 		void CreateEmptyEntity();
 		void CreateRectangularTilemap();
@@ -27,6 +29,7 @@ namespace Yuicy {
 		EditorContext* m_context = nullptr;
 		EditorSceneController* m_sceneController = nullptr;
 		EditorCommandHistory* m_commandHistory = nullptr;
+		bool* m_tilePalettePanelOpen = nullptr;
 	};
 
 }
