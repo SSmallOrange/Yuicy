@@ -37,11 +37,14 @@ namespace Yuicy {
 		m_pauseStopIcon     = EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Pause-Start.png", { 200, 200, 50, 255 });
 		m_stepIcon			= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Viewport/Step-Forward.png",  { 50, 200, 200, 255 });
 		m_overlayIcon		= EditorIconUtils::LoadIconTexture("assets/textures/Editor/Generic/Gear.png",   { 160, 160, 160, 255 });
+	
+		m_tilemapEditorTool.Init(m_context, m_commandHistory, m_dirtyTracker, &m_editorCamera);
 	}
 
 	void EditorViewportPanel::OnSceneChanged()
 	{
 		m_gizmoType = -1;
+		m_tilemapEditorTool.OnSceneChanged();
 	}
 
 	void EditorViewportPanel::OnUpdate(Timestep ts)
@@ -72,12 +75,18 @@ namespace Yuicy {
 		// 编辑器相机更新（悬停或正在 MMB 平移时允许更新）
 		if (m_context->runtime.mode != SceneMode::Play && (viewportState.hovered || m_editorCamera.IsPanning()))
 			m_editorCamera.OnUpdate(ts);
+		
+		// Tile Editor 更新
+		m_tilemapEditorTool.OnUpdate(ts);
 
 		// 执行渲染管线
 		m_renderPipeline->Execute(ts, m_editorCamera);
 
 		// 框选逻辑更新
-		UpdateBoxSelection();
+		if (m_tilemapEditorTool.ShouldBlockViewportEditing())
+			CancelBoxSelection();
+		else
+			UpdateBoxSelection();
 
 		// 鼠标拾取
 		UpdateMousePicking();
@@ -140,6 +149,8 @@ namespace Yuicy {
 		uint64_t textureID = m_renderPipeline->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ viewportState.size.x, viewportState.size.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
+		m_tilemapEditorTool.OnImGuiRender();
+
 		// 接收从 ContentBrowser 拖拽过来的场景文件
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -174,6 +185,9 @@ namespace Yuicy {
 	void EditorViewportPanel::OnImGuiDrawGizmos()
 	{
 		if (!m_context->runtime.IsEditing())
+			return;
+
+		if (m_tilemapEditorTool.ShouldBlockViewportEditing())
 			return;
 
 		// 从共享选择上下文解析选中实体
@@ -466,6 +480,9 @@ namespace Yuicy {
 		if (m_context->viewport.hovered)
 			m_editorCamera.OnEvent(e);
 
+		if (m_tilemapEditorTool.OnEvent(e))
+			return;
+
 		EventDispatcher dispatcher(e);
 
 		dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& event)
@@ -481,6 +498,9 @@ namespace Yuicy {
 
 	bool EditorViewportPanel::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 	{
+		if (m_tilemapEditorTool.ShouldBlockViewportEditing())
+			return true;
+
 		if (e.GetMouseButton() == Mouse::ButtonLeft)
 		{
 			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
@@ -579,8 +599,21 @@ namespace Yuicy {
 		return false;
 	}
 
+	void EditorViewportPanel::CancelBoxSelection()
+	{
+		m_boxSelectPending = false;
+		m_isBoxSelecting = false;
+		m_boxSelectSnapshot.clear();
+	}
+
 	void EditorViewportPanel::UpdateBoxSelection()
 	{
+		if (m_tilemapEditorTool.ShouldBlockViewportEditing())
+		{
+			CancelBoxSelection();
+			return;
+		}
+
 		if (!m_boxSelectPending && !m_isBoxSelecting)
 			return;
 

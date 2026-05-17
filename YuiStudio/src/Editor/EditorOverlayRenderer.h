@@ -37,6 +37,7 @@ namespace Yuicy {
 		void DrawCameraBounds(const Ref<Scene>& scene);
 		void DrawCameraSafeArea(const Ref<Scene>& scene);
 		void DrawColliders(const Ref<Scene>& scene);
+		void DrawTilemapBrushPreview(const Ref<Scene>& scene);
 
 		void DrawEntityPivot(const Ref<Scene>& scene);
 		void DrawRelationshipLines(const Ref<Scene>& scene);

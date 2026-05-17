@@ -7,6 +7,8 @@
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Scene/Components.h"
 
+#include "Editor/Tilemap/TilemapEditorTool.h"
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <vector>
@@ -34,11 +36,11 @@ namespace Yuicy {
 
 		void Init();
 
-		void SetContext(EditorContext* context) { m_context = context; }
+		void SetContext(EditorContext* context) { m_context = context; m_tilemapEditorTool.SetContext(context); }
 		void SetRenderPipeline(EditorRenderPipeline* pipeline) { m_renderPipeline = pipeline; }
 		void SetSceneController(EditorSceneController* controller) { m_sceneController = controller; }
-		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; }
-		void SetCommandHistory(EditorCommandHistory* history) { m_commandHistory = history; }
+		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; m_tilemapEditorTool.SetDirtyTracker(tracker); }
+		void SetCommandHistory(EditorCommandHistory* history) { m_commandHistory = history; m_tilemapEditorTool.SetCommandHistory(history); }
 
 		void OnUpdate(Timestep ts);
 		void OnImGuiRender();
@@ -60,6 +62,7 @@ namespace Yuicy {
 		void UpdateMousePicking();
 
 		// 框选
+		void CancelBoxSelection();
 		void UpdateBoxSelection();
 		void DrawBoxSelectionOverlay();
 
@@ -78,6 +81,9 @@ namespace Yuicy {
 
 		// 编辑器相机
 		EditorCamera m_editorCamera;
+
+		// Tile Draw
+		TilemapEditorTool m_tilemapEditorTool;
 
 		// Gizmo
 		int m_gizmoType = -1;

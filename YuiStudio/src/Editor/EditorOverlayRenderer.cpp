@@ -6,6 +6,7 @@
 #include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Tilemap/GridLayoutUtility.h"
 
 #include <cmath>
 
@@ -35,6 +36,8 @@ namespace Yuicy {
 	{
 		if (!m_context || !scene)
 			return;
+
+		DrawTilemapBrushPreview(scene);
 
 		auto& settings = m_context->viewportSettings;
 		if (!settings.showOverlay)
@@ -313,6 +316,51 @@ namespace Yuicy {
 				Renderer2D::DrawCircle(boundsTransform, cc.IsTrigger ? triggerColor : colliderColor);
 			}
 		}
+	}
+
+	void EditorOverlayRenderer::DrawTilemapBrushPreview(const Ref<Scene>& scene)
+	{
+		auto& tilemapState = m_context->tilemap;
+		if (!tilemapState.m_showGridOverlay || !tilemapState.m_hasHoveredCell || tilemapState.m_activeTilemapEntity == 0)
+			return;
+
+		Entity tilemapEntity = scene->FindEntityByUUID(tilemapState.m_activeTilemapEntity);
+		if (!tilemapEntity || !tilemapEntity.HasComponent<TilemapComponent>())
+			return;
+
+		Entity gridEntity = tilemapEntity.HasComponent<GridComponent>() ? tilemapEntity : tilemapEntity.GetParent();
+		if (!gridEntity || !gridEntity.HasComponent<GridComponent>())
+			return;
+
+		const GridComponent& grid = gridEntity.GetComponent<GridComponent>();
+		if (grid.m_layout != GridLayout::Rectangular)
+			return;
+
+		glm::vec2 cellOrigin = GridLayoutUtility::CellToLocal(tilemapState.m_hoveredCell, grid);
+		glm::vec2 cellCenter = cellOrigin + grid.m_cellSize * 0.5f;
+		glm::mat4 gridWorldTransform = scene->GetWorldSpaceTransformMatrix(gridEntity);
+		glm::mat4 brushTransform = gridWorldTransform
+			* glm::translate(glm::mat4(1.0f), glm::vec3(cellCenter, 0.06f))
+			* glm::scale(glm::mat4(1.0f), glm::vec3(grid.m_cellSize, 1.0f));
+
+		glm::vec4 color = { 0.2f, 0.75f, 1.0f, 0.95f };
+		switch (tilemapState.m_activeTool)
+		{
+		case TilemapTool::Erase:
+			color = { 1.0f, 0.25f, 0.2f, 0.95f };
+			break;
+		case TilemapTool::Picker:
+			color = { 1.0f, 0.85f, 0.15f, 0.95f };
+			break;
+		case TilemapTool::BoxFill:
+		case TilemapTool::FloodFill:
+			color = { 0.35f, 0.9f, 0.45f, 0.95f };
+			break;
+		default:
+			break;
+		}
+
+		Renderer2D::DrawRect(brushTransform, color);
 	}
 
 	void EditorOverlayRenderer::DrawSelectionBounds(const Ref<Scene>& scene)
