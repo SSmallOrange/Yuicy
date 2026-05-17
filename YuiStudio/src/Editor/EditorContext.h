@@ -82,6 +82,10 @@ namespace Yuicy {
 		bool m_hasHoveredCell = false;
 		bool m_showGridOverlay = true;
 		bool m_isPainting = false;
+		GridPosition m_boxFillStartCell;
+		GridPosition m_boxFillEndCell;
+		bool m_hasBoxFillPreview = false;
+		bool m_boxFillErases = false;
 
 		void ClearHover()
 		{
@@ -92,6 +96,23 @@ namespace Yuicy {
 		void EndBrushStroke()
 		{
 			m_isPainting = false;
+			ClearBoxFillPreview();
+		}
+
+		void SetBoxFillPreview(const GridPosition& startCell, const GridPosition& endCell, bool erases)
+		{
+			m_boxFillStartCell = startCell;
+			m_boxFillEndCell = endCell;
+			m_hasBoxFillPreview = true;
+			m_boxFillErases = erases;
+		}
+
+		void ClearBoxFillPreview()
+		{
+			m_boxFillStartCell = {};
+			m_boxFillEndCell = {};
+			m_hasBoxFillPreview = false;
+			m_boxFillErases = false;
 		}
 
 		void ClearSceneState()

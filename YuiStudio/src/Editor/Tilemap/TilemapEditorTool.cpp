@@ -17,6 +17,8 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Tilemap/GridLayoutUtility.h"
 
+#include <algorithm>
+
 namespace Yuicy {
 
 	void TilemapEditorTool::Init(EditorContext* context, EditorCommandHistory* commandHistory, EditorDirtyTracker* dirtyTracker, EditorCamera* editorCamera)
@@ -55,7 +57,7 @@ namespace Yuicy {
 
 		if (m_consumingStroke)
 		{
-			bool mouseHeld = Input::IsMouseButtonPressed(Mouse::ButtonLeft);
+			bool mouseHeld = Input::IsMouseButtonPressed(m_strokeMouseButton);
 			if (!mouseHeld || (!m_context->viewport.focused && !m_context->viewport.hovered))
 			{
 				FinishStroke(true);
@@ -63,7 +65,12 @@ namespace Yuicy {
 			}
 
 			if (hasHoveredCell && !IsCameraNavigationInput())
-				ApplyStrokeAtHoveredCell();
+			{
+				if (m_strokeTool == TilemapTool::BoxFill)
+					UpdateBoxFillPreview();
+				else
+					ApplyStrokeAtHoveredCell();
+			}
 		}
 	}
 
@@ -203,7 +210,7 @@ namespace Yuicy {
 
 	bool TilemapEditorTool::IsStrokeTool() const
 	{
-		return IsPaintStrokeTool();
+		return IsPaintStrokeTool() || IsBoxFillStrokeTool();
 	}
 
 	bool TilemapEditorTool::IsPaintStrokeTool() const
@@ -219,6 +226,11 @@ namespace Yuicy {
 		default:
 			return false;
 		}
+	}
+
+	bool TilemapEditorTool::IsBoxFillStrokeTool() const
+	{
+		return m_context && m_context->tilemap.m_activeTool == TilemapTool::BoxFill;
 	}
 
 	Entity TilemapEditorTool::GetActiveTilemapEntity() const
@@ -304,7 +316,7 @@ namespace Yuicy {
 		return true;
 	}
 
-	void TilemapEditorTool::BeginStroke()
+	void TilemapEditorTool::BeginStroke(MouseCode mouseButton)
 	{
 		ClearStrokeState();
 
@@ -312,7 +324,13 @@ namespace Yuicy {
 		m_strokeTilemapEntity = m_context->tilemap.m_activeTilemapEntity;
 		m_strokeTool = m_context->tilemap.m_activeTool;
 		m_strokeTile = m_context->tilemap.m_activeTile;
+		m_strokeStartCell = m_context->tilemap.m_hoveredCell;
+		m_strokeMouseButton = mouseButton;
+		m_strokeErases = m_strokeTool == TilemapTool::Erase || mouseButton == Mouse::ButtonRight;
 		m_context->tilemap.m_isPainting = true;
+
+		if (m_strokeTool == TilemapTool::BoxFill)
+			UpdateBoxFillPreview();
 	}
 
 	bool TilemapEditorTool::ApplyStrokeAtHoveredCell()
@@ -325,7 +343,11 @@ namespace Yuicy {
 			return false;
 
 		std::optional<TileCell> after;
-		if (m_strokeTool == TilemapTool::Paint)
+		if (m_strokeErases)
+		{
+			after = std::nullopt;
+		}
+		else if (m_strokeTool == TilemapTool::Paint)
 		{
 			if (m_strokeTile == 0)
 				return false;
@@ -345,6 +367,60 @@ namespace Yuicy {
 
 		RecordTileChange(tilemapEntity, m_context->tilemap.m_hoveredCell, after);
 		return true;
+	}
+
+	bool TilemapEditorTool::ApplyBoxFillAtHoveredCell()
+	{
+		if (!m_context || !m_context->activeScene)
+			return false;
+
+		Entity tilemapEntity = m_context->activeScene->FindEntityByUUID(m_strokeTilemapEntity);
+		if (!tilemapEntity || !tilemapEntity.HasComponent<TilemapComponent>())
+			return false;
+
+		std::optional<TileCell> after;
+		if (!m_strokeErases)
+		{
+			if (m_strokeTile == 0)
+				return false;
+
+			TileCell cell;
+			cell.m_tileHandle = m_strokeTile;
+			after = cell;
+		}
+
+		GridPosition endCell = m_context->tilemap.m_hasBoxFillPreview
+			? m_context->tilemap.m_boxFillEndCell
+			: m_strokeStartCell;
+
+		RecordRectangleChanges(tilemapEntity, m_strokeStartCell, endCell, after);
+		return true;
+	}
+
+	bool TilemapEditorTool::PickTileAtHoveredCell()
+	{
+		if (!m_context || !m_context->activeScene || !m_context->tilemap.m_hasHoveredCell)
+			return false;
+
+		Entity tilemapEntity = GetActiveTilemapEntity();
+		if (!tilemapEntity || !tilemapEntity.HasComponent<TilemapComponent>())
+			return false;
+
+		const auto& tilemap = tilemapEntity.GetComponent<TilemapComponent>();
+		if (const TileCell* cell = tilemap.GetTile(m_context->tilemap.m_hoveredCell))
+			m_context->tilemap.m_activeTile = cell->m_tileHandle;
+		else
+			m_context->tilemap.m_activeTile = 0;
+
+		return true;
+	}
+
+	void TilemapEditorTool::UpdateBoxFillPreview()
+	{
+		if (!m_context || m_strokeTool != TilemapTool::BoxFill || !m_context->tilemap.m_hasHoveredCell)
+			return;
+
+		m_context->tilemap.SetBoxFillPreview(m_strokeStartCell, m_context->tilemap.m_hoveredCell, m_strokeErases);
 	}
 
 	void TilemapEditorTool::RecordTileChange(Entity tilemapEntity, const GridPosition& position, const std::optional<TileCell>& after)
@@ -374,6 +450,25 @@ namespace Yuicy {
 
 		if (TileCellOptionalsEqual(change.before, change.after))
 			RemoveStrokeChange(index);
+	}
+
+	void TilemapEditorTool::RecordRectangleChanges(Entity tilemapEntity, const GridPosition& startCell, const GridPosition& endCell, const std::optional<TileCell>& after)
+	{
+		int minX = std::min(startCell.m_x, endCell.m_x);
+		int maxX = std::max(startCell.m_x, endCell.m_x);
+		int minY = std::min(startCell.m_y, endCell.m_y);
+		int maxY = std::max(startCell.m_y, endCell.m_y);
+		int minZ = std::min(startCell.m_z, endCell.m_z);
+		int maxZ = std::max(startCell.m_z, endCell.m_z);
+
+		for (int z = minZ; z <= maxZ; z++)
+		{
+			for (int y = minY; y <= maxY; y++)
+			{
+				for (int x = minX; x <= maxX; x++)
+					RecordTileChange(tilemapEntity, { x, y, z }, after);
+			}
+		}
 	}
 
 	void TilemapEditorTool::RemoveStrokeChange(size_t index)
@@ -432,7 +527,8 @@ namespace Yuicy {
 
 	bool TilemapEditorTool::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 	{
-		if (e.GetMouseButton() != Mouse::ButtonLeft)
+		MouseCode mouseButton = e.GetMouseButton();
+		if (mouseButton != Mouse::ButtonLeft && mouseButton != Mouse::ButtonRight)
 			return false;
 
 		if (!CanUseActiveTool() || IsCameraNavigationInput())
@@ -441,10 +537,22 @@ namespace Yuicy {
 		if (!m_context->tilemap.m_hasHoveredCell && !UpdateHoveredCell())
 			return false;
 
+		if (m_context->tilemap.m_activeTool == TilemapTool::Picker)
+		{
+			if (mouseButton != Mouse::ButtonLeft)
+				return false;
+
+			return PickTileAtHoveredCell();
+		}
+
 		if (IsStrokeTool())
 		{
-			BeginStroke();
-			ApplyStrokeAtHoveredCell();
+			BeginStroke(mouseButton);
+
+			if (m_strokeTool == TilemapTool::BoxFill)
+				UpdateBoxFillPreview();
+			else
+				ApplyStrokeAtHoveredCell();
 		}
 
 		return true;
@@ -452,7 +560,7 @@ namespace Yuicy {
 
 	bool TilemapEditorTool::OnMouseButtonReleased(MouseButtonReleasedEvent& e)
 	{
-		if (e.GetMouseButton() != Mouse::ButtonLeft || !m_consumingStroke)
+		if (!m_consumingStroke || e.GetMouseButton() != m_strokeMouseButton)
 			return false;
 
 		FinishStroke(true);
@@ -467,7 +575,12 @@ namespace Yuicy {
 			return false;
 
 		if (UpdateHoveredCell())
-			ApplyStrokeAtHoveredCell();
+		{
+			if (m_strokeTool == TilemapTool::BoxFill)
+				UpdateBoxFillPreview();
+			else
+				ApplyStrokeAtHoveredCell();
+		}
 
 		return true;
 	}
@@ -491,6 +604,10 @@ namespace Yuicy {
 
 		Scene* scene = m_context ? m_context->activeScene.get() : nullptr;
 		UUID tilemapEntityUUID = m_strokeTilemapEntity;
+
+		if (submitCommand && m_strokeTool == TilemapTool::BoxFill)
+			ApplyBoxFillAtHoveredCell();
+
 		std::vector<TileChange> changes = std::move(m_strokeChanges);
 
 		ClearStrokeState();
@@ -514,6 +631,9 @@ namespace Yuicy {
 		m_strokeTilemapEntity = 0;
 		m_strokeTool = TilemapTool::Select;
 		m_strokeTile = 0;
+		m_strokeStartCell = {};
+		m_strokeMouseButton = Mouse::ButtonLeft;
+		m_strokeErases = false;
 		m_strokeChanges.clear();
 		m_strokeChangeIndices.clear();
 		if (m_context)

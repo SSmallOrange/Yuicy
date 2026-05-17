@@ -8,6 +8,7 @@
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Tilemap/GridLayoutUtility.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace Yuicy {
@@ -321,7 +322,10 @@ namespace Yuicy {
 	void EditorOverlayRenderer::DrawTilemapBrushPreview(const Ref<Scene>& scene)
 	{
 		auto& tilemapState = m_context->tilemap;
-		if (!tilemapState.m_showGridOverlay || !tilemapState.m_hasHoveredCell || tilemapState.m_activeTilemapEntity == 0)
+		if (!tilemapState.m_showGridOverlay || tilemapState.m_activeTilemapEntity == 0)
+			return;
+
+		if (!tilemapState.m_hasHoveredCell && !tilemapState.m_hasBoxFillPreview)
 			return;
 
 		Entity tilemapEntity = scene->FindEntityByUUID(tilemapState.m_activeTilemapEntity);
@@ -335,13 +339,6 @@ namespace Yuicy {
 		const GridComponent& grid = gridEntity.GetComponent<GridComponent>();
 		if (grid.m_layout != GridLayout::Rectangular)
 			return;
-
-		glm::vec2 cellOrigin = GridLayoutUtility::CellToLocal(tilemapState.m_hoveredCell, grid);
-		glm::vec2 cellCenter = cellOrigin + grid.m_cellSize * 0.5f;
-		glm::mat4 gridWorldTransform = scene->GetWorldSpaceTransformMatrix(gridEntity);
-		glm::mat4 brushTransform = gridWorldTransform
-			* glm::translate(glm::mat4(1.0f), glm::vec3(cellCenter, 0.06f))
-			* glm::scale(glm::mat4(1.0f), glm::vec3(grid.m_cellSize, 1.0f));
 
 		glm::vec4 color = { 0.2f, 0.75f, 1.0f, 0.95f };
 		switch (tilemapState.m_activeTool)
@@ -360,7 +357,42 @@ namespace Yuicy {
 			break;
 		}
 
-		Renderer2D::DrawRect(brushTransform, color);
+		if (tilemapState.m_hasBoxFillPreview && tilemapState.m_boxFillErases)
+			color = { 1.0f, 0.25f, 0.2f, 0.95f };
+
+		glm::mat4 gridWorldTransform = scene->GetWorldSpaceTransformMatrix(gridEntity);
+		auto drawCellPreview = [&](const GridPosition& cell)
+		{
+			glm::vec2 cellOrigin = GridLayoutUtility::CellToLocal(cell, grid);
+			glm::vec2 cellCenter = cellOrigin + grid.m_cellSize * 0.5f;
+			glm::mat4 brushTransform = gridWorldTransform
+				* glm::translate(glm::mat4(1.0f), glm::vec3(cellCenter, 0.06f))
+				* glm::scale(glm::mat4(1.0f), glm::vec3(grid.m_cellSize, 1.0f));
+
+			Renderer2D::DrawRect(brushTransform, color);
+		};
+
+		if (!tilemapState.m_hasBoxFillPreview)
+		{
+			drawCellPreview(tilemapState.m_hoveredCell);
+			return;
+		}
+
+		int minX = std::min(tilemapState.m_boxFillStartCell.m_x, tilemapState.m_boxFillEndCell.m_x);
+		int maxX = std::max(tilemapState.m_boxFillStartCell.m_x, tilemapState.m_boxFillEndCell.m_x);
+		int minY = std::min(tilemapState.m_boxFillStartCell.m_y, tilemapState.m_boxFillEndCell.m_y);
+		int maxY = std::max(tilemapState.m_boxFillStartCell.m_y, tilemapState.m_boxFillEndCell.m_y);
+		int minZ = std::min(tilemapState.m_boxFillStartCell.m_z, tilemapState.m_boxFillEndCell.m_z);
+		int maxZ = std::max(tilemapState.m_boxFillStartCell.m_z, tilemapState.m_boxFillEndCell.m_z);
+
+		for (int z = minZ; z <= maxZ; z++)
+		{
+			for (int y = minY; y <= maxY; y++)
+			{
+				for (int x = minX; x <= maxX; x++)
+					drawCellPreview({ x, y, z });
+			}
+		}
 	}
 
 	void EditorOverlayRenderer::DrawSelectionBounds(const Ref<Scene>& scene)

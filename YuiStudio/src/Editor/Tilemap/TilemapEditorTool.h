@@ -2,6 +2,7 @@
 
 #include "Editor/Commands/PaintTileBatchCommand.h"
 
+#include "Yuicy/Core/MouseCodes.h"
 #include "Yuicy/Core/Timestep.h"
 
 #include <optional>
@@ -55,12 +56,17 @@ namespace Yuicy {
 		bool RequiresActiveTile() const;
 		bool IsStrokeTool() const;
 		bool IsPaintStrokeTool() const;
+		bool IsBoxFillStrokeTool() const;
 		Entity GetActiveTilemapEntity() const;
 		Entity GetGridEntity(Entity tilemapEntity) const;
 		bool UpdateHoveredCell();
-		void BeginStroke();
+		void BeginStroke(MouseCode mouseButton);
 		bool ApplyStrokeAtHoveredCell();
+		bool ApplyBoxFillAtHoveredCell();
+		bool PickTileAtHoveredCell();
+		void UpdateBoxFillPreview();
 		void RecordTileChange(Entity tilemapEntity, const GridPosition& position, const std::optional<TileCell>& after);
+		void RecordRectangleChanges(Entity tilemapEntity, const GridPosition& startCell, const GridPosition& endCell, const std::optional<TileCell>& after);
 		void RemoveStrokeChange(size_t index);
 		std::optional<TileCell> GetCellSnapshot(const TilemapComponent& tilemap, const GridPosition& position) const;
 		bool TileCellsEqual(const TileCell& lhs, const TileCell& rhs) const;
@@ -84,6 +90,9 @@ namespace Yuicy {
 		UUID m_strokeTilemapEntity = 0;
 		TilemapTool m_strokeTool = {};
 		AssetHandle m_strokeTile = 0;
+		GridPosition m_strokeStartCell;
+		MouseCode m_strokeMouseButton = Mouse::ButtonLeft;
+		bool m_strokeErases = false;
 		std::vector<TileChange> m_strokeChanges;
 		std::unordered_map<GridPosition, size_t, GridPositionHash> m_strokeChangeIndices;
 	};
