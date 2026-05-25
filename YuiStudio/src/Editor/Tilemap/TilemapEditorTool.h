@@ -52,6 +52,8 @@ namespace Yuicy {
 		bool HasValidActiveTilemap() const;
 		bool HasUsableGrid() const;
 		bool HasActiveTile() const;
+		bool IsTileHandleValid(AssetHandle tileHandle) const;
+		void ValidateActiveTile();
 		bool CanUseActiveTool() const;
 		bool RequiresActiveTile() const;
 		bool IsStrokeTool() const;

@@ -88,6 +88,25 @@ namespace Yuicy {
 			return filename.empty() ? FormatHandle(handle) : filename;
 		}
 
+		bool IsAssetUsable(const Ref<EditorAssetManager>& assetManager, AssetHandle handle, AssetType expectedType)
+		{
+			if (!assetManager || handle == 0 || !assetManager->IsAssetHandleValid(handle))
+				return false;
+
+			if (assetManager->GetAssetType(handle) != expectedType)
+				return false;
+
+			if (assetManager->IsMemoryAsset(handle))
+				return true;
+
+			const AssetMetadata& metadata = assetManager->GetMetadata(handle);
+			if (!metadata.IsValid())
+				return false;
+
+			std::error_code ec;
+			return std::filesystem::exists(EditorAssetManager::GetFileSystemPath(metadata), ec) && !ec;
+		}
+
 		std::vector<AssetEntry> CollectAssetsWithType(const Ref<EditorAssetManager>& assetManager, AssetType assetType)
 		{
 			std::vector<AssetEntry> entries;
@@ -190,6 +209,8 @@ namespace Yuicy {
 			return;
 		}
 
+		ValidateActiveAssets();
+
 		DrawPaletteSelector();
 		ImGui::Separator();
 
@@ -221,14 +242,6 @@ namespace Yuicy {
 	{
 		auto assetManager = Project::GetEditorAssetManager();
 		auto& tilemapState = m_context->tilemap;
-
-		if (tilemapState.m_activePalette != 0
-			&& (!assetManager->IsAssetHandleValid(tilemapState.m_activePalette)
-				|| assetManager->GetAssetType(tilemapState.m_activePalette) != AssetType::TilePalette))
-		{
-			tilemapState.m_activePalette = 0;
-			tilemapState.m_activeTile = 0;
-		}
 
 		std::string currentLabel = GetAssetLabel(assetManager, tilemapState.m_activePalette, AssetType::TilePalette);
 		if (ImGui::BeginCombo("Palette", currentLabel.c_str()))
@@ -346,6 +359,9 @@ namespace Yuicy {
 
 		if (tilemapState.m_activeTilemapEntity == 0 && ActiveToolNeedsTarget())
 			ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.25f, 1.0f), "No Active Target. Current tool is unavailable.");
+
+		if (tilemapState.m_activeTile == 0 && ActiveToolNeedsTile())
+			ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.25f, 1.0f), "No valid Active Tile. Current tool is unavailable.");
 	}
 
 	void TilePalettePanel::DrawToolButtons()
@@ -413,6 +429,45 @@ namespace Yuicy {
 		}
 	}
 
+	bool TilePalettePanel::ActiveToolNeedsTile() const
+	{
+		if (!m_context)
+			return false;
+
+		switch (m_context->tilemap.m_activeTool)
+		{
+		case TilemapTool::Paint:
+		case TilemapTool::BoxFill:
+		case TilemapTool::FloodFill:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	void TilePalettePanel::ValidateActiveAssets()
+	{
+		if (!m_context)
+			return;
+
+		auto assetManager = Project::GetEditorAssetManager();
+		auto& tilemapState = m_context->tilemap;
+
+		if (tilemapState.m_activePalette != 0
+			&& !IsAssetUsable(assetManager, tilemapState.m_activePalette, AssetType::TilePalette))
+		{
+			m_dirtyPalettes.erase(tilemapState.m_activePalette);
+			tilemapState.m_activePalette = 0;
+			tilemapState.m_activeTile = 0;
+		}
+
+		if (tilemapState.m_activeTile != 0
+			&& !IsAssetUsable(assetManager, tilemapState.m_activeTile, AssetType::Tile))
+		{
+			tilemapState.m_activeTile = 0;
+		}
+	}
+
 	void TilePalettePanel::DrawPaletteGrid()
 	{
 		auto assetManager = Project::GetEditorAssetManager();
@@ -476,7 +531,8 @@ namespace Yuicy {
 		auto assetManager = Project::GetEditorAssetManager();
 		AssetHandle tileHandle = palette ? palette->GetTile(position) : AssetHandle(0);
 		bool hasTile = tileHandle != 0;
-		bool selected = hasTile && m_context && m_context->tilemap.m_activeTile == tileHandle;
+		bool tileValid = IsAssetUsable(assetManager, tileHandle, AssetType::Tile);
+		bool selected = tileValid && m_context && m_context->tilemap.m_activeTile == tileHandle;
 
 		ImGui::PushID(position.m_x);
 		ImGui::PushID(position.m_y);
@@ -492,14 +548,16 @@ namespace Yuicy {
 		}
 		else if (hasTile)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.22f, 0.42f, 0.28f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_Button,
+				tileValid ? ImVec4{ 0.22f, 0.42f, 0.28f, 1.0f } : ImVec4{ 0.55f, 0.16f, 0.16f, 1.0f });
 		}
 
-		ImGui::Button(hasTile ? "Tile" : "", ImVec2{ s_paletteCellSize, s_paletteCellSize });
+		const char* cellLabel = tileValid ? "Tile" : (hasTile ? "!" : "");
+		ImGui::Button(cellLabel, ImVec2{ s_paletteCellSize, s_paletteCellSize });
 		bool cellHovered = ImGui::IsItemHovered();
 
 		if (palette && ImGui::IsItemClicked(ImGuiMouseButton_Left))
-			m_context->tilemap.m_activeTile = hasTile ? tileHandle : AssetHandle(0);
+			m_context->tilemap.m_activeTile = tileValid ? tileHandle : AssetHandle(0);
 
 		if (palette && ImGui::BeginDragDropTarget())
 		{
@@ -526,7 +584,11 @@ namespace Yuicy {
 		if (hasTile && cellHovered)
 		{
 			ImGui::BeginTooltip();
-			ImGui::Text("Tile: %s", GetAssetLabel(assetManager, tileHandle, AssetType::Tile).c_str());
+			if (tileValid)
+				ImGui::Text("Tile: %s", GetAssetLabel(assetManager, tileHandle, AssetType::Tile).c_str());
+			else
+				ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "Missing Tile: %s",
+					GetAssetLabel(assetManager, tileHandle, AssetType::Tile).c_str());
 			ImGui::EndTooltip();
 		}
 
@@ -546,6 +608,9 @@ namespace Yuicy {
 	void TilePalettePanel::SetPaletteCell(const Ref<TilePaletteAsset>& palette, const GridPosition& position, AssetHandle tileHandle)
 	{
 		if (!palette || tileHandle == 0 || !m_context)
+			return;
+
+		if (!IsAssetUsable(Project::GetEditorAssetManager(), tileHandle, AssetType::Tile))
 			return;
 
 		palette->SetTile(position, tileHandle);

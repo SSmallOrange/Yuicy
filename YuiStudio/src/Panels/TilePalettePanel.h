@@ -38,6 +38,8 @@ namespace Yuicy {
 		void DrawActiveTilePreview();
 		Entity GetSelectedTilemapEntity() const;
 		bool ActiveToolNeedsTarget() const;
+		bool ActiveToolNeedsTile() const;
+		void ValidateActiveAssets();
 
 		void CreateNewPalette();
 		bool SaveActivePalette();

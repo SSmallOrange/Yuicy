@@ -163,6 +163,11 @@ namespace Yuicy {
 				ImVec2{ uvMin.x, uvMax.y }, ImVec2{ uvMax.x, uvMin.y });
 		}
 
+		void DrawMissingPreview(const char* label)
+		{
+			ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x, 48.0f));
+		}
+
 		Ref<Texture2D> GetTextureFromSprite(const Ref<SpriteAsset>& sprite)
 		{
 			if (!sprite || sprite->m_textureHandle == 0)
@@ -620,9 +625,14 @@ namespace Yuicy {
 		}
 
 		if (sprite)
+		{
 			DrawTexturePreview(GetTextureFromSprite(sprite), sprite->m_uvMin, sprite->m_uvMax);
+		}
 		else
+		{
+			DrawMissingPreview("Missing Sprite");
 			ImGui::TextColored(s_missingColor, "Tile sprite is missing.");
+		}
 	}
 
 	void AssetInspectorPanel::DrawTilePaletteInspector(const AssetMetadata& metadata)

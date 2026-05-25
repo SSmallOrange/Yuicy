@@ -12,12 +12,15 @@
 #include "Yuicy/Events/Event.h"
 #include "Yuicy/Events/KeyEvent.h"
 #include "Yuicy/Events/MouseEvent.h"
+#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Tilemap/GridLayoutUtility.h"
 
 #include <algorithm>
+#include <filesystem>
 
 namespace Yuicy {
 
@@ -45,6 +48,7 @@ namespace Yuicy {
 			return;
 
 		m_context->ValidateTilemapState();
+		ValidateActiveTile();
 
 		if (!CanUseActiveTool())
 		{
@@ -87,6 +91,8 @@ namespace Yuicy {
 	{
 		if (e.Handled)
 			return false;
+
+		ValidateActiveTile();
 
 		if (!CanUseActiveTool() && !m_consumingStroke)
 			return false;
@@ -169,7 +175,36 @@ namespace Yuicy {
 
 	bool TilemapEditorTool::HasActiveTile() const
 	{
-		return m_context && m_context->tilemap.m_activeTile != 0;
+		return m_context && IsTileHandleValid(m_context->tilemap.m_activeTile);
+	}
+
+	bool TilemapEditorTool::IsTileHandleValid(AssetHandle tileHandle) const
+	{
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager || tileHandle == 0 || !assetManager->IsAssetHandleValid(tileHandle))
+			return false;
+
+		if (assetManager->GetAssetType(tileHandle) != AssetType::Tile)
+			return false;
+
+		if (assetManager->IsMemoryAsset(tileHandle))
+			return true;
+
+		const AssetMetadata& metadata = assetManager->GetMetadata(tileHandle);
+		if (!metadata.IsValid())
+			return false;
+
+		std::error_code ec;
+		return std::filesystem::exists(EditorAssetManager::GetFileSystemPath(metadata), ec) && !ec;
+	}
+
+	void TilemapEditorTool::ValidateActiveTile()
+	{
+		if (!m_context || m_context->tilemap.m_activeTile == 0)
+			return;
+
+		if (!IsTileHandleValid(m_context->tilemap.m_activeTile))
+			m_context->tilemap.m_activeTile = 0;
 	}
 
 	bool TilemapEditorTool::CanUseActiveTool() const
@@ -349,7 +384,7 @@ namespace Yuicy {
 		}
 		else if (m_strokeTool == TilemapTool::Paint)
 		{
-			if (m_strokeTile == 0)
+			if (!IsTileHandleValid(m_strokeTile))
 				return false;
 
 			TileCell cell;
@@ -381,7 +416,7 @@ namespace Yuicy {
 		std::optional<TileCell> after;
 		if (!m_strokeErases)
 		{
-			if (m_strokeTile == 0)
+			if (!IsTileHandleValid(m_strokeTile))
 				return false;
 
 			TileCell cell;
@@ -407,10 +442,15 @@ namespace Yuicy {
 			return false;
 
 		const auto& tilemap = tilemapEntity.GetComponent<TilemapComponent>();
-		if (const TileCell* cell = tilemap.GetTile(m_context->tilemap.m_hoveredCell))
+		if (const TileCell* cell = tilemap.GetTile(m_context->tilemap.m_hoveredCell);
+			cell && IsTileHandleValid(cell->m_tileHandle))
+		{
 			m_context->tilemap.m_activeTile = cell->m_tileHandle;
+		}
 		else
+		{
 			m_context->tilemap.m_activeTile = 0;
+		}
 
 		return true;
 	}
