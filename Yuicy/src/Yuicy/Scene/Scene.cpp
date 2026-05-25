@@ -85,6 +85,12 @@ namespace Yuicy {
 		}
 	}
 
+	static void ResetTilemapColliderRuntimeData(TilemapCollider2DComponent& collider)
+	{
+		collider.runtimeBody = nullptr;
+		collider.runtimeFixtures.clear();
+	}
+
 	Scene::Scene()
 	{
 	}
@@ -126,6 +132,10 @@ namespace Yuicy {
 		CopyComponent<GridComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<TilemapComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<TilemapRendererComponent>(dstRegistry, srcRegistry, enttMap);
+		CopyComponent<TilemapCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
+		auto tilemapColliderView = dstRegistry.view<TilemapCollider2DComponent>();
+		for (auto entity : tilemapColliderView)
+			ResetTilemapColliderRuntimeData(tilemapColliderView.get<TilemapCollider2DComponent>(entity));
 		CopyComponent<CameraComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<NativeScriptComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<LuaScriptComponent>(dstRegistry, srcRegistry, enttMap);

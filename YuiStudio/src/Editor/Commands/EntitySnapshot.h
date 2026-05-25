@@ -30,6 +30,7 @@ namespace Yuicy {
 		std::optional<GridComponent> grid;
 		std::optional<TilemapComponent> tilemap;
 		std::optional<TilemapRendererComponent> tilemapRenderer;
+		std::optional<TilemapCollider2DComponent> tilemapCollider;
 
 		static EntitySnapshot Capture(Entity entity)
 		{
@@ -76,6 +77,13 @@ namespace Yuicy {
 				snapshot.tilemap = entity.GetComponent<TilemapComponent>();
 			if (entity.HasComponent<TilemapRendererComponent>())
 				snapshot.tilemapRenderer = entity.GetComponent<TilemapRendererComponent>();
+			if (entity.HasComponent<TilemapCollider2DComponent>())
+			{
+				auto collider = entity.GetComponent<TilemapCollider2DComponent>();
+				collider.runtimeBody = nullptr;
+				collider.runtimeFixtures.clear();
+				snapshot.tilemapCollider = collider;
+			}
 
 			return snapshot;
 		}
@@ -114,6 +122,7 @@ namespace Yuicy {
 			if (grid)			entity.AddComponent<GridComponent>(*grid);
 			if (tilemap)		entity.AddComponent<TilemapComponent>(*tilemap);
 			if (tilemapRenderer) entity.AddComponent<TilemapRendererComponent>(*tilemapRenderer);
+			if (tilemapCollider) entity.AddComponent<TilemapCollider2DComponent>(*tilemapCollider);
 
 			return entity;
 		}

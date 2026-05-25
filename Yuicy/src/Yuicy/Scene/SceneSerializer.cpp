@@ -158,6 +158,25 @@ namespace Yuicy {
 			out << YAML::EndMap;
 		}
 
+		// TilemapCollider2DComponent
+		if (entity.HasComponent<TilemapCollider2DComponent>())
+		{
+			out << YAML::Key << "TilemapCollider2DComponent";
+			out << YAML::BeginMap;
+
+			auto& collider = entity.GetComponent<TilemapCollider2DComponent>();
+			out << YAML::Key << "DefaultColliderType" << YAML::Value << TilemapUtils::TileColliderTypeToString(collider.defaultColliderType);
+			out << YAML::Key << "IsTrigger" << YAML::Value << collider.isTrigger;
+			out << YAML::Key << "CategoryBits" << YAML::Value << collider.categoryBits;
+			out << YAML::Key << "MaskBits" << YAML::Value << collider.maskBits;
+			out << YAML::Key << "Density" << YAML::Value << collider.density;
+			out << YAML::Key << "Friction" << YAML::Value << collider.friction;
+			out << YAML::Key << "Restitution" << YAML::Value << collider.restitution;
+			out << YAML::Key << "RestitutionThreshold" << YAML::Value << collider.restitutionThreshold;
+
+			out << YAML::EndMap;
+		}
+
 		// CameraComponent
 		if (entity.HasComponent<CameraComponent>())
 		{
@@ -418,6 +437,22 @@ namespace Yuicy {
 						tilemap.SetTile(position, cell);
 					}
 				}
+			}
+
+			// TilemapCollider2DComponent
+			if (auto tilemapColliderComponent = entity["TilemapCollider2DComponent"]; tilemapColliderComponent)
+			{
+				auto& collider = deserializedEntity.AddComponent<TilemapCollider2DComponent>();
+				collider.defaultColliderType = TilemapUtils::TileColliderTypeFromString(tilemapColliderComponent["DefaultColliderType"].as<std::string>("Grid"));
+				collider.isTrigger = tilemapColliderComponent["IsTrigger"].as<bool>(false);
+				collider.categoryBits = tilemapColliderComponent["CategoryBits"].as<uint16_t>(CollisionLayer::Default);
+				collider.maskBits = tilemapColliderComponent["MaskBits"].as<uint16_t>(CollisionLayer::All);
+				collider.density = tilemapColliderComponent["Density"].as<float>(1.0f);
+				collider.friction = tilemapColliderComponent["Friction"].as<float>(0.5f);
+				collider.restitution = tilemapColliderComponent["Restitution"].as<float>(0.0f);
+				collider.restitutionThreshold = tilemapColliderComponent["RestitutionThreshold"].as<float>(0.5f);
+				collider.runtimeBody = nullptr;
+				collider.runtimeFixtures.clear();
 			}
 
 			// CameraComponent

@@ -204,6 +204,36 @@ namespace Yuicy {
 		TilemapRendererComponent(const TilemapRendererComponent&) = default;
 	};
 
+	namespace CollisionLayer
+	{
+		enum : uint16_t
+		{
+			None    = 0,
+			Default = 1 << 0,   // 0x0001
+			All     = 0xFFFF
+		};
+	}
+
+	struct TilemapCollider2DComponent
+	{
+		TileColliderType defaultColliderType = TileColliderType::Grid;
+		bool isTrigger = false;
+
+		uint16_t categoryBits = CollisionLayer::Default;
+		uint16_t maskBits = CollisionLayer::All;
+
+		float density = 1.0f;
+		float friction = 0.5f;
+		float restitution = 0.0f;
+		float restitutionThreshold = 0.5f;
+
+		void* runtimeBody = nullptr;
+		std::vector<void*> runtimeFixtures;
+
+		TilemapCollider2DComponent() = default;
+		TilemapCollider2DComponent(const TilemapCollider2DComponent&) = default;
+	};
+
 	struct CameraComponent
 	{
 		Yuicy::SceneCamera Camera;
@@ -410,16 +440,6 @@ namespace Yuicy {
 			return State.CurrentClipName == clipName && State.Playing && !State.Finished;
 		}
 	};
-
-	namespace CollisionLayer
-	{
-		enum : uint16_t
-		{
-			None    = 0,
-			Default = 1 << 0,   // 0x0001
-			All     = 0xFFFF
-		};
-	}
 
 	// ==================== 物理组件 ====================
 
