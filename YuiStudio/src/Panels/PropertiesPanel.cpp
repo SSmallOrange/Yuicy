@@ -239,6 +239,9 @@ namespace Yuicy {
 			DrawAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
 			DrawAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
 			DrawAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
+			DrawAddComponentEntry<GridComponent>("Grid");
+			DrawAddComponentEntry<TilemapComponent>("Tilemap");
+			DrawAddComponentEntry<TilemapRendererComponent>("Tilemap Renderer");
 
 			ImGui::EndPopup();
 		}
@@ -262,6 +265,21 @@ namespace Yuicy {
 		// SpriteRendererComponent
 		DrawComponentUI<SpriteRendererComponent>("Sprite Renderer", entity, [this, dt](auto& component) {
 			m_spriteEditor.Draw(component, dt);
+		}, dt, ch);
+
+		// GridComponent
+		DrawComponentUI<GridComponent>("Grid", entity, [this, dt](auto& component) {
+			m_gridEditor.Draw(component, dt);
+		}, dt, ch);
+
+		// TilemapComponent
+		DrawComponentUI<TilemapComponent>("Tilemap", entity, [this, entity, dt, ch](auto& component) {
+			m_tilemapEditor.Draw(component, entity, dt, ch);
+		}, dt, ch);
+
+		// TilemapRendererComponent
+		DrawComponentUI<TilemapRendererComponent>("Tilemap Renderer", entity, [this, dt](auto& component) {
+			m_tilemapRendererEditor.Draw(component, dt);
 		}, dt, ch);
 
 		// AnimationComponent

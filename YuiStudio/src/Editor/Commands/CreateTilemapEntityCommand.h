@@ -13,9 +13,14 @@ namespace Yuicy {
 	class CreateTilemapEntityCommand : public IEditorCommand
 	{
 	public:
-		CreateTilemapEntityCommand(Scene* scene, EditorSelectionContext* selection = nullptr)
+		CreateTilemapEntityCommand(Scene* scene, EditorSelectionContext* selection = nullptr, UUID targetGridUUID = 0)
 			: m_scene(scene), m_selection(selection)
 		{
+			if (targetGridUUID != 0)
+			{
+				m_gridUUID = targetGridUUID;
+				m_reuseExistingGrid = true;
+			}
 		}
 
 		void Execute() override
@@ -26,6 +31,9 @@ namespace Yuicy {
 			Entity gridEntity = m_scene->FindEntityByUUID(m_gridUUID);
 			if (!gridEntity)
 			{
+				if (m_reuseExistingGrid)
+					return;
+
 				gridEntity = m_scene->CreateEntityWithUUID(m_gridUUID, "Grid");
 				gridEntity.AddComponent<GridComponent>();
 			}
@@ -60,7 +68,13 @@ namespace Yuicy {
 				return;
 
 			Entity gridEntity = m_scene->FindEntityByUUID(m_gridUUID);
-			if (gridEntity)
+			if (m_reuseExistingGrid)
+			{
+				Entity tilemapEntity = m_scene->FindEntityByUUID(m_tilemapUUID);
+				if (tilemapEntity)
+					m_scene->DestroyEntity(tilemapEntity);
+			}
+			else if (gridEntity)
 			{
 				m_scene->DestroyEntity(gridEntity);
 			}
@@ -99,6 +113,7 @@ namespace Yuicy {
 		EditorSelectionContext* m_selection = nullptr;
 		UUID m_gridUUID;
 		UUID m_tilemapUUID;
+		bool m_reuseExistingGrid = false;
 	};
 
 }

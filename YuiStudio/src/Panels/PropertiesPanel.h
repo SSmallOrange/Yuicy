@@ -5,6 +5,9 @@
 #include "ComponentEditors/CameraEditor.h"
 #include "ComponentEditors/SpriteEditor.h"
 #include "ComponentEditors/ColliderEditor.h"
+#include "ComponentEditors/GridEditor.h"
+#include "ComponentEditors/TilemapEditor.h"
+#include "ComponentEditors/TilemapRendererEditor.h"
 
 #include <glm/fwd.hpp>
 #include <string>
@@ -53,6 +56,9 @@ namespace Yuicy {
 		CameraEditor m_cameraEditor;
 		SpriteEditor m_spriteEditor;
 		ColliderEditor m_colliderEditor;
+		GridEditor m_gridEditor;
+		TilemapEditor m_tilemapEditor;
+		TilemapRendererEditor m_tilemapRendererEditor;
 	};
 
 }

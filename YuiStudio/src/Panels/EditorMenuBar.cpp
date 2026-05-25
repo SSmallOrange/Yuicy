@@ -3,6 +3,8 @@
 #include "EditorMenuBar.h"
 
 #include "Yuicy/Core/Application.h"
+#include "Yuicy/Scene/Components.h"
+#include "Yuicy/Scene/Entity.h"
 
 #include "../Editor/EditorCommandHistory.h"
 #include "../Editor/EditorContext.h"
@@ -140,7 +142,23 @@ namespace Yuicy {
 			return;
 
 		m_commandHistory->ExecuteCommand(
-			CreateScope<CreateTilemapEntityCommand>(m_context->activeScene.get(), &m_context->selection));
+			CreateScope<CreateTilemapEntityCommand>(m_context->activeScene.get(), &m_context->selection, GetSelectedGridUUID()));
+	}
+
+	UUID EditorMenuBar::GetSelectedGridUUID() const
+	{
+		if (!m_context || !m_context->activeScene)
+			return UUID(0);
+
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+		if (selectedUUID == 0)
+			return UUID(0);
+
+		Entity selectedEntity = m_context->activeScene->FindEntityByUUID(selectedUUID);
+		if (!selectedEntity || !selectedEntity.HasComponent<GridComponent>())
+			return UUID(0);
+
+		return selectedUUID;
 	}
 
 }

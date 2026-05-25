@@ -328,6 +328,24 @@ namespace Yuicy {
 
 			ImGui::EndCombo();
 		}
+
+		Entity selectedTilemap = GetSelectedTilemapEntity();
+		if (selectedTilemap)
+		{
+			UUID selectedUUID = selectedTilemap.GetUUID();
+			if (tilemapState.m_activeTilemapEntity != selectedUUID)
+			{
+				if (ImGui::Button("Use Selected Tilemap"))
+					tilemapState.m_activeTilemapEntity = selectedUUID;
+			}
+			else
+			{
+				ImGui::TextDisabled("Selected Tilemap is active target.");
+			}
+		}
+
+		if (tilemapState.m_activeTilemapEntity == 0 && ActiveToolNeedsTarget())
+			ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.25f, 1.0f), "No Active Target. Current tool is unavailable.");
 	}
 
 	void TilePalettePanel::DrawToolButtons()
@@ -357,6 +375,41 @@ namespace Yuicy {
 			}
 
 			ImGui::EndTable();
+		}
+	}
+
+	Entity TilePalettePanel::GetSelectedTilemapEntity() const
+	{
+		if (!m_context || !m_context->activeScene)
+			return {};
+
+		UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
+		if (selectedUUID == 0)
+			return {};
+
+		Entity selectedEntity = m_context->activeScene->FindEntityByUUID(selectedUUID);
+		if (!selectedEntity || !selectedEntity.HasComponent<TilemapComponent>())
+			return {};
+
+		return selectedEntity;
+	}
+
+	bool TilePalettePanel::ActiveToolNeedsTarget() const
+	{
+		if (!m_context)
+			return false;
+
+		switch (m_context->tilemap.m_activeTool)
+		{
+		case TilemapTool::Move:
+		case TilemapTool::Paint:
+		case TilemapTool::Erase:
+		case TilemapTool::BoxFill:
+		case TilemapTool::FloodFill:
+		case TilemapTool::Picker:
+			return true;
+		default:
+			return false;
 		}
 	}
 

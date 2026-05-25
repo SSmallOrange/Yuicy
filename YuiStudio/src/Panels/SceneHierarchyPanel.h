@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy/Core/Base.h"
+#include "Yuicy/Core/UUID.h"
 #include "Yuicy/Renderer/Texture.h"
 
 namespace Yuicy {
@@ -35,6 +36,9 @@ namespace Yuicy {
 
 	private:
 		void DrawEntityNode(Entity entity);
+		void DrawCreateTilemapMenu(UUID targetGridUUID = 0);
+		void CreateRectangularTilemap(UUID targetGridUUID = 0);
+		UUID GetSelectedGridUUID() const;
 
 	private:
 		Ref<Scene> m_context;

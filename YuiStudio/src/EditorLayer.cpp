@@ -442,7 +442,6 @@ namespace Yuicy {
 			else if (ctrl) m_sceneController.SaveScene();
 			break;
 		case Key::Z:
-			YUICY_CORE_INFO("ctrl: {}, shift: {}", ctrl, shift);
 			if (ctrl && !shift) m_commandHistory.Undo();
 			break;
 		case Key::Y:

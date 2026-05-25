@@ -11,6 +11,7 @@
 #include "../Editor/EditorDirtyTracker.h"
 #include "../Editor/EditorSelectionContext.h"
 #include "../Editor/Commands/CreateEntityCommand.h"
+#include "../Editor/Commands/CreateTilemapEntityCommand.h"
 #include "../Editor/Commands/DeleteEntityCommand.h"
 #include "../Editor/Commands/ReparentEntityCommand.h"
 #include "../Utils/EditorIconUtils.h"
@@ -99,6 +100,8 @@ namespace Yuicy {
 						if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 					}
 				}
+
+				DrawCreateTilemapMenu(GetSelectedGridUUID());
 				ImGui::EndPopup();
 			}
 
@@ -220,6 +223,8 @@ namespace Yuicy {
 					if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 				}
 			}
+
+			DrawCreateTilemapMenu(entity.HasComponent<GridComponent>() ? entityUUID : UUID(0));
 
 			if (ImGui::MenuItem("Delete Entity"))
 				entityDeleted = true;
@@ -391,6 +396,48 @@ namespace Yuicy {
 				if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
 			}
 		}
+	}
+
+	void SceneHierarchyPanel::DrawCreateTilemapMenu(UUID targetGridUUID)
+	{
+		if (ImGui::BeginMenu("2D Object"))
+		{
+			if (ImGui::BeginMenu("Tilemap"))
+			{
+				if (ImGui::MenuItem("Rectangular"))
+					CreateRectangularTilemap(targetGridUUID);
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+	}
+
+	void SceneHierarchyPanel::CreateRectangularTilemap(UUID targetGridUUID)
+	{
+		if (!m_context)
+			return;
+
+		if (m_commandHistory)
+		{
+			m_commandHistory->ExecuteCommand(
+				CreateScope<CreateTilemapEntityCommand>(m_context.get(), m_editorSelection, targetGridUUID));
+			return;
+		}
+
+		CreateTilemapEntityCommand command(m_context.get(), m_editorSelection, targetGridUUID);
+		command.Execute();
+		if (m_dirtyTracker) m_dirtyTracker->MarkSceneDirty();
+	}
+
+	UUID SceneHierarchyPanel::GetSelectedGridUUID() const
+	{
+		Entity selectedEntity = GetSelectedEntity();
+		if (!selectedEntity || !selectedEntity.HasComponent<GridComponent>())
+			return UUID(0);
+
+		return selectedEntity.GetUUID();
 	}
 
 }

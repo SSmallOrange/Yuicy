@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Yuicy/Core/UUID.h"
+
 namespace Yuicy {
 
 	struct EditorContext;
@@ -24,6 +26,7 @@ namespace Yuicy {
 
 		void CreateEmptyEntity();
 		void CreateRectangularTilemap();
+		UUID GetSelectedGridUUID() const;
 
 	private:
 		EditorContext* m_context = nullptr;

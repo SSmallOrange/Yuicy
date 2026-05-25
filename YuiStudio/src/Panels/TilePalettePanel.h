@@ -12,6 +12,7 @@ namespace Yuicy {
 	struct EditorContext;
 	class EditorAssetWorkflow;
 	class EditorDirtyTracker;
+	class Entity;
 	struct TilePaletteAsset;
 
 	class TilePalettePanel
@@ -35,6 +36,8 @@ namespace Yuicy {
 		void DrawToolButtons();
 		void DrawPaletteGrid();
 		void DrawActiveTilePreview();
+		Entity GetSelectedTilemapEntity() const;
+		bool ActiveToolNeedsTarget() const;
 
 		void CreateNewPalette();
 		bool SaveActivePalette();
