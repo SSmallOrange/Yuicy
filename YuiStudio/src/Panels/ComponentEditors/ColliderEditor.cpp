@@ -10,6 +10,22 @@
 
 namespace Yuicy {
 
+	namespace {
+
+		struct TileColliderTypeEntry
+		{
+			TileColliderType colliderType;
+			const char* label;
+		};
+
+		constexpr TileColliderTypeEntry tileColliderTypeEntries[] = {
+			{ TileColliderType::None,   "None" },
+			{ TileColliderType::Grid,   "Grid" },
+			{ TileColliderType::Sprite, "Sprite" }
+		};
+
+	}
+
 	void ColliderEditor::DrawBoxCollider(BoxCollider2DComponent& component, EditorDirtyTracker* dt)
 	{
 		if (ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset), 0.01f))
@@ -50,6 +66,45 @@ namespace Yuicy {
 
 		ImGui::Separator();
 		DrawCollisionFilter(component.CategoryBits, component.MaskBits, dt);
+	}
+
+	void ColliderEditor::DrawTilemapCollider(TilemapCollider2DComponent& component, EditorDirtyTracker* dt)
+	{
+		const char* currentColliderType = TilemapUtils::TileColliderTypeToString(component.defaultColliderType);
+		if (ImGui::BeginCombo("Default Collider Type", currentColliderType))
+		{
+			for (const TileColliderTypeEntry& entry : tileColliderTypeEntries)
+			{
+				bool isSelected = component.defaultColliderType == entry.colliderType;
+				if (ImGui::Selectable(entry.label, isSelected))
+				{
+					component.defaultColliderType = entry.colliderType;
+					if (dt) dt->MarkSceneDirty();
+				}
+
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
+
+		if (ImGui::Checkbox("Is Trigger", &component.isTrigger))
+			if (dt) dt->MarkSceneDirty();
+
+		if (ImGui::DragFloat("Density", &component.density, 0.01f, 0.0f, 10.0f))
+			if (dt) dt->MarkSceneDirty();
+		if (ImGui::DragFloat("Friction", &component.friction, 0.01f, 0.0f, 1.0f))
+			if (dt) dt->MarkSceneDirty();
+		if (ImGui::DragFloat("Restitution", &component.restitution, 0.01f, 0.0f, 1.0f))
+			if (dt) dt->MarkSceneDirty();
+		if (ImGui::DragFloat("Restitution Threshold", &component.restitutionThreshold, 0.01f, 0.0f))
+			if (dt) dt->MarkSceneDirty();
+
+		ImGui::Text("Runtime Shape Count: %d", (int)component.runtimeFixtures.size());
+
+		ImGui::Separator();
+		DrawCollisionFilter(component.categoryBits, component.maskBits, dt);
 	}
 
 	// 从 bitmask 中找到最低位的索引（用于单选下拉框显示）

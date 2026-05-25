@@ -12,6 +12,7 @@ namespace Yuicy {
 
 		void DrawBoxCollider(BoxCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
 		void DrawCircleCollider(CircleCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
+		void DrawTilemapCollider(TilemapCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
 
 	private:
 		// 碰撞过滤位掩码编辑（Category / Mask）

@@ -12,6 +12,7 @@
 #include "Yuicy/Scene/ContactListener.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
 #include "Yuicy/Tilemap/TilemapRenderer2D.h"
+#include "Yuicy/Tilemap/TilemapColliderBuilder.h"
 
 #include <glm/glm.hpp>
 
@@ -85,12 +86,6 @@ namespace Yuicy {
 		}
 	}
 
-	static void ResetTilemapColliderRuntimeData(TilemapCollider2DComponent& collider)
-	{
-		collider.runtimeBody = nullptr;
-		collider.runtimeFixtures.clear();
-	}
-
 	Scene::Scene()
 	{
 	}
@@ -135,7 +130,7 @@ namespace Yuicy {
 		CopyComponent<TilemapCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
 		auto tilemapColliderView = dstRegistry.view<TilemapCollider2DComponent>();
 		for (auto entity : tilemapColliderView)
-			ResetTilemapColliderRuntimeData(tilemapColliderView.get<TilemapCollider2DComponent>(entity));
+			TilemapColliderBuilder::ClearRuntimeData(tilemapColliderView.get<TilemapCollider2DComponent>(entity));
 		CopyComponent<CameraComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<NativeScriptComponent>(dstRegistry, srcRegistry, enttMap);
 		CopyComponent<LuaScriptComponent>(dstRegistry, srcRegistry, enttMap);
@@ -554,6 +549,14 @@ namespace Yuicy {
 				cc2d.RuntimeFixture = body->CreateFixture(&fixtureDef);
 			}
 		}
+
+		// 为 Tilemap Collider 创建独立的静态碰撞体
+		auto tilemapColliderView = m_Registry.view<TransformComponent, TilemapComponent, TilemapCollider2DComponent>();
+		for (auto e : tilemapColliderView)
+		{
+			Entity tilemapEntity = { e, this };
+			TilemapColliderBuilder::Build(this, m_PhysicsWorld, tilemapEntity);
+		}
 	}
 
 	void Scene::DestroyPhysicsWorld()
@@ -578,6 +581,10 @@ namespace Yuicy {
 				cc2d.RuntimeFixture = nullptr;
 			}
 		}
+
+		auto tilemapColliderView = m_Registry.view<TilemapCollider2DComponent>();
+		for (auto e : tilemapColliderView)
+			TilemapColliderBuilder::ClearRuntimeData(tilemapColliderView.get<TilemapCollider2DComponent>(e));
 
 		delete m_ContactListener;
 		m_ContactListener = nullptr;

@@ -242,6 +242,7 @@ namespace Yuicy {
 			DrawAddComponentEntry<GridComponent>("Grid");
 			DrawAddComponentEntry<TilemapComponent>("Tilemap");
 			DrawAddComponentEntry<TilemapRendererComponent>("Tilemap Renderer");
+			DrawAddComponentEntry<TilemapCollider2DComponent>("Tilemap Collider 2D");
 
 			ImGui::EndPopup();
 		}
@@ -280,6 +281,11 @@ namespace Yuicy {
 		// TilemapRendererComponent
 		DrawComponentUI<TilemapRendererComponent>("Tilemap Renderer", entity, [this, dt](auto& component) {
 			m_tilemapRendererEditor.Draw(component, dt);
+		}, dt, ch);
+
+		// TilemapCollider2DComponent
+		DrawComponentUI<TilemapCollider2DComponent>("Tilemap Collider 2D", entity, [this, dt](auto& component) {
+			m_colliderEditor.DrawTilemapCollider(component, dt);
 		}, dt, ch);
 
 		// AnimationComponent
