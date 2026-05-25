@@ -7,12 +7,24 @@
 #include "Yuicy/Tilemap/Tile.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Yuicy {
 
 	namespace {
+
+		void WarnMissingTileAssetOnce(AssetHandle tileHandle)
+		{
+			static std::unordered_set<uint64_t> warnedTileHandles;
+
+			uint64_t key = (uint64_t)tileHandle;
+			if (!warnedTileHandles.insert(key).second)
+				return;
+
+			YUICY_CORE_WARN("TilemapColliderGeometry skipped tile asset because it failed to load. Handle: {}", key);
+		}
 
 		TileColliderType ResolveColliderType(const TileCell& cell, const TilemapCollider2DComponent& collider)
 		{
@@ -23,7 +35,10 @@ namespace Yuicy {
 
 			Ref<TileAsset> tileAsset = AssetManager::GetAsset<TileAsset>(cell.m_tileHandle);
 			if (!tileAsset)
+			{
+				WarnMissingTileAssetOnce(cell.m_tileHandle);
 				return TileColliderType::None;
+			}
 
 			// TileAsset 的 None 表示显式无碰撞，不被 defaultColliderType 覆盖
 			return tileAsset->m_colliderType;

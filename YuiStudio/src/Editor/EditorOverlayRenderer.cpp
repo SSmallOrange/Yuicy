@@ -7,11 +7,40 @@
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Tilemap/GridLayoutUtility.h"
+#include "Yuicy/Tilemap/TilemapColliderGeometry.h"
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace Yuicy {
+
+	namespace {
+
+		const GridComponent* ResolveGridForTilemap(Entity tilemapEntity)
+		{
+			if (tilemapEntity.HasComponent<GridComponent>())
+				return &tilemapEntity.GetComponent<GridComponent>();
+
+			Entity parent = tilemapEntity.GetParent();
+			if (parent && parent.HasComponent<GridComponent>())
+				return &parent.GetComponent<GridComponent>();
+
+			return nullptr;
+		}
+
+		void DrawTilemapColliderShape(const TilemapColliderShape& shape, const glm::vec4& color)
+		{
+			const float z = -0.03f;
+			for (size_t index = 0; index < shape.points.size(); index++)
+			{
+				const glm::vec2& start = shape.points[index];
+				const glm::vec2& end = shape.points[(index + 1) % shape.points.size()];
+				Renderer2D::DrawLine({ start.x, start.y, z }, { end.x, end.y, z }, color);
+			}
+		}
+
+	}
 
 	// 背景层：Grid + Origin
 	void EditorOverlayRenderer::RenderBackground(const EditorCamera& camera, const Ref<Scene>& scene)
@@ -315,6 +344,34 @@ namespace Yuicy {
 					* glm::scale(glm::mat4(1.0f), glm::vec3(diameter, diameter, 1.0f));
 
 				Renderer2D::DrawCircle(boundsTransform, cc.IsTrigger ? triggerColor : colliderColor);
+			}
+		}
+
+		// TilemapCollider2D
+		{
+			auto view = scene->GetAllEntitiesWith<TransformComponent, TilemapComponent, TilemapCollider2DComponent>();
+			for (auto entityHandle : view)
+			{
+				Entity entity(entityHandle, scene.get());
+
+				// 跳过隐藏实体
+				if (m_context->IsEntityHiddenInHierarchy(entity.GetUUID()))
+					continue;
+
+				const GridComponent* grid = ResolveGridForTilemap(entity);
+				if (!grid)
+					continue;
+
+				const auto& tilemap = entity.GetComponent<TilemapComponent>();
+				const auto& collider = entity.GetComponent<TilemapCollider2DComponent>();
+				glm::mat4 tilemapWorldTransform = scene->GetWorldSpaceTransformMatrix(entity);
+
+				std::vector<TilemapColliderShape> shapes =
+					TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, *grid, tilemap, collider);
+				glm::vec4 color = collider.isTrigger ? triggerColor : colliderColor;
+
+				for (const TilemapColliderShape& shape : shapes)
+					DrawTilemapColliderShape(shape, color);
 			}
 		}
 	}
