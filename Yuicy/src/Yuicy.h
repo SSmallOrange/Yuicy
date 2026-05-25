@@ -48,6 +48,8 @@
 #include "Yuicy/Tilemap/Tile.h"
 #include "Yuicy/Tilemap/TilePalette.h"
 #include "Yuicy/Tilemap/TilemapRenderer2D.h"
+#include "Yuicy/Tilemap/TilemapColliderGeometry.h"
+#include "Yuicy/Tilemap/TilemapColliderBuilder.h"
 
 // Project
 #include "Yuicy/Project/Project.h"
