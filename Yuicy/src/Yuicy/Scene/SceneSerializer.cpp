@@ -166,6 +166,7 @@ namespace Yuicy {
 
 			auto& collider = entity.GetComponent<TilemapCollider2DComponent>();
 			out << YAML::Key << "DefaultColliderType" << YAML::Value << TilemapUtils::TileColliderTypeToString(collider.defaultColliderType);
+			out << YAML::Key << "CompositeOperation" << YAML::Value << TilemapUtils::TilemapColliderCompositeOperationToString(collider.compositeOperation);
 			out << YAML::Key << "IsTrigger" << YAML::Value << collider.isTrigger;
 			out << YAML::Key << "CategoryBits" << YAML::Value << collider.categoryBits;
 			out << YAML::Key << "MaskBits" << YAML::Value << collider.maskBits;
@@ -444,6 +445,7 @@ namespace Yuicy {
 			{
 				auto& collider = deserializedEntity.AddComponent<TilemapCollider2DComponent>();
 				collider.defaultColliderType = TilemapUtils::TileColliderTypeFromString(tilemapColliderComponent["DefaultColliderType"].as<std::string>("Grid"));
+				collider.compositeOperation = TilemapUtils::TilemapColliderCompositeOperationFromString(tilemapColliderComponent["CompositeOperation"].as<std::string>("Merge"));
 				collider.isTrigger = tilemapColliderComponent["IsTrigger"].as<bool>(false);
 				collider.categoryBits = tilemapColliderComponent["CategoryBits"].as<uint16_t>(CollisionLayer::Default);
 				collider.maskBits = tilemapColliderComponent["MaskBits"].as<uint16_t>(CollisionLayer::All);

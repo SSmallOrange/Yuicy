@@ -18,10 +18,21 @@ namespace Yuicy {
 			const char* label;
 		};
 
+		struct TilemapColliderCompositeOperationEntry
+		{
+			TilemapColliderCompositeOperation operation;
+			const char* label;
+		};
+
 		constexpr TileColliderTypeEntry tileColliderTypeEntries[] = {
 			{ TileColliderType::None,   "None" },
 			{ TileColliderType::Grid,   "Grid" },
 			{ TileColliderType::Sprite, "Sprite" }
+		};
+
+		constexpr TilemapColliderCompositeOperationEntry tilemapColliderCompositeOperationEntries[] = {
+			{ TilemapColliderCompositeOperation::None,  "None" },
+			{ TilemapColliderCompositeOperation::Merge, "Merge" }
 		};
 
 	}
@@ -79,6 +90,25 @@ namespace Yuicy {
 				if (ImGui::Selectable(entry.label, isSelected))
 				{
 					component.defaultColliderType = entry.colliderType;
+					if (dt) dt->MarkSceneDirty();
+				}
+
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
+
+		const char* currentCompositeOperation = TilemapUtils::TilemapColliderCompositeOperationToString(component.compositeOperation);
+		if (ImGui::BeginCombo("Composite Operation", currentCompositeOperation))
+		{
+			for (const TilemapColliderCompositeOperationEntry& entry : tilemapColliderCompositeOperationEntries)
+			{
+				bool isSelected = component.compositeOperation == entry.operation;
+				if (ImGui::Selectable(entry.label, isSelected))
+				{
+					component.compositeOperation = entry.operation;
 					if (dt) dt->MarkSceneDirty();
 				}
 

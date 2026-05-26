@@ -41,6 +41,12 @@ namespace Yuicy {
 		Individual
 	};
 
+	enum class TilemapColliderCompositeOperation
+	{
+		None = 0,
+		Merge
+	};
+
 	struct GridPosition
 	{
 		int m_x = 0;
@@ -168,6 +174,24 @@ namespace Yuicy {
 			if (mode == "Chunk")      return TilemapRenderMode::Chunk;
 			if (mode == "Individual") return TilemapRenderMode::Individual;
 			return TilemapRenderMode::Chunk;
+		}
+
+		inline const char* TilemapColliderCompositeOperationToString(TilemapColliderCompositeOperation operation)
+		{
+			switch (operation)
+			{
+				case TilemapColliderCompositeOperation::None:  return "None";
+				case TilemapColliderCompositeOperation::Merge: return "Merge";
+			}
+
+			return "Merge";
+		}
+
+		inline TilemapColliderCompositeOperation TilemapColliderCompositeOperationFromString(std::string_view operation)
+		{
+			if (operation == "None")  return TilemapColliderCompositeOperation::None;
+			if (operation == "Merge") return TilemapColliderCompositeOperation::Merge;
+			return TilemapColliderCompositeOperation::Merge;
 		}
 
 	}

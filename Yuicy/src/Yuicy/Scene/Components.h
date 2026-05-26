@@ -217,6 +217,7 @@ namespace Yuicy {
 	struct TilemapCollider2DComponent
 	{
 		TileColliderType defaultColliderType = TileColliderType::Grid;
+		TilemapColliderCompositeOperation compositeOperation = TilemapColliderCompositeOperation::Merge;
 		bool isTrigger = false;
 
 		uint16_t categoryBits = CollisionLayer::Default;
