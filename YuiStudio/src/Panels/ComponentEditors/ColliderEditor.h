@@ -5,6 +5,8 @@
 
 namespace Yuicy {
 
+	class Entity;
+
 	class ColliderEditor
 	{
 	public:
@@ -12,7 +14,7 @@ namespace Yuicy {
 
 		void DrawBoxCollider(BoxCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
 		void DrawCircleCollider(CircleCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
-		void DrawTilemapCollider(TilemapCollider2DComponent& component, EditorDirtyTracker* dirtyTracker);
+		void DrawTilemapCollider(TilemapCollider2DComponent& component, Entity entity, EditorDirtyTracker* dirtyTracker);
 
 	private:
 		// 碰撞过滤位掩码编辑（Category / Mask）

@@ -40,6 +40,23 @@ namespace Yuicy {
 			}
 		}
 
+		std::vector<TilemapColliderShape> BuildTilemapColliderShapes(
+			const glm::mat4& tilemapWorldTransform,
+			const GridComponent& grid,
+			const TilemapComponent& tilemap,
+			const TilemapCollider2DComponent& collider)
+		{
+			switch (collider.compositeOperation)
+			{
+				case TilemapColliderCompositeOperation::None:
+					return TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+				case TilemapColliderCompositeOperation::Merge:
+					return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+			}
+
+			return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+		}
+
 	}
 
 	// 背景层：Grid + Origin
@@ -367,7 +384,7 @@ namespace Yuicy {
 				glm::mat4 tilemapWorldTransform = scene->GetWorldSpaceTransformMatrix(entity);
 
 				std::vector<TilemapColliderShape> shapes =
-					TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, *grid, tilemap, collider);
+					BuildTilemapColliderShapes(tilemapWorldTransform, *grid, tilemap, collider);
 				glm::vec4 color = collider.isTrigger ? triggerColor : colliderColor;
 
 				for (const TilemapColliderShape& shape : shapes)

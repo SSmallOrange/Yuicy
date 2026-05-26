@@ -13,6 +13,7 @@ namespace Yuicy {
 	{
 	public:
 		static void Build(Scene* scene, b2World* world, Entity tilemapEntity);
+		static void Rebuild(Scene* scene, b2World* world, Entity tilemapEntity);
 		static void ClearRuntimeData(TilemapCollider2DComponent& collider);
 	};
 

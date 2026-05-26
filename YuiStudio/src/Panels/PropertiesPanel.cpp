@@ -284,8 +284,8 @@ namespace Yuicy {
 		}, dt, ch);
 
 		// TilemapCollider2DComponent
-		DrawComponentUI<TilemapCollider2DComponent>("Tilemap Collider 2D", entity, [this, dt](auto& component) {
-			m_colliderEditor.DrawTilemapCollider(component, dt);
+		DrawComponentUI<TilemapCollider2DComponent>("Tilemap Collider 2D", entity, [this, entity, dt](auto& component) {
+			m_colliderEditor.DrawTilemapCollider(component, entity, dt);
 		}, dt, ch);
 
 		// AnimationComponent

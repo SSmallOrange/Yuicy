@@ -155,6 +155,28 @@ namespace Yuicy {
 		}
 	}
 
+	void TilemapColliderBuilder::Rebuild(Scene* scene, b2World* world, Entity tilemapEntity)
+	{
+		if (!scene || !world || !tilemapEntity)
+			return;
+
+		if (tilemapEntity.GetScene() != scene)
+		{
+			YUICY_CORE_WARN("TilemapColliderBuilder skipped rebuild for entity from a different scene.");
+			return;
+		}
+
+		if (!tilemapEntity.HasComponent<TilemapCollider2DComponent>())
+			return;
+
+		auto& collider = tilemapEntity.GetComponent<TilemapCollider2DComponent>();
+		if (collider.runtimeBody)
+			world->DestroyBody(static_cast<b2Body*>(collider.runtimeBody));
+
+		ClearRuntimeData(collider);
+		Build(scene, world, tilemapEntity);
+	}
+
 	void TilemapColliderBuilder::ClearRuntimeData(TilemapCollider2DComponent& collider)
 	{
 		collider.runtimeBody = nullptr;

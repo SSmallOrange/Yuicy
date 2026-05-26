@@ -3,10 +3,15 @@
 #include "ColliderEditor.h"
 
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Scene/Entity.h"
+#include "Yuicy/Scene/Scene.h"
+#include "Yuicy/Tilemap/TilemapColliderGeometry.h"
 
 #include "imgui/imgui.h"
 
 #include <glm/gtc/type_ptr.hpp>
+
+#include <vector>
 
 namespace Yuicy {
 
@@ -34,6 +39,51 @@ namespace Yuicy {
 			{ TilemapColliderCompositeOperation::None,  "None" },
 			{ TilemapColliderCompositeOperation::Merge, "Merge" }
 		};
+
+		const GridComponent* ResolveGridForTilemap(Entity tilemapEntity)
+		{
+			if (tilemapEntity.HasComponent<GridComponent>())
+				return &tilemapEntity.GetComponent<GridComponent>();
+
+			Entity parent = tilemapEntity.GetParent();
+			if (parent && parent.HasComponent<GridComponent>())
+				return &parent.GetComponent<GridComponent>();
+
+			return nullptr;
+		}
+
+		std::vector<TilemapColliderShape> BuildTilemapColliderShapes(
+			const glm::mat4& tilemapWorldTransform,
+			const GridComponent& grid,
+			const TilemapComponent& tilemap,
+			const TilemapCollider2DComponent& collider)
+		{
+			switch (collider.compositeOperation)
+			{
+				case TilemapColliderCompositeOperation::None:
+					return TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+				case TilemapColliderCompositeOperation::Merge:
+					return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+			}
+
+			return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+		}
+
+		int EstimateTilemapShapeCount(Entity tilemapEntity, const TilemapCollider2DComponent& collider)
+		{
+			if (!tilemapEntity || !tilemapEntity.HasComponent<TilemapComponent>())
+				return -1;
+
+			Scene* scene = tilemapEntity.GetScene();
+			const GridComponent* grid = ResolveGridForTilemap(tilemapEntity);
+			if (!scene || !grid)
+				return -1;
+
+			const auto& tilemap = tilemapEntity.GetComponent<TilemapComponent>();
+			const glm::mat4 tilemapWorldTransform = scene->GetWorldSpaceTransformMatrix(tilemapEntity);
+			std::vector<TilemapColliderShape> shapes = BuildTilemapColliderShapes(tilemapWorldTransform, *grid, tilemap, collider);
+			return (int)shapes.size();
+		}
 
 	}
 
@@ -79,7 +129,7 @@ namespace Yuicy {
 		DrawCollisionFilter(component.CategoryBits, component.MaskBits, dt);
 	}
 
-	void ColliderEditor::DrawTilemapCollider(TilemapCollider2DComponent& component, EditorDirtyTracker* dt)
+	void ColliderEditor::DrawTilemapCollider(TilemapCollider2DComponent& component, Entity entity, EditorDirtyTracker* dt)
 	{
 		const char* currentColliderType = TilemapUtils::TileColliderTypeToString(component.defaultColliderType);
 		if (ImGui::BeginCombo("Default Collider Type", currentColliderType))
@@ -132,6 +182,11 @@ namespace Yuicy {
 			if (dt) dt->MarkSceneDirty();
 
 		ImGui::Text("Runtime Shape Count: %d", (int)component.runtimeFixtures.size());
+		const int estimatedShapeCount = EstimateTilemapShapeCount(entity, component);
+		if (estimatedShapeCount >= 0)
+			ImGui::Text("Estimated Shape Count: %d", estimatedShapeCount);
+		else
+			ImGui::TextDisabled("Estimated Shape Count: N/A");
 
 		ImGui::Separator();
 		DrawCollisionFilter(component.categoryBits, component.maskBits, dt);
