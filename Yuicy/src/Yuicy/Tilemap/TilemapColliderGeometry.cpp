@@ -15,6 +15,12 @@ namespace Yuicy {
 
 	namespace {
 
+		struct SolidGridCell
+		{
+			GridPosition position;
+			TileColliderType colliderType = TileColliderType::Grid;
+		};
+
 		void WarnMissingTileAssetOnce(AssetHandle tileHandle)
 		{
 			static std::unordered_set<uint64_t> warnedTileHandles;
@@ -42,6 +48,53 @@ namespace Yuicy {
 
 			// TileAsset 的 None 表示显式无碰撞，不被 defaultColliderType 覆盖
 			return tileAsset->m_colliderType;
+		}
+
+		std::vector<GridPosition> CollectSortedTilePositions(const TilemapComponent& tilemap)
+		{
+			std::vector<GridPosition> sortedPositions;
+			sortedPositions.reserve(tilemap.m_cells.size());
+
+			for (const auto& [position, cell] : tilemap.m_cells)
+			{
+				if (cell.m_tileHandle != 0)
+					sortedPositions.push_back(position);
+			}
+
+			std::ranges::sort(sortedPositions, [](const GridPosition& a, const GridPosition& b) {
+				return a < b;
+			});
+
+			return sortedPositions;
+		}
+
+		std::vector<SolidGridCell> CollectSolidGridCells(
+			const GridComponent& grid,
+			const TilemapComponent& tilemap,
+			const TilemapCollider2DComponent& collider)
+		{
+			std::vector<SolidGridCell> solidCells;
+
+			if (grid.m_layout != GridLayout::Rectangular || tilemap.m_cells.empty())
+				return solidCells;
+
+			std::vector<GridPosition> sortedPositions = CollectSortedTilePositions(tilemap);
+			solidCells.reserve(sortedPositions.size());
+
+			for (const GridPosition& position : sortedPositions)
+			{
+				const TileCell* cell = tilemap.GetTile(position);
+				if (!cell || cell->m_tileHandle == 0)
+					continue;
+
+				const TileColliderType colliderType = ResolveColliderType(*cell, collider);
+				if (colliderType != TileColliderType::Grid)
+					continue;
+
+				solidCells.push_back({ position, colliderType });
+			}
+
+			return solidCells;
 		}
 
 		TilemapColliderShape BuildGridShape(
@@ -122,35 +175,11 @@ namespace Yuicy {
 		const TilemapCollider2DComponent& collider)
 	{
 		std::vector<TilemapColliderShape> shapes;
+		std::vector<SolidGridCell> solidCells = CollectSolidGridCells(grid, tilemap, collider);
+		shapes.reserve(solidCells.size());
 
-		if (grid.m_layout != GridLayout::Rectangular || tilemap.m_cells.empty())
-			return shapes;
-
-		std::vector<GridPosition> sortedCells;
-		sortedCells.reserve(tilemap.m_cells.size());
-		for (const auto& [position, cell] : tilemap.m_cells)
-		{
-			if (cell.m_tileHandle != 0)
-				sortedCells.push_back(position);
-		}
-
-		std::ranges::sort(sortedCells, [](const GridPosition& a, const GridPosition& b) {
-			return a < b;
-		});
-		shapes.reserve(sortedCells.size());
-
-		for (const GridPosition& position : sortedCells)
-		{
-			const TileCell* cell = tilemap.GetTile(position);
-			if (!cell || cell->m_tileHandle == 0)
-				continue;
-
-			const TileColliderType colliderType = ResolveColliderType(*cell, collider);
-			if (colliderType != TileColliderType::Grid)
-				continue;
-
-			shapes.push_back(BuildGridShape(tilemapWorldTransform, grid, tilemap, position, colliderType));
-		}
+		for (const SolidGridCell& solidCell : solidCells)
+			shapes.push_back(BuildGridShape(tilemapWorldTransform, grid, tilemap, solidCell.position, solidCell.colliderType));
 
 		return shapes;
 	}
@@ -177,36 +206,14 @@ namespace Yuicy {
 		const TilemapCollider2DComponent& collider)
 	{
 		std::vector<TilemapColliderRect> rects;
+		std::vector<SolidGridCell> solidCells = CollectSolidGridCells(grid, tilemap, collider);
+		rects.reserve(solidCells.size());
 
-		if (grid.m_layout != GridLayout::Rectangular || tilemap.m_cells.empty())
-			return rects;
-
-		std::vector<GridPosition> sortedCells;
-		sortedCells.reserve(tilemap.m_cells.size());
-		for (const auto& [position, cell] : tilemap.m_cells)
+		for (const SolidGridCell& solidCell : solidCells)
 		{
-			if (cell.m_tileHandle != 0)
-				sortedCells.push_back(position);
-		}
-
-		std::ranges::sort(sortedCells, [](const GridPosition& a, const GridPosition& b) {
-			return a < b;
-		});
-		rects.reserve(sortedCells.size());
-
-		for (const GridPosition& position : sortedCells)
-		{
-			const TileCell* cell = tilemap.GetTile(position);
-			if (!cell || cell->m_tileHandle == 0)
-				continue;
-
-			const TileColliderType colliderType = ResolveColliderType(*cell, collider);
-			if (colliderType != TileColliderType::Grid)
-				continue;
-
 			TilemapColliderRect rect;
-			rect.origin = position;
-			rect.colliderType = colliderType;
+			rect.origin = solidCell.position;
+			rect.colliderType = solidCell.colliderType;
 			rects.push_back(rect);
 		}
 
