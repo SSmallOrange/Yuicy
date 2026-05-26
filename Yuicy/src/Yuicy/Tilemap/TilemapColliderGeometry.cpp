@@ -82,6 +82,37 @@ namespace Yuicy {
 			return shape;
 		}
 
+		TilemapColliderShape BuildGridShapeFromRect(
+			const glm::mat4& tilemapWorldTransform,
+			const GridComponent& grid,
+			const TilemapComponent& tilemap,
+			const TilemapColliderRect& rect)
+		{
+			const glm::vec2 origin = GridLayoutUtility::CellToLocal(rect.origin, grid);
+			const glm::vec2 anchor = { tilemap.m_tileAnchor.x, tilemap.m_tileAnchor.y };
+			const glm::vec2 localMin = origin + (anchor - glm::vec2(0.5f)) * grid.m_cellSize;
+			const glm::vec2 localMax = origin + (glm::vec2(rect.width - 1, rect.height - 1) + anchor + glm::vec2(0.5f)) * grid.m_cellSize;
+
+			const std::array<glm::vec4, 4> localCorners = {
+				glm::vec4(localMin.x, localMin.y, tilemap.m_tileAnchor.z, 1.0f),
+				glm::vec4(localMax.x, localMin.y, tilemap.m_tileAnchor.z, 1.0f),
+				glm::vec4(localMax.x, localMax.y, tilemap.m_tileAnchor.z, 1.0f),
+				glm::vec4(localMin.x, localMax.y, tilemap.m_tileAnchor.z, 1.0f)
+			};
+
+			TilemapColliderShape shape;
+			shape.cell = rect.origin;
+			shape.colliderType = rect.colliderType;
+
+			for (size_t i = 0; i < localCorners.size(); i++)
+			{
+				const glm::vec4 worldPoint = tilemapWorldTransform * localCorners[i];
+				shape.points[i] = { worldPoint.x, worldPoint.y };
+			}
+
+			return shape;
+		}
+
 	}
 
 	std::vector<TilemapColliderShape> TilemapColliderGeometry::BuildGridShapes(
@@ -122,6 +153,64 @@ namespace Yuicy {
 		}
 
 		return shapes;
+	}
+
+	std::vector<TilemapColliderShape> TilemapColliderGeometry::BuildMergedGridShapes(
+		const glm::mat4& tilemapWorldTransform,
+		const GridComponent& grid,
+		const TilemapComponent& tilemap,
+		const TilemapCollider2DComponent& collider)
+	{
+		std::vector<TilemapColliderRect> rects = BuildMergedGridRects(grid, tilemap, collider);
+		std::vector<TilemapColliderShape> shapes;
+		shapes.reserve(rects.size());
+
+		for (const TilemapColliderRect& rect : rects)
+			shapes.push_back(BuildGridShapeFromRect(tilemapWorldTransform, grid, tilemap, rect));
+
+		return shapes;
+	}
+
+	std::vector<TilemapColliderRect> TilemapColliderGeometry::BuildMergedGridRects(
+		const GridComponent& grid,
+		const TilemapComponent& tilemap,
+		const TilemapCollider2DComponent& collider)
+	{
+		std::vector<TilemapColliderRect> rects;
+
+		if (grid.m_layout != GridLayout::Rectangular || tilemap.m_cells.empty())
+			return rects;
+
+		std::vector<GridPosition> sortedCells;
+		sortedCells.reserve(tilemap.m_cells.size());
+		for (const auto& [position, cell] : tilemap.m_cells)
+		{
+			if (cell.m_tileHandle != 0)
+				sortedCells.push_back(position);
+		}
+
+		std::ranges::sort(sortedCells, [](const GridPosition& a, const GridPosition& b) {
+			return a < b;
+		});
+		rects.reserve(sortedCells.size());
+
+		for (const GridPosition& position : sortedCells)
+		{
+			const TileCell* cell = tilemap.GetTile(position);
+			if (!cell || cell->m_tileHandle == 0)
+				continue;
+
+			const TileColliderType colliderType = ResolveColliderType(*cell, collider);
+			if (colliderType != TileColliderType::Grid)
+				continue;
+
+			TilemapColliderRect rect;
+			rect.origin = position;
+			rect.colliderType = colliderType;
+			rects.push_back(rect);
+		}
+
+		return rects;
 	}
 
 }
