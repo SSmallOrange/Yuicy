@@ -52,6 +52,23 @@ namespace Yuicy {
 			return vertices;
 		}
 
+		std::vector<TilemapColliderShape> BuildColliderShapes(
+			const glm::mat4& tilemapWorldTransform,
+			const GridComponent& grid,
+			const TilemapComponent& tilemap,
+			const TilemapCollider2DComponent& collider)
+		{
+			switch (collider.compositeOperation)
+			{
+				case TilemapColliderCompositeOperation::None:
+					return TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+				case TilemapColliderCompositeOperation::Merge:
+					return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+			}
+
+			return TilemapColliderGeometry::BuildMergedGridShapes(tilemapWorldTransform, grid, tilemap, collider);
+		}
+
 	}
 
 	void TilemapColliderBuilder::Build(Scene* scene, b2World* world, Entity tilemapEntity)
@@ -90,7 +107,7 @@ namespace Yuicy {
 		}
 
 		const glm::mat4 tilemapWorldTransform = scene->GetWorldSpaceTransformMatrix(tilemapEntity);
-		std::vector<TilemapColliderShape> shapes = TilemapColliderGeometry::BuildGridShapes(tilemapWorldTransform, *grid, tilemap, collider);
+		std::vector<TilemapColliderShape> shapes = BuildColliderShapes(tilemapWorldTransform, *grid, tilemap, collider);
 		if (shapes.empty())
 			return;
 

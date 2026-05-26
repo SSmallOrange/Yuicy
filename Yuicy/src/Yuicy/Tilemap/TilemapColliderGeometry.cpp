@@ -7,6 +7,7 @@
 #include "Yuicy/Tilemap/Tile.h"
 
 #include <algorithm>
+#include <cmath>
 #include <unordered_set>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -95,6 +96,123 @@ namespace Yuicy {
 			}
 
 			return solidCells;
+		}
+
+		bool HasCellGap(const GridComponent& grid)
+		{
+			return std::abs(grid.m_cellGap.x) > 0.000001f || std::abs(grid.m_cellGap.y) > 0.000001f;
+		}
+
+		TilemapColliderRect BuildSingleCellRect(const SolidGridCell& solidCell)
+		{
+			TilemapColliderRect rect;
+			rect.origin = solidCell.position;
+			rect.colliderType = solidCell.colliderType;
+			return rect;
+		}
+
+		std::vector<TilemapColliderRect> BuildSingleCellRects(const std::vector<SolidGridCell>& solidCells)
+		{
+			std::vector<TilemapColliderRect> rects;
+			rects.reserve(solidCells.size());
+
+			for (const SolidGridCell& solidCell : solidCells)
+				rects.push_back(BuildSingleCellRect(solidCell));
+
+			return rects;
+		}
+
+		bool IsSolidAndUnvisited(
+			const GridPosition& position,
+			const std::unordered_set<GridPosition, GridPositionHash>& solidPositions,
+			const std::unordered_set<GridPosition, GridPositionHash>& visitedPositions)
+		{
+			return solidPositions.contains(position) && !visitedPositions.contains(position);
+		}
+
+		bool CanExtendRow(
+			const GridPosition& origin,
+			int width,
+			int height,
+			const std::unordered_set<GridPosition, GridPositionHash>& solidPositions,
+			const std::unordered_set<GridPosition, GridPositionHash>& visitedPositions)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				GridPosition position = origin;
+				position.m_x += x;
+				position.m_y += height;
+
+				if (!IsSolidAndUnvisited(position, solidPositions, visitedPositions))
+					return false;
+			}
+
+			return true;
+		}
+
+		void MarkRectVisited(
+			const GridPosition& origin,
+			int width,
+			int height,
+			std::unordered_set<GridPosition, GridPositionHash>& visitedPositions)
+		{
+			for (int y = 0; y < height; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					GridPosition position = origin;
+					position.m_x += x;
+					position.m_y += y;
+					visitedPositions.insert(position);
+				}
+			}
+		}
+
+		std::vector<TilemapColliderRect> MergeSolidGridCells(const std::vector<SolidGridCell>& solidCells)
+		{
+			std::vector<TilemapColliderRect> rects;
+			rects.reserve(solidCells.size());
+
+			std::unordered_set<GridPosition, GridPositionHash> solidPositions;
+			solidPositions.reserve(solidCells.size());
+			for (const SolidGridCell& solidCell : solidCells)
+				solidPositions.insert(solidCell.position);
+
+			std::unordered_set<GridPosition, GridPositionHash> visitedPositions;
+			visitedPositions.reserve(solidCells.size());
+
+			for (const SolidGridCell& solidCell : solidCells)
+			{
+				const GridPosition& origin = solidCell.position;
+				if (visitedPositions.contains(origin))
+					continue;
+
+				int width = 1;
+				while (true)
+				{
+					GridPosition position = origin;
+					position.m_x += width;
+					if (!IsSolidAndUnvisited(position, solidPositions, visitedPositions))
+						break;
+
+					width++;
+				}
+
+				int height = 1;
+				while (CanExtendRow(origin, width, height, solidPositions, visitedPositions))
+					height++;
+
+				MarkRectVisited(origin, width, height, visitedPositions);
+
+				TilemapColliderRect rect;
+				rect.origin = origin;
+				rect.width = width;
+				rect.height = height;
+				rect.colliderType = solidCell.colliderType;
+				rects.push_back(rect);
+			}
+
+			return rects;
 		}
 
 		TilemapColliderShape BuildGridShape(
@@ -205,19 +323,14 @@ namespace Yuicy {
 		const TilemapComponent& tilemap,
 		const TilemapCollider2DComponent& collider)
 	{
-		std::vector<TilemapColliderRect> rects;
 		std::vector<SolidGridCell> solidCells = CollectSolidGridCells(grid, tilemap, collider);
-		rects.reserve(solidCells.size());
+		if (solidCells.empty())
+			return {};
 
-		for (const SolidGridCell& solidCell : solidCells)
-		{
-			TilemapColliderRect rect;
-			rect.origin = solidCell.position;
-			rect.colliderType = solidCell.colliderType;
-			rects.push_back(rect);
-		}
+		if (HasCellGap(grid))
+			return BuildSingleCellRects(solidCells);
 
-		return rects;
+		return MergeSolidGridCells(solidCells);
 	}
 
 }
