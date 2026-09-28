@@ -67,8 +67,10 @@ Yuicy/
 │   │   └── Panels/             # ImGui 面板与组件编辑器
 │   └── assets/                 # 编辑器资源（shaders / textures / fonts）
 ├── Sandbox/                    # 功能临时验证
+├── premake/                    # premake 下载引导（premake.ps1）、扩展模块与第三方工程脚本
 ├── premake5.lua                # 工程生成脚本
-├── GenerateProject.bat         # 一键生成 VS2022 工程
+├── GenerateProject.bat         # Windows：生成 VS2022 工程与 compile_commands.json
+├── GenerateProject.sh          # macOS / Linux：生成 compile_commands.json
 └── AGENTS.md                   # AI 编码助手 / 贡献者工作约定
 ```
 
@@ -96,10 +98,14 @@ git submodule update --init --recursive
 
 ### 生成解决方案
 
-双击运行 `GenerateProject.bat`，或手动执行：
+双击运行 `GenerateProject.bat`。
+
+- 仓库不再内置 `premake5.exe`：首次运行时自动下载固定版本（`5.0.0-beta7`）到 `bin/tools/`（已被 git 忽略），校验 SHA256 后使用，之后复用缓存。
+- 需要联网访问 GitHub；离线或已有 premake 时，可 `set PREMAKE5=C:\path\to\premake5.exe` 后再运行。
+- 手动执行任意 premake 命令：
 
 ```bat
-premake5.exe vs2022
+powershell -NoProfile -ExecutionPolicy Bypass -File premake\premake.ps1 vs2022
 ```
 
 ### 运行
@@ -111,6 +117,29 @@ premake5.exe vs2022
 构建产物位于 `bin/<Config>-x64/<Project>/`。
 
 > 新增源文件后需重新运行 `GenerateProject.bat`（`premake5.lua` 以通配方式收集 `src/**`）。
+
+### 编译数据库（clangd / LSP）
+
+在仓库根目录生成 `compile_commands.json`（已被 git 忽略），供 clangd 等工具做跳转定义、查引用。三个平台均可生成：
+
+| 平台 | 命令 |
+|---|---|
+| Windows | `GenerateProject.bat`（生成 VS 工程的同时导出） |
+| macOS / Linux | `./GenerateProject.sh`（同样自动下载固定版本的 premake 到 `bin/tools/` 并校验 SHA256） |
+
+导出其他配置：
+
+```bash
+# macOS / Linux
+./GenerateProject.sh export-compile-commands --export-compile-commands-config=Release
+# Windows
+powershell -NoProfile -ExecutionPolicy Bypass -File premake\premake.ps1 export-compile-commands --export-compile-commands-config=Release
+```
+
+- 实现见 `premake/export-compile-commands.lua`；文件中使用的是绝对路径，**需要在使用它的机器上生成**，不能拷贝到其他机器。
+- 已有 premake5 时可通过环境变量 `PREMAKE5` 指定，如 `PREMAKE5=/path/to/premake5 ./GenerateProject.sh`。
+- macOS / Linux 缺失的 Win32 头文件由 `premake/clangd-win32-stubs/` 中的空头文件兜底，仅直接调用 Win32 API 的少数文件会有 clangd 报错。
+- 新增 / 删除源文件后需重新生成。
 
 ---
 

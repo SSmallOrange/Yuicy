@@ -19,3 +19,7 @@ YuiStudio/assert/
 *.filters
 /assets
 /.vscode
+
+# Compilation database (premake5 export-compile-commands) & clangd index
+/compile_commands.json
+.cache/

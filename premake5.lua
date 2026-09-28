@@ -1,3 +1,6 @@
+-- premake5 export-compile-commands：生成 compile_commands.json（clangd / LSP 用）
+include "premake/export-compile-commands.lua"
+
 workspace "Yuicy"
     architecture "x64"
     startproject "YuiStudio"
@@ -13,7 +16,12 @@ group "Dependencies"
     include "Yuicy/thirdparty/imgui"
     include "Yuicy/thirdparty/Box2D/box2d"
     include "Yuicy/thirdparty/lua"
-    include "Yuicy/thirdparty/yaml-cpp"
+    -- 上游 yaml-cpp 不带 premake 脚本；兼容本地已放入子模块的旧脚本，否则使用仓库内维护的版本
+    if os.isfile("Yuicy/thirdparty/yaml-cpp/premake5.lua") then
+        include "Yuicy/thirdparty/yaml-cpp"
+    else
+        include "premake/thirdparty/yaml-cpp.lua"
+    end
 
 group ""
 project "Yuicy"
