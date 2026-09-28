@@ -1,0 +1,3 @@
+# 第三方代码禁止格式化（兼容不支持 .clang-format-ignore 的旧版本 / IDE 内置 clang-format）
+DisableFormat: true
+SortIncludes: Never

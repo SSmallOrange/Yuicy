@@ -1,0 +1,43 @@
+# https://editorconfig.org  （VS2022 / VS Code / CLion / Rider 均原生支持）
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+[*.{h,hpp,inl,cpp,c,glsl}]
+indent_style = tab
+indent_size = 4
+
+# premake / Lua 脚本当前使用 4 空格缩进
+[*.lua]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,yui,yproj}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+indent_style = space
+indent_size = 2
+# Markdown 行尾两个空格表示换行，不能裁剪
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# 第三方代码保持原样
+[Yuicy/thirdparty/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset
+tab_width = unset

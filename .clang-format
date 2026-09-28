@@ -1,0 +1,93 @@
+# Yuicy 代码格式规范（clang-format >= 17）
+#
+# 该配置从现有代码风格反推，目标是"新代码风格一致"，而不是重排历史代码。
+# 请只格式化自己改动的行，不要整文件 / 整仓库批量格式化：
+#   git clang-format            # 仅格式化暂存区中改动的行
+#   git clang-format --diff     # 仅预览
+# 第三方代码见 .clang-format-ignore 与 Yuicy/thirdparty/.clang-format。
+---
+Language: Cpp
+BasedOnStyle: Microsoft
+Standard: c++20
+
+# 缩进：Tab 缩进，Tab 宽 4；对齐部分使用空格
+UseTab: ForContinuationAndIndentation
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+# 不强制行宽，保留作者手动折行
+ColumnLimit: 0
+
+# namespace Yuicy { 同行花括号，内部整体缩进一级
+NamespaceIndentation: All
+AccessModifierOffset: -4
+IndentCaseLabels: false
+
+# Allman 风格（namespace 与 lambda 除外）
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+# 允许的单行写法：类内短函数、if (x) return;、case X: return y;
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+AllowShortLambdasOnASingleLine: All
+AllowShortEnumsOnASingleLine: false
+
+# 指针/引用贴类型：Ref<T>& foo, const char* name
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+SpaceAfterTemplateKeyword: false
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
+# 花括号初始化内保留空格：ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f }
+Cpp11BracedListStyle: false
+
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+PackConstructorInitializers: Never
+
+# 不做自动对齐（现有代码为手动对齐，自动对齐会产生大量无关 diff）
+AlignAfterOpenBracket: DontAlign
+AlignTrailingComments:
+  Kind: Leave
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignEscapedNewlines: DontAlign
+AlignOperands: DontAlign
+BreakBeforeBinaryOperators: NonAssignment
+
+# include 顺序与分组由作者手动维护（pch.h 必须在 .cpp 第一行）
+SortIncludes: Never
+IncludeBlocks: Preserve
+FixNamespaceComments: false
+ReflowComments: Never
+
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: true
+  AtStartOfFile: false
+MaxEmptyLinesToKeep: 2
+InsertNewlineAtEOF: true

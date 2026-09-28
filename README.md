@@ -1,134 +1,146 @@
-# Yuicy Framework
+# Yuicy
 
-> ×¢£º±¾ÏîÄ¿Ñ§Ï°×Ô£º``HazelÒıÇæ``µÄ¿ªÔ´²¿·Ö£¬ÉáÆúÔ­±¾ÒıÇæµÄ±à¼­½çÃæ£¬²¢´ÓFBO²¿·Ö¿ªÊ¼ÍÑÀë£¬×¨×¢ÓÚOpenGLÏà¹ØÄÚÈİ£¬ÒÔÏÂÊÇHazelÒıÇæÏà¹ØÁ´½Ó£º
+> æœ¬é¡¹ç›®å­¦ä¹ è‡ª [Hazel å¼•æ“](https://github.com/TheCherno/Hazel) çš„å¼€æºéƒ¨åˆ†ï¼Œå¹¶åœ¨æ­¤åŸºç¡€ä¸Šç‹¬ç«‹æ¼”è¿›ã€‚
 >
-> Github£º[TheCherno/Hazel: Hazel Engine](https://github.com/TheCherno/Hazel)
->
-> Youtube£º[Introducing the GAME ENGINE series! - YouTube](https://www.youtube.com/watch?v=JxIZbV_XjAs&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT)
->
-> Bilibili·­Òë°æ£ºBV1wtLazEEmC
+> - YouTubeï¼š[Introducing the GAME ENGINE series!](https://www.youtube.com/watch?v=JxIZbV_XjAs&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT)
+> - Bilibili ç¿»è¯‘ç‰ˆï¼šBV1wtLazEEmC
 
-Yuicy ÊÇÒ»¸ö **C++20 + OpenGL** µÄÇáÁ¿¼¶**äÖÈ¾Ñ§Ï°¿ò¼Ü£¨Framework£©**¡£Ö÷ÒªÓÃÀ´Ñ§Ï°ÍêÕûµÄGPUäÖÈ¾Á÷³Ì£¬²¢¼ÌĞøÏòÍâÍØÕ¹¡£
-
-> ºËĞÄÄ¿±ê£ºÍ¨¹ıÊµÏÖ¼òµ¥DemoÀ´ÕûºÏÏÖ´ú OpenGL äÖÈ¾Á÷³Ì£¬°üÀ¨äÖÈ¾³éÏó¡¢2D ÅúäÖÈ¾¡¢FBO¡¢¹âÕÕ¡¢ºó´¦Àí¡¢Á£×ÓÌØĞ§¡¢½Å±¾µÈ¡£
+Yuicy æ˜¯ä¸€ä¸ª **C++20 + OpenGL 4.5** çš„è½»é‡çº§ **2D å¼•æ“**ï¼Œé…å¥—åœºæ™¯ç¼–è¾‘å™¨ **YuiStudio**ã€‚
+ä¸»è¦ç”¨æ¥å­¦ä¹ å®Œæ•´çš„ GPU æ¸²æŸ“æµç¨‹å’Œå¼•æ“/ç¼–è¾‘å™¨æ¶æ„ï¼Œå¹¶æŒç»­å‘å¤–æ‰©å±•ã€‚
 
 ---
 
-### ÄÚÈİÑİÊ¾
+## åŠŸèƒ½æ¦‚è§ˆ
 
+### å¼•æ“ï¼ˆYuicyï¼‰
 
+- **åº”ç”¨æ¡†æ¶**ï¼š`Application` / `Layer` / `LayerStack`ï¼Œäº‹ä»¶ç³»ç»Ÿï¼Œçª—å£ä¸é”®é¼ è¾“å…¥ï¼ˆç›®å‰ä»… Windowsï¼‰
+- **2D æ¸²æŸ“**ï¼š`Renderer2D` æ‰¹æ¸²æŸ“ï¼ˆQuad / Sprite / Line / Rect / Circleï¼‰ã€çº¹ç†ä¸ SubTexture åˆ‡ç‰‡ã€Framebufferï¼ˆå«å®ä½“ ID æ‹¾å–é™„ä»¶ï¼‰
+- **æ¸²æŸ“æ’åº**ï¼šSorting Layer + Sorting Order å…±åŒå†³å®šç»˜åˆ¶é¡ºåºï¼Œå±‚çº§åœ¨é¡¹ç›®ä¸­é…ç½®
+- **ECS åœºæ™¯**ï¼šåŸºäº `EnTT` å°è£…ï¼Œæ”¯æŒå®ä½“çˆ¶å­å±‚çº§ã€åœºæ™¯æ‹·è´ä¸ YAML åºåˆ—åŒ–ï¼ˆ`.yui`ï¼‰
+- **å†…ç½®ç»„ä»¶**ï¼šID / Tag / Relationship / Transform / SpriteRenderer / Camera / Animation / LuaScript / NativeScript / Rigidbody2D / BoxCollider2D / CircleCollider2D
+- **2D ç‰©ç†**ï¼šåŸºäº `Box2D`ï¼Œæ”¯æŒåˆšä½“ã€ç¢°æ’ä½“ã€è§¦å‘å™¨ä¸ç¢°æ’å±‚ï¼ˆCollision Layerï¼‰è¿‡æ»¤
+- **Lua è„šæœ¬**ï¼šåŸºäº `sol2`ï¼Œè„šæœ¬å¯å®ç° `OnCreate` / `OnUpdate` / `OnDestroy` / `OnCollisionEnter` / `OnCollisionExit` / `OnTriggerEnter` / `OnTriggerExit`
+- **èµ„æºä¸é¡¹ç›®**ï¼šåŸºäº `AssetHandle`(UUID) çš„èµ„æºæ³¨å†Œè¡¨ä¸å¯¼å…¥å™¨ï¼›é¡¹ç›®æ–‡ä»¶ `.yproj` ç®¡ç†èµ„æºç›®å½•ã€æ’åºå±‚ä¸ç¢°æ’å±‚
+- **è°ƒè¯•**ï¼šspdlog æ—¥å¿—ã€æ–­è¨€ã€`YUICY_PROFILE_*` æ€§èƒ½é‡‡æ ·ï¼ˆChrome Tracing æ ¼å¼ï¼‰
+
+### ç¼–è¾‘å™¨ï¼ˆYuiStudioï¼‰
+
+- **è§†å£**ï¼šç¼–è¾‘å™¨ç›¸æœºï¼ˆ`Alt+WASD` ç§»åŠ¨ã€`Shift` åŠ é€Ÿã€ä¸­é”®æ‹–æ‹½å¹³ç§»ã€æ»šè½®ä»¥é¼ æ ‡ä¸ºä¸­å¿ƒç¼©æ”¾ã€`F` èšç„¦é€‰ä¸­å®ä½“ï¼‰ã€Gizmoï¼ˆ`Q/W/E/R` åˆ‡æ¢ æ— /å¹³ç§»/æ—‹è½¬/ç¼©æ”¾ï¼‰
+- **é€‰æ‹©**ï¼šå•å‡»ã€`Ctrl+Click` åˆ‡æ¢é€‰æ‹©ã€`Shift+Click` è¿½åŠ é€‰æ‹©ã€é¼ æ ‡æ¡†é€‰ï¼Œå¤šé€‰é«˜äº®
+- **åœºæ™¯å±‚çº§é¢æ¿**ï¼šå®ä½“æ ‘ã€æ‹–æ‹½è°ƒæ•´çˆ¶å­å…³ç³»ã€èŠ‚ç‚¹é”å®šä¸éšè—
+- **å±æ€§é¢æ¿**ï¼šç»„ä»¶å¢åˆ ä¸ç¼–è¾‘ï¼ˆSpriteã€Animation å¸§åˆ‡ç‰‡ã€Camera å®½é«˜æ¯”ä¸å®‰å…¨åŒºã€Collider ä¸ç¢°æ’å±‚ç­‰ï¼‰
+- **å†…å®¹æµè§ˆå™¨**ï¼šé¢åŒ…å±‘å¯¼èˆªã€æœç´¢ä¸ç±»å‹è¿‡æ»¤ã€å³é”®æ–°å»º/é‡å‘½å/åˆ é™¤æ–‡ä»¶ä¸æ–‡ä»¶å¤¹ã€æ–°å»ºè„šæœ¬ä¸åœºæ™¯ã€æ‹–æ‹½èµ„æºåˆ°åœºæ™¯æˆ–ç»„ä»¶
+- **èµ„æºæ£€æŸ¥é¢æ¿**ï¼šä¸å†…å®¹æµè§ˆå™¨è”åŠ¨ï¼Œå±•ç¤ºèµ„æºè¯¦æƒ…
+- **Undo / Redo**ï¼šå®ä½“ä¸ç»„ä»¶çš„å¢åˆ ã€çˆ¶å­å…³ç³»å˜æ›´ã€å˜æ¢æ“ä½œå‡å¯æ’¤é”€ï¼ˆ`Ctrl+Z` / `Ctrl+Y`ï¼‰
+- **è¿è¡Œæ¨¡å¼**ï¼šEdit / Play / Simulateï¼Œæ”¯æŒæš‚åœä¸å•æ­¥
+- **æ–‡ä»¶**ï¼šæ–°å»º/æ‰“å¼€/ä¿å­˜ åœºæ™¯ï¼ˆ`Ctrl+N` / `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S`ï¼‰ä¸é¡¹ç›®ï¼Œè„æ ‡è®°ä¸è‡ªåŠ¨ä¿å­˜
 
 ---
 
-
-
-###  µ±Ç°Ö§³ÖĞ§¹û
-
-- 2D äÖÈ¾£º¾«Áé»æÖÆÓëÅúäÖÈ¾£¬ÎÆÀíÓë¾«Áé±íÇĞ·Ö
-- ÀëÆÁäÖÈ¾Óëºó´¦Àí£º»ùÓÚ FBO µÄĞ§¹ûÁ´£¬Ö§³Ö»ù´¡É«²Êµ÷½Ú¡¢Îí¡¢°µ½Ç¡¢ÓêµÎµş¼Ó
-- 2D ¹âÕÕ£ºµã¹âÔ´Óë¾Û¹âµÆ
-- ÌìÆøÏµÍ³£ºÁ£×ÓÓêÓë½¦Éä£¬Ö§³ÖÔ¤ÉèÅäÖÃ
-- ¼òµ¥µÄ2D ÎïÀíÓë½»»¥
-
-### ¿ò¼Ü²ãÄÜÁ¦
-
-- Ó¦ÓÃ¿ò¼Ü£º`Application / Layer / LayerStack`
-- ´°¿ÚÓëÊäÈë£ºÄ¿Ç°Ö»Ö§³ÖWindows Æ½Ì¨µÄ´°¿Ú¡¢¼üÊóÊäÈë¡¢ÊÂ¼şÏµÍ³
-- ECS/³¡¾°£º»ùÓÚ`entt`·â×°ECS£¬Ä¬ÈÏÖ§³Ö×é¼ş£ºTag/Transform/Sprite/Camera/Animation/LuaScript
-- 2D ÎïÀí£º»ùÓÚ`Box2D`·â×°£¬Ö§³ÖÎïÀíĞ§¹û
-- TileMap£ºÔ¤Éè»ù´¡µÄµØÍ¼½âÎö¿ò¼Ü£¬Ö§³Ö°´ÕÕ¸ñÊ½Çø·Ö²»Í¬µÄ½âÎö·½Ê½
-- Lua ½Å±¾£ºÍ¨¹ı `sol2`Ö§³ÖLua½Å±¾¹¦ÄÜ£¬½Å±¾Í¨¹ı£¨`OnCreate`¡¢`OnUpdate`¡¢`OnDestroy`¡¢`OnCollisionEnter`µÈ·½·¨£¬º­¸ÇÊµÌåµÄÉúÃüÖÜÆÚºÍÅö×²
-
----
-
-### Ä¿Â¼½á¹¹
+## ç›®å½•ç»“æ„
 
 ```
 Yuicy/
-  Yuicy/                 # ¾²Ì¬¿â
-    src/
-      Yuicy/Core/        # Application/Layer/Log/Assert
-      Yuicy/Renderer/    # Renderer2D/Shader/Texture/Framebuffer
-      Yuicy/Scene/       # Scene/Entity/Components
-      Yuicy/Scripting/   # Lua ÒıÇæÓë°ó¶¨
-      Yuicy/Physics/     # Box2D ·â×°
-      Yuicy/TileMap/     # TileMap½âÎö
-      Yuicy/Effects/     # Weather/Lighting2D/PostProcessingµÈ¶îÍâĞ§¹û
-      Platform/          # OpenGL + Windows Æ½Ì¨¸ôÀë
-      
-    thirdparty/          # µÚÈı·½ÒÀÀµ
-
-  TinyDungeon/           # DemoÕ¹Ê¾£¨ÄÚÈİÇı¶¯£ºµØÍ¼/½Å±¾/µĞÈË/Ğ§¹û£©
-    src/
-    assets/				# µØÍ¼¡¢ÈËÎï¡¢½Å±¾×ÊÔ´
-
-  Sandbox/                # ¹¦ÄÜÁÙÊ±ÑéÖ¤
-  
-  premake5.lua            # ×Ü¹¤³ÌÉú³É½Å±¾
-  GenerateProject.bat     # Ò»¼üÉú³É VS2022 ¹¤³Ì
-  premake5.exe
+â”œâ”€â”€ Yuicy/                      # å¼•æ“ï¼ˆé™æ€åº“ï¼‰
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ Yuicy.h             # å®¢æˆ·ç«¯æ€»å¤´æ–‡ä»¶
+â”‚   â”‚   â”œâ”€â”€ Yuicy/
+â”‚   â”‚   â”‚   â”œâ”€â”€ Core/           # Application / Layer / Log / Assert / UUID / Input / Window
+â”‚   â”‚   â”‚   â”œâ”€â”€ Events/         # äº‹ä»¶ç³»ç»Ÿ
+â”‚   â”‚   â”‚   â”œâ”€â”€ Renderer/       # Renderer2D / Shader / Texture / Framebuffer / Camera
+â”‚   â”‚   â”‚   â”œâ”€â”€ Scene/          # Scene / Entity / Components / SceneSerializer
+â”‚   â”‚   â”‚   â”œâ”€â”€ Asset/          # èµ„æºå¥æŸ„ã€æ³¨å†Œè¡¨ã€å¯¼å…¥å™¨ã€EditorAssetManager
+â”‚   â”‚   â”‚   â”œâ”€â”€ Project/        # é¡¹ç›®é…ç½®ä¸åºåˆ—åŒ–
+â”‚   â”‚   â”‚   â”œâ”€â”€ Physics/        # Box2D å°è£…ã€ç¢°æ’å±‚
+â”‚   â”‚   â”‚   â”œâ”€â”€ Scripting/      # Lua å¼•æ“ä¸ç»‘å®š
+â”‚   â”‚   â”‚   â”œâ”€â”€ ImGui/          # ImGuiLayerã€ImGuizmo
+â”‚   â”‚   â”‚   â””â”€â”€ Debug/          # Instrumentor
+â”‚   â”‚   â””â”€â”€ Platform/
+â”‚   â”‚       â”œâ”€â”€ OpenGL/         # OpenGL å®ç°
+â”‚   â”‚       â””â”€â”€ Windows/        # Windows çª—å£ä¸è¾“å…¥
+â”‚   â””â”€â”€ thirdparty/             # ç¬¬ä¸‰æ–¹ä¾èµ–
+â”œâ”€â”€ YuiStudio/                  # åœºæ™¯ç¼–è¾‘å™¨ï¼ˆé»˜è®¤å¯åŠ¨é¡¹ç›®ï¼‰
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ EditorLayer.*       # ç¼–è¾‘å™¨ä¸» Layer
+â”‚   â”‚   â”œâ”€â”€ Editor/             # ç¼–è¾‘å™¨æœåŠ¡ï¼šä¸Šä¸‹æ–‡ã€å‘½ä»¤/æ’¤é”€ã€åœºæ™¯æ§åˆ¶ã€èµ„æºå·¥ä½œæµã€æ¸²æŸ“ç®¡çº¿
+â”‚   â”‚   â””â”€â”€ Panels/             # ImGui é¢æ¿ä¸ç»„ä»¶ç¼–è¾‘å™¨
+â”‚   â””â”€â”€ assets/                 # ç¼–è¾‘å™¨èµ„æºï¼ˆshaders / textures / fontsï¼‰
+â”œâ”€â”€ Sandbox/                    # åŠŸèƒ½ä¸´æ—¶éªŒè¯
+â”œâ”€â”€ premake5.lua                # å·¥ç¨‹ç”Ÿæˆè„šæœ¬
+â”œâ”€â”€ GenerateProject.bat         # ä¸€é”®ç”Ÿæˆ VS2022 å·¥ç¨‹
+â””â”€â”€ AGENTS.md                   # AI ç¼–ç åŠ©æ‰‹ / è´¡çŒ®è€…å·¥ä½œçº¦å®š
 ```
-
-
 
 ---
 
-## ¹¹½¨ÓëÔËĞĞ£¨Windows£©
+## æ„å»ºä¸è¿è¡Œï¼ˆWindowsï¼‰
 
-### »·¾³ÒªÇó
+### ç¯å¢ƒè¦æ±‚
 
-- Windows
-- Visual Studio 2022£¨`GenerateProject.bat` Ä¬ÈÏÉú³É vs2022 ¹¤³Ì£©
-- C++20 ¹¤¾ßÁ´ + Windows SDK
+- Windows 10/11
+- Visual Studio 2022ï¼ˆå« "ä½¿ç”¨ C++ çš„æ¡Œé¢å¼€å‘" å·¥ä½œè´Ÿè½½ã€Windows SDKï¼‰
+- æ”¯æŒ OpenGL 4.5 çš„æ˜¾å¡é©±åŠ¨
 
-### ¹¹½¨
+### è·å–ä»£ç 
 
 ```bash
 git clone --recursive https://github.com/SSmallOrange/Yuicy
 ```
 
-Èç¹ûÒÑ clone Î´´ø×ÓÄ£¿é£º
+å¦‚æœ clone æ—¶æœªå¸¦å­æ¨¡å—ï¼š
 
 ```bash
 git submodule update --init --recursive
 ```
 
-### Éú³É½â¾ö·½°¸
+### ç”Ÿæˆè§£å†³æ–¹æ¡ˆ
 
-Ë«»÷ÔËĞĞ£º
-
-```bat
-GenerateProject.bat
-```
-
-»òÊÖ¶¯Ö´ĞĞ£º
+åŒå‡»è¿è¡Œ `GenerateProject.bat`ï¼Œæˆ–æ‰‹åŠ¨æ‰§è¡Œï¼š
 
 ```bat
 premake5.exe vs2022
 ```
 
-### ÔËĞĞ
+### è¿è¡Œ
 
-1. ´ò¿ªÉú³ÉµÄ `.sln`
-2. Ä¬ÈÏÒÔ `TinyDungeon` ×÷ÎªÆô¶¯ÏîÄ¿
-3. ±àÒë²¢ÔËĞĞ
+1. æ‰“å¼€ç”Ÿæˆçš„ `Yuicy.sln`
+2. é»˜è®¤å¯åŠ¨é¡¹ç›®ä¸º `YuiStudio`ï¼ˆä¹Ÿå¯å°† `Sandbox` è®¾ä¸ºå¯åŠ¨é¡¹ç›®ï¼‰
+3. é€‰æ‹© `Debug` æˆ– `Release`ï¼Œç¼–è¯‘å¹¶è¿è¡Œ
+
+æ„å»ºäº§ç‰©ä½äº `bin/<Config>-x64/<Project>/`ã€‚
+
+> æ–°å¢æºæ–‡ä»¶åéœ€é‡æ–°è¿è¡Œ `GenerateProject.bat`ï¼ˆ`premake5.lua` ä»¥é€šé…æ–¹å¼æ”¶é›† `src/**`ï¼‰ã€‚
 
 ---
 
-## ÒÀÀµÓëµÚÈı·½
+## ä¾èµ–
 
-ÒÀÀµÓÉ¸ùÄ¿Â¼ `premake5.lua` Í³Ò»¹ÜÀí£¬¼¯ÖĞÔÚ `Yuicy/thirdparty/`¡£
+ä¾èµ–ç”±æ ¹ç›®å½• `premake5.lua` ç»Ÿä¸€ç®¡ç†ï¼Œä½äº `Yuicy/thirdparty/`ï¼š
 
-- GLFW
-- GLAD
-- ImGui
-- Box2D
-- Lua
-- sol2
-- glm
-- stb_image
-- EnTT
-- spdlog
+| åº“ | ç”¨é€” | å¼•å…¥æ–¹å¼ |
+|---|---|---|
+| [GLFW](https://github.com/TheCherno/glfw) | çª—å£ä¸è¾“å…¥ | å­æ¨¡å— |
+| GLAD | OpenGL å‡½æ•°åŠ è½½ | æºç  |
+| [Dear ImGui](https://github.com/ocornut/imgui) | ç¼–è¾‘å™¨ UI | æºç  |
+| [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo) | å˜æ¢ Gizmo | æºç ï¼ˆ`Yuicy/src/Yuicy/ImGui/`ï¼‰ |
+| [EnTT](https://github.com/skypjack/entt) | ECS | æºç  |
+| [Box2D](https://github.com/thecherno/box2d) | 2D ç‰©ç† | å­æ¨¡å— |
+| Lua | è„šæœ¬è™šæ‹Ÿæœº | æºç  |
+| [sol2](https://github.com/ThePhD/sol2) | Lua ç»‘å®š | å­æ¨¡å— |
+| [yaml-cpp](https://github.com/jbeder/yaml-cpp) | åœºæ™¯ / é¡¹ç›®åºåˆ—åŒ– | å­æ¨¡å— |
+| [spdlog](https://github.com/gabime/spdlog) | æ—¥å¿— | å­æ¨¡å— |
+| [glm](https://github.com/g-truc/glm) | æ•°å­¦åº“ | å­æ¨¡å— |
+| stb_image | å›¾ç‰‡åŠ è½½ | æºç  |
+| [TinyReflection](https://github.com/SSmallOrange/TinyReflection) | åå°„ | å­æ¨¡å— |
+
+---
+
+## å‚ä¸å¼€å‘
+
+- ä»£ç é£æ ¼ï¼šè§ `.clang-format` / `.editorconfig`ï¼Œåªæ ¼å¼åŒ–è‡ªå·±æ”¹åŠ¨çš„ä»£ç ï¼ˆ`git clang-format`ï¼‰
+- æäº¤ä¿¡æ¯ï¼š`<type>(<scope>): <æè¿°>`ï¼Œä¾‹å¦‚ `feat(YuiStudio): æ–°å¢å¤šé€‰å®ä½“åŠŸèƒ½`
+- ä½¿ç”¨ AI ç¼–ç åŠ©æ‰‹æ—¶ï¼Œè¯·å…ˆé˜…è¯» [AGENTS.md](AGENTS.md)
 
 ---
 

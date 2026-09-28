@@ -1,0 +1,4 @@
+# clang-format >= 18 读取此文件：以下路径不参与格式化（第三方 / 外部拷贝代码）
+Yuicy/thirdparty/**
+Yuicy/src/Yuicy/ImGui/ImGuizmo.h
+Yuicy/src/Yuicy/ImGui/ImGuizmo.cpp

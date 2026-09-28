@@ -1,0 +1,40 @@
+# 默认：自动识别文本文件，仓库与工作区统一使用 LF
+* text=auto eol=lf
+
+# 源码 / 着色器 / 脚本 / 配置
+*.h       text eol=lf diff=cpp
+*.hpp     text eol=lf diff=cpp
+*.inl     text eol=lf diff=cpp
+*.cpp     text eol=lf diff=cpp
+*.c       text eol=lf diff=cpp
+*.glsl    text eol=lf
+*.lua     text eol=lf
+*.md      text eol=lf diff=markdown
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.ini     text eol=lf
+
+# 引擎资源文件（YAML 文本）
+*.yui     text eol=lf
+*.yproj   text eol=lf
+
+# Windows 批处理必须使用 CRLF，否则 cmd 解析标签/跳转可能出错
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# 二进制
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.ico     binary
+*.ttf     binary
+*.otf     binary
+*.exe     binary
+*.dll     binary
+*.lib     binary
+*.pdb     binary
+
+# 第三方代码：不参与 GitHub 语言统计，diff 默认折叠
+Yuicy/thirdparty/** linguist-vendored
+Yuicy/src/Yuicy/ImGui/ImGuizmo.* linguist-vendored
