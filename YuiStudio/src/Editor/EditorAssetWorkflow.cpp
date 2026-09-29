@@ -7,10 +7,10 @@
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Core/Log.h"
+#include "Yuicy/Core/PlatformUtils.h"
 
 #include "imgui/imgui.h"
 
-#include <shellapi.h>
 #include <fstream>
 
 namespace Yuicy {
@@ -217,7 +217,8 @@ namespace Yuicy {
 		if (std::error_code ec; !std::filesystem::exists(path, ec) || ec)
 			return;
 
-		ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+		if (!PlatformUtils::RevealInFileBrowser(path))
+			YUICY_CORE_WARN("[AssetWorkflow] Failed to reveal in file browser: {}", path.string());
 	}
 
 	void EditorAssetWorkflow::OpenFileExternal(const std::filesystem::path& filepath)
@@ -231,7 +232,8 @@ namespace Yuicy {
 			return;
 		}
 
-		ShellExecuteW(nullptr, L"open", filepath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+		if (!PlatformUtils::OpenWithDefaultApp(filepath))
+			YUICY_CORE_WARN("[AssetWorkflow] Failed to open with default app: {}", filepath.string());
 	}
 
 }
