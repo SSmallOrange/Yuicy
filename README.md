@@ -67,10 +67,9 @@ Yuicy/
 │   │   └── Panels/             # ImGui 面板与组件编辑器
 │   └── assets/                 # 编辑器资源（shaders / textures / fonts）
 ├── Sandbox/                    # 功能临时验证
-├── premake/                    # premake 下载引导（premake.ps1）、扩展模块与第三方工程脚本
-├── premake5.lua                # 工程生成脚本
-├── GenerateProject.bat         # Windows：生成 VS2022 工程与 compile_commands.json
-├── GenerateProject.sh          # macOS / Linux：生成 compile_commands.json
+├── cmake/                      # CMake 辅助模块：第三方依赖 target（ThirdParty.cmake）、公共设置（YuicyHelpers.cmake）
+├── CMakeLists.txt              # 根构建脚本（Yuicy/、YuiStudio/、Sandbox/ 下各有一份子脚本）
+├── CMakePresets.json           # 构建预设：debug / release（Makefile）、vs2022
 └── AGENTS.md                   # AI 编码助手 / 贡献者工作约定
 ```
 
@@ -81,8 +80,11 @@ Yuicy/
 ### 环境要求
 
 - Windows 10/11
-- Visual Studio 2022（含 "使用 C++ 的桌面开发" 工作负载、Windows SDK）
+- Visual Studio 2022（含 "使用 C++ 的桌面开发" 工作负载、Windows SDK；自带 CMake）
+- CMake ≥ 3.21（VS2022 自带的即可）
 - 支持 OpenGL 4.5 的显卡驱动
+
+> macOS / Linux 目前可以完成 CMake 配置并编译第三方库，但引擎源码尚未完成跨平台适配，编译会在平台相关代码处失败。
 
 ### 获取代码
 
@@ -96,56 +98,49 @@ git clone --recursive https://github.com/SSmallOrange/Yuicy
 git submodule update --init --recursive
 ```
 
-### 生成解决方案
+### 生成与构建
 
-双击运行 `GenerateProject.bat`。
+构建系统为 CMake，预设定义在 `CMakePresets.json`，构建目录为 `build/<preset>/`（已被 git 忽略）。
 
-- 仓库不再内置 `premake5.exe`：首次运行时自动下载固定版本（`5.0.0-beta7`）到 `bin/tools/`（已被 git 忽略），校验 SHA256 后使用，之后复用缓存。
-- 需要联网访问 GitHub；离线或已有 premake 时，可 `set PREMAKE5=C:\path\to\premake5.exe` 后再运行。
-- 手动执行任意 premake 命令：
+**Windows（Visual Studio 2022）**
+
+- 方式一：VS2022 直接"打开本地文件夹"选择仓库根目录，VS 会识别 `CMakePresets.json`，选择 `vs2022` 预设即可。
+- 方式二：命令行生成解决方案后打开 `build/vs2022/Yuicy.sln`：
 
 ```bat
-powershell -NoProfile -ExecutionPolicy Bypass -File premake\premake.ps1 vs2022
+cmake --preset vs2022
+cmake --build --preset vs2022-debug
 ```
 
-### 运行
+默认启动项目为 `YuiStudio`（也可将 `Sandbox` 设为启动项目），调试工作目录为工程目录（`YuiStudio/`、`Sandbox/`），资源以 `assets/...` 相对路径加载。
 
-1. 打开生成的 `Yuicy.sln`
-2. 默认启动项目为 `YuiStudio`（也可将 `Sandbox` 设为启动项目）
-3. 选择 `Debug` 或 `Release`，编译并运行
+**macOS / Linux（Unix Makefiles）**
 
-构建产物位于 `bin/<Config>-x64/<Project>/`。
+```bash
+cmake --preset debug                 # 生成 build/debug/Makefile（Release 用 release）
+cmake --build --preset debug         # 编译全部目标
+cmake --build --preset debug --target YuiStudio
+cmake --build --preset debug --target run-YuiStudio   # 以工程目录为工作目录运行
+```
 
-> 新增源文件后需重新运行 `GenerateProject.bat`（`premake5.lua` 以通配方式收集 `src/**`）。
+构建产物：可执行文件在 `build/<preset>/bin/`（VS 为 `bin/<Config>/`），静态库在 `build/<preset>/lib/`。
+
+> 新增 / 删除源文件无需修改 CMake 脚本（以通配方式收集 `src/**`，并带 `CONFIGURE_DEPENDS`，下次构建时自动重新配置）。
 
 ### 编译数据库（clangd / LSP）
 
-在仓库根目录生成 `compile_commands.json`（已被 git 忽略），供 clangd 等工具做跳转定义、查引用。三个平台均可生成：
+使用 Makefile 预设（`debug` / `release`）配置时，CMake 会生成 `build/<preset>/compile_commands.json`，
+并在仓库根目录创建指向它的符号链接 `compile_commands.json`（已被 git 忽略），clangd 可直接使用。
 
-| 平台 | 命令 |
-|---|---|
-| Windows | `GenerateProject.bat`（生成 VS 工程的同时导出） |
-| macOS / Linux | `./GenerateProject.sh`（同样自动下载固定版本的 premake 到 `bin/tools/` 并校验 SHA256） |
-
-导出其他配置：
-
-```bash
-# macOS / Linux
-./GenerateProject.sh export-compile-commands --export-compile-commands-config=Release
-# Windows
-powershell -NoProfile -ExecutionPolicy Bypass -File premake\premake.ps1 export-compile-commands --export-compile-commands-config=Release
-```
-
-- 实现见 `premake/export-compile-commands.lua`；文件中使用的是绝对路径，**需要在使用它的机器上生成**，不能拷贝到其他机器。
-- 已有 premake5 时可通过环境变量 `PREMAKE5` 指定，如 `PREMAKE5=/path/to/premake5 ./GenerateProject.sh`。
-- macOS / Linux 缺失的 Win32 头文件由 `premake/clangd-win32-stubs/` 中的空头文件兜底，仅直接调用 Win32 API 的少数文件会有 clangd 报错。
-- 新增 / 删除源文件后需重新生成。
+- 文件中使用的是绝对路径，**需要在使用它的机器上生成**。
+- Visual Studio 生成器不产生编译数据库；Windows 上需要时可在 VS 开发者命令行中用 `cmake -S . -B build/ninja -G Ninja` 生成。
 
 ---
 
 ## 依赖
 
-依赖由根目录 `premake5.lua` 统一管理，位于 `Yuicy/thirdparty/`：
+依赖位于 `Yuicy/thirdparty/`，其 CMake target 统一在 `cmake/ThirdParty.cmake` 中声明
+（GLFW / Box2D / yaml-cpp 使用上游 CMakeLists，GLAD / imgui / Lua 在该文件中定义，其余为纯头文件）：
 
 | 库 | 用途 | 引入方式 |
 |---|---|---|

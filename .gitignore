@@ -1,8 +1,11 @@
 #Directories
 .vs/
-bin/Debug-x64/
+# CMake 构建目录（见 CMakePresets.json）
+/build/
+/out/
+CMakeUserPresets.json
+# 旧 premake 构建产物
 bin/
-bin/int/
 Yuicy/thirdparty/*/bin
 Yuicy/thirdparty/*/bin-int
 YuiStudio/assert/
@@ -20,6 +23,6 @@ YuiStudio/assert/
 /assets
 /.vscode
 
-# Compilation database (premake5 export-compile-commands) & clangd index
+# Compilation database（CMake 生成于 build/<preset>/，根目录为指向它的符号链接）& clangd index
 /compile_commands.json
 .cache/

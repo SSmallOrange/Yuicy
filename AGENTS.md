@@ -32,17 +32,20 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 | 事项 | 说明 |
 |---|---|
 | 可运行平台 | **目前仅 Windows**（这是现状与待办，不是设计目标，见第 3 节） |
-| 工具链 | Visual Studio 2022 / MSVC，C++20，`/utf-8` |
-| 生成工程 | `GenerateProject.bat`（经 `premake/premake.ps1` 执行 `premake5 vs2022`），产物 `Yuicy.sln` 已被 git 忽略 |
-| premake | 不入库；两端脚本首次运行时下载固定版本（`5.0.0-beta7`）到 `bin/tools/` 并校验 SHA256，可用环境变量 `PREMAKE5` 覆盖。升级版本需**同时**修改 `premake/premake.ps1` 与 `GenerateProject.sh` 中的版本号与哈希 |
-| 编译数据库 | Windows：`GenerateProject.bat`；macOS / Linux：`./GenerateProject.sh` → 根目录 `compile_commands.json`（git 忽略，含绝对路径需本机生成）；实现在 `premake/export-compile-commands.lua` |
+| 工具链 | Visual Studio 2022 / MSVC，C++20，`/utf-8`；CMake ≥ 3.21 |
+| 构建系统 | CMake。根 `CMakeLists.txt` + `Yuicy/`、`YuiStudio/`、`Sandbox/` 各一份子脚本；第三方 target 在 `cmake/ThirdParty.cmake`，公共设置在 `cmake/YuicyHelpers.cmake` |
+| 预设 | `CMakePresets.json`：`debug` / `release`（Unix Makefiles，macOS / Linux）、`vs2022`（Windows）。构建目录 `build/<preset>/`（git 忽略） |
+| 常用命令 | `cmake --preset debug` → `cmake --build --preset debug [--target YuiStudio]`；运行用 `--target run-YuiStudio`（工作目录为工程目录）。Windows：`cmake --preset vs2022` 后打开 `build/vs2022/Yuicy.sln`，或 VS2022 直接打开文件夹 |
+| 编译数据库 | Makefile 预设配置时自动生成 `build/<preset>/compile_commands.json`，并在根目录建立符号链接（git 忽略，含绝对路径需本机生成） |
 | 子模块 | `git submodule update --init --recursive` |
-| 配置 | `Debug`（`YUICY_PROFILE_DEBUG`、断言开启）/ `Release`（`NDEBUG`） |
-| 输出 | `bin/<Config>-x64/<Project>/`，中间文件 `bin/int/...` |
-| 工作目录 | `debugdir` 为可执行文件目录，资源以 `assets/...` 相对路径加载 |
+| 配置 | `Debug`（`YUICY_PROFILE_DEBUG`、断言开启）/ `Release`（`NDEBUG`，由 CMake 自动定义） |
+| MSVC 运行时 | 全部工程与第三方库统一静态 CRT（`/MT`、`/MTd`），由根脚本 `CMAKE_MSVC_RUNTIME_LIBRARY` 控制，不要在单个 target 上改 |
+| 输出 | 可执行文件 `build/<preset>/bin/`（VS 多配置为 `bin/<Config>/`），静态库 `build/<preset>/lib/` |
+| 工作目录 | 工程目录（`YuiStudio/`、`Sandbox/`），资源以 `assets/...` 相对路径加载；VS 通过 `VS_DEBUGGER_WORKING_DIRECTORY` 设置 |
 
-新增 `.h/.cpp` 无需修改 `premake5.lua`（`files` 使用 `src/**` 通配），但需要重新运行 `GenerateProject.bat`
-（在 macOS / Linux 上是 `./GenerateProject.sh`，用于刷新 `compile_commands.json`）。
+新增 `.h/.cpp` 无需修改 CMake 脚本（`src/**` 通配 + `CONFIGURE_DEPENDS`，下次构建时自动重新配置）。
+新增第三方库：放入 `Yuicy/thirdparty/`，在 `cmake/ThirdParty.cmake` 中声明 target（上游有 CMakeLists 优先 `add_subdirectory`，
+并关闭其 tests / examples / install 选项），加入 `YUICY_THIRDPARTY_TARGETS`，再由 `Yuicy/CMakeLists.txt` 链接。
 
 ## 3. 跨平台约定（改动平台相关代码前必读）
 
@@ -81,7 +84,7 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 | 图形上下文 | `Yuicy/Renderer/GraphicsContext.h` | `Platform/OpenGL/OpenGLContext` | `GraphicsContext::Create` **目前硬编码 OpenGL**（switch 被注释掉） |
 | 调试断点 | `YUICY_DEBUGBREAK()`（`Yuicy/Core/Assert.h`） | — | 按**编译器**分支：`_MSC_VER` → `__debugbreak()`，`__GNUC__` → `raise(SIGTRAP)` |
 
-**平台宏叫 `PLATFORM_WINDOWS`**（没有 `YUICY_` 前缀），仅在 `premake5.lua` 的 `defines` 中定义，
+**平台宏叫 `PLATFORM_WINDOWS`**，仅在 `Yuicy/CMakeLists.txt` 中于 `if(WIN32)` 下以 PUBLIC 定义，
 没有任何头文件从 `_WIN32` 推导它。使用中的位置只有 5 处：两个 `pch.h`、`Core/Core.h`、`Core/Window.cpp`、`Core/EntryPoint.h`。
 
 渲染资源工厂（上表第 4 行）是目前抽象质量最好的部分：新增一个渲染后端只需加 `enum` 值、
@@ -126,8 +129,6 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 | `Yuicy/src/Yuicy/Core/Core.h:13-15` | `#else #error Yuicy Only Support Windows!`，非 Windows 直接编译失败 |
 | `Yuicy/src/pch.h:3-5`、`YuiStudio/src/pch.h:3-5` | `#ifdef PLATFORM_WINDOWS` → `#include <Windows.h>`，把 Win32 注入每个翻译单元，掩盖了下方 B 类问题 |
 | `Yuicy/src/Yuicy/Core/EntryPoint.h:3` | 整个 `main()` 被 `#ifdef PLATFORM_WINDOWS` 包住（函数体本身是标准 C++） |
-| `premake5.lua:61,119,168` | `PLATFORM_WINDOWS` 定义在 `filter "system:windows"` **之外**，任何系统生成工程都会定义它；且无 `filter "system:macosx"/"linux"`，`opengl32/user32/gdi32/shell32` 只在 Windows filter 内 |
-| `premake5.lua:11` | `rundir` 用反斜杠硬拼路径 |
 
 **B. 抽象泄漏（平台无关层直接调平台 API）**
 
@@ -158,19 +159,19 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 
 ### 3.5 在 macOS / Linux 上工作时
 
-本仓库当前**无法**在 macOS / Linux 上编译或运行（原因见 3.4 的 A、C 两类）。因此：
+macOS / Linux 上 `cmake --preset debug` 可以完成配置，第三方库可以编译通过；但引擎与编辑器源码
+**尚无法**编译运行（原因见 3.4 的 A、C 两类，第一个错误就是 `Core.h` 的 `#error`）。因此：
 
 - **允许也欢迎推进跨平台移植**，但要作为**明确的任务**来做，并按 3.4 的清单分步推进
-  （建议顺序：premake 平台 filter → 移除 pch 的 `<Windows.h>` → 抽出 `FileDialogs` / Shell 集成
+  （建议顺序：移除 pch 的 `<Windows.h>` → 抽出 `FileDialogs` / Shell 集成
   → 放开 `Core.h` / `EntryPoint.h` → 最后处理 GL 后端）。
   移除 pch 里的 `<Windows.h>` 会让 B 类问题立刻暴露为编译错误，可当作"债务探测器"。
-- **不要在无关任务里夹带平台重构**：修一个面板 Bug 时不要顺手改 `premake5.lua` 或渲染后端。
+- **不要在无关任务里夹带平台重构**：修一个面板 Bug 时不要顺手改 CMake 脚本或渲染后端。
 - **无法编译验证时，必须在结果中明确说明"未经编译验证"**，并列出需要人工在 Windows 上验证的点。
 - 需要语义导航（跳转定义 / 查引用）时优先用 clangd / LSP 而非文本搜索；
-  根目录没有 `compile_commands.json` 或增删过源文件时，先运行 `./GenerateProject.sh`。
-- `WindowsWindow.cpp`、`EditorSceneController.cpp`、`EditorAssetWorkflow.cpp` 等直接调用 Win32 API 的文件
-  在 macOS 上会有 clangd 报错，**属预期**（`premake/clangd-win32-stubs/` 里只有 `Windows.h`、`commdlg.h`、
-  `shellapi.h`、`windowsx.h` 四个空桩，通过 `-idirafter` 兜底），不要据此修改代码。
+  根目录没有 `compile_commands.json` 时，先运行 `cmake --preset debug`。
+- 在 macOS 上 `PLATFORM_WINDOWS` 不再被定义，clangd 会在 `Core.h` 的 `#error` 处报错，**属预期**，
+  待跨平台移植放开 `Core.h` 后消失；不要为了消除 clangd 报错而在 CMake 中重新定义该宏。
 
 ## 4. 硬性规则（违反即视为错误）
 
@@ -186,7 +187,7 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 7. 日志用 `YUICY_CORE_*`（引擎内）/ `YUICY_*`（客户端），断言用 `YUICY_CORE_ASSERT` / `YUICY_ASSERT`；不要使用 `std::cout` / `printf`。
 8. 智能指针用 `Ref<T>` / `Scope<T>` 与 `CreateRef` / `CreateScope`（`Yuicy/Core/Base.h`）。
 9. 不要批量重排格式；只格式化自己改动的代码（见第 7 节）。
-10. 不要提交构建产物、`.sln` / `.vcxproj` / `imgui.ini` 的无关改动。
+10. 不要提交构建产物（`build/`）、`imgui.ini` 的无关改动。
 
 ## 5. 目录地图
 
@@ -225,10 +226,12 @@ YuiStudio/src/
   Utils/
 YuiStudio/assets/          # 编辑器资源（shaders、textures、fonts）
 
-premake/
-  export-compile-commands.lua  # 生成 compile_commands.json 的 premake 模块
-  premake.ps1                  # Windows 侧 premake 下载引导（固定版本 + SHA256 校验）
-  clangd-win32-stubs/          # 4 个空的 Win32 头文件桩，仅供非 Windows 主机上的 clangd
+CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）并引入子目录
+CMakePresets.json              # 构建预设（debug / release / vs2022）
+cmake/
+  ThirdParty.cmake             # 第三方依赖 target（GLFW / Box2D / yaml-cpp 用上游 CMake，GLAD / imgui / lua / 纯头文件库在此声明）
+  YuicyHelpers.cmake           # 自有工程公共函数：源文件收集、编译选项、调试工作目录与 run-<target>
+Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt  # 各工程的 target 定义
 ```
 
 资源扩展名：场景 `.yui`、项目 `.yproj`（均为 YAML 文本），脚本 `.lua`，着色器 `.glsl`。
