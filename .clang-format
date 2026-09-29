@@ -5,8 +5,9 @@
 #   git clang-format            # 仅格式化暂存区中改动的行
 #   git clang-format --diff     # 仅预览
 # 第三方代码见 .clang-format-ignore 与 Yuicy/thirdparty/.clang-format。
+#
+# 第一段不写 Language，作为所有语言的公共规则；文件末尾按语言启用（Cpp、ObjC）。
 ---
-Language: Cpp
 BasedOnStyle: Microsoft
 Standard: c++20
 
@@ -93,3 +94,13 @@ KeepEmptyLines:
   AtStartOfFile: false
 MaxEmptyLinesToKeep: 2
 InsertNewlineAtEOF: true
+
+---
+Language: Cpp
+---
+# Platform/MacOS/*.mm（ObjC++）
+Language: ObjC
+---
+# 公共规则会作用到所有语言，CMakePresets.json 等保持手写格式
+Language: Json
+DisableFormat: true

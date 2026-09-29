@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Core/FileDialogs.h"
 
 #include <filesystem>
+#include <span>
 #include <string_view>
 
 namespace Yuicy {
@@ -16,10 +18,10 @@ namespace Yuicy {
 		bool Deserialize(const std::filesystem::path& filepath);
 
 	public:
-		inline static std::string_view FileFilter = "Yuicy Project (*.yproj)\0*.yproj\0";
+		inline static const FileDialogFilter FileFilter{ "Yuicy Project", { "yproj" } };
 		inline static std::string_view DefaultExtension = ".yproj";
 
-		static const char* GetProjectSerializerFileFilter() { return FileFilter.data(); }
+		static std::span<const FileDialogFilter> GetProjectSerializerFileFilter() { return { &FileFilter, 1 }; }
 		static const char* GetProjectSerializerDefaultExtension() { return DefaultExtension.data(); }
 
 	private:

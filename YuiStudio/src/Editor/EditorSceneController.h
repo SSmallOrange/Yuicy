@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <string>
 
 namespace Yuicy {
 
@@ -46,10 +45,6 @@ namespace Yuicy {
 		// 未保存提示 UI
 		// TODO: 后续考虑解耦成单独的提示任务类
 		void OnImGuiRender();
-
-		// 文件对话框（Win32 平台实现）
-		static std::string ShowOpenFileDialog(const char* filter);
-		static std::string ShowSaveFileDialog(const char* filter, const char* defaultExtension = nullptr);
 
 	private:
 		void NotifySceneChanged();

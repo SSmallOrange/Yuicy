@@ -33,4 +33,9 @@ if(WIN32)
 	target_link_libraries(Yuicy PUBLIC opengl32 user32 gdi32 shell32)
 endif()
 
+# Cocoa 已由 glfw 传递；UTType（文件对话框的类型过滤）在单独的框架里
+if(APPLE)
+	target_link_libraries(Yuicy PRIVATE "-framework UniformTypeIdentifiers")
+endif()
+
 yuicy_configure_target(Yuicy)

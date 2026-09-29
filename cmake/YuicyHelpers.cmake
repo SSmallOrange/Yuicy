@@ -5,11 +5,16 @@ function(yuicy_collect_sources out_var dir)
 	file(GLOB_RECURSE sources CONFIGURE_DEPENDS
 		"${dir}/*.h"
 		"${dir}/*.hpp"
-		"${dir}/*.cpp")
+		"${dir}/*.cpp"
+		"${dir}/*.mm")
 
 	# Platform/<OS>/ 只在对应系统上编译；新增平台目录时在这里补充排除规则
 	if(NOT WIN32)
 		list(FILTER sources EXCLUDE REGEX "/Platform/Windows/")
+	endif()
+	if(NOT APPLE)
+		list(FILTER sources EXCLUDE REGEX "/Platform/MacOS/")
+		list(FILTER sources EXCLUDE REGEX "\\.mm$")
 	endif()
 
 	set(${out_var} ${sources} PARENT_SCOPE)
@@ -27,8 +32,18 @@ function(yuicy_configure_target target)
 		endif()
 	endif()
 
+	# Cocoa 对象交给 ARC 管理
+	target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+
 	get_target_property(target_sources ${target} SOURCES)
 	source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${target_sources})
+
+	# CMake 会为每种语言各生成一份 PCH；.mm 不走 PCH，避免多编一份 ObjC++ 版本（文件首行仍 include "pch.h"）
+	set(objcxx_sources ${target_sources})
+	list(FILTER objcxx_sources INCLUDE REGEX "\\.mm$")
+	if(objcxx_sources)
+		set_source_files_properties(${objcxx_sources} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+	endif()
 endfunction()
 
 # 可执行工程：设置 IDE 调试工作目录，并提供 `run-<target>` 目标。

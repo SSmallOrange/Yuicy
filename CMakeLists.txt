@@ -8,6 +8,12 @@ set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
 
 project(Yuicy LANGUAGES C CXX)
 
+# Platform/MacOS/ 下的 .mm（ObjC++）用于调用 Cocoa API；OBJCXX 未设置标准时沿用 CMAKE_CXX_STANDARD。
+# OBJC 必须一起启用：否则 CMake 会把 .m 也交给 OBJCXX，GLFW 的 cocoa_*.m 会按 ObjC++ 编译失败。
+if(APPLE)
+	enable_language(OBJC OBJCXX)
+endif()
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 	message(FATAL_ERROR "请勿在源码目录内构建，使用 `cmake --preset <name>`（见 CMakePresets.json）")
 endif()

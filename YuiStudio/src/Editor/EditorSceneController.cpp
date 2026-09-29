@@ -8,14 +8,9 @@
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Project/ProjectSerializer.h"
 #include "Yuicy/Core/Log.h"
-#include "Yuicy/Core/Application.h"
+#include "Yuicy/Core/FileDialogs.h"
 
 #include "imgui/imgui.h"
-
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#include <commdlg.h>
 
 namespace Yuicy {
 
@@ -193,14 +188,14 @@ namespace Yuicy {
 		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		std::string filepath = ShowOpenFileDialog(SceneSerializer::GetSceneSerializerFileFilter());
-		if (!filepath.empty())
+		std::optional<std::filesystem::path> filepath = FileDialogs::OpenFile(SceneSerializer::GetSceneSerializerFileFilter());
+		if (filepath)
 		{
-			m_pendingFilePath = filepath;
+			m_pendingFilePath = *filepath;
 			if (CheckDirtyAndConfirm(PendingAction::OpenScene))
 			{
 				m_pendingFilePath.clear();
-				OpenScene(filepath);
+				OpenScene(*filepath);
 			}
 		}
 	}
@@ -269,12 +264,10 @@ namespace Yuicy {
 		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		std::string filepath = ShowSaveFileDialog(
-			SceneSerializer::GetSceneSerializerFileFilter(),
-			SceneSerializer::GetSceneSerializerDefaultExtension());
-		if (!filepath.empty())
+		std::optional<std::filesystem::path> filepath = FileDialogs::SaveFile(SceneSerializer::GetSceneSerializerFileFilter());
+		if (filepath)
 		{
-			std::filesystem::path scenePath = filepath;
+			std::filesystem::path scenePath = *filepath;
 			if (scenePath.extension() != SceneSerializer::GetSceneSerializerDefaultExtension())
 				scenePath += SceneSerializer::GetSceneSerializerDefaultExtension();
 
@@ -302,13 +295,11 @@ namespace Yuicy {
 		if (m_pendingAction == PendingAction::None && !CheckDirtyAndConfirm(PendingAction::NewProject))
 			return;
 
-		std::string filepath = ShowSaveFileDialog(
-			ProjectSerializer::GetProjectSerializerFileFilter(),
-			ProjectSerializer::GetProjectSerializerDefaultExtension());
-		if (filepath.empty())
+		std::optional<std::filesystem::path> filepath = FileDialogs::SaveFile(ProjectSerializer::GetProjectSerializerFileFilter());
+		if (!filepath)
 			return;
 
-		std::filesystem::path projectPath = filepath;
+		std::filesystem::path projectPath = *filepath;
 		if (projectPath.extension() != ProjectSerializer::GetProjectSerializerDefaultExtension())
 			projectPath += ProjectSerializer::GetProjectSerializerDefaultExtension();
 
@@ -348,14 +339,14 @@ namespace Yuicy {
 		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		std::string filepath = ShowOpenFileDialog(ProjectSerializer::GetProjectSerializerFileFilter());
-		if (!filepath.empty())
+		std::optional<std::filesystem::path> filepath = FileDialogs::OpenFile(ProjectSerializer::GetProjectSerializerFileFilter());
+		if (filepath)
 		{
-			m_pendingFilePath = filepath;
+			m_pendingFilePath = *filepath;
 			if (CheckDirtyAndConfirm(PendingAction::OpenProject))
 			{
 				m_pendingFilePath.clear();
-				OpenProject(filepath);
+				OpenProject(*filepath);
 			}
 		}
 	}
@@ -544,52 +535,6 @@ namespace Yuicy {
 		// Step 只有在暂停状态下才生效
 		m_context->runtime.paused = true;
 		m_context->runtime.pendingStepFrames = 1;
-	}
-
-	// 文件对话框 (Win32)
-	std::string EditorSceneController::ShowOpenFileDialog(const char* filter)
-	{
-		OPENFILENAMEA ofn;
-		CHAR szFile[260] = { 0 };
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-
-		if (GetOpenFileNameA(&ofn) == TRUE)
-			return ofn.lpstrFile;
-
-		return {};
-	}
-
-	std::string EditorSceneController::ShowSaveFileDialog(const char* filter, const char* defaultExtension)
-	{
-		OPENFILENAMEA ofn;
-		CHAR szFile[260] = { 0 };
-		std::string normalizedExtension;
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
-
-		if (defaultExtension && defaultExtension[0] != '\0')
-		{
-			normalizedExtension = defaultExtension[0] == '.' ? defaultExtension + 1 : defaultExtension;
-			ofn.lpstrDefExt = normalizedExtension.c_str();
-		}
-
-		if (GetSaveFileNameA(&ofn) == TRUE)
-			return ofn.lpstrFile;
-
-		return {};
 	}
 
 }

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Yuicy/Scene/Scene.h"
+#include "Yuicy/Core/FileDialogs.h"
+
+#include <span>
 
 namespace YAML {
 	class Emitter;
@@ -18,10 +21,10 @@ namespace Yuicy {
 		bool Deserialize(const std::filesystem::path& filepath);
 
 	public:
-		inline static std::string_view FileFilter = "Yuicy Scene (*.yui)\0*.yui\0";
+		inline static const FileDialogFilter FileFilter{ "Yuicy Scene", { "yui" } };
 		inline static std::string_view DefaultExtension = ".yui";
 
-		static const char* GetSceneSerializerFileFilter() { return FileFilter.data(); }
+		static std::span<const FileDialogFilter> GetSceneSerializerFileFilter() { return { &FileFilter, 1 }; }
 		static const char* GetSceneSerializerDefaultExtension() { return DefaultExtension.data(); }
 
 	private:
