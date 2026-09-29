@@ -41,6 +41,7 @@ namespace Yuicy {
 		void Maximize() override;
 		void Restore() override;
 		bool IsMaximized() const override;
+		bool HasCustomTitleBar() const override { return true; }
 
 	private:
 		virtual void Init(const WindowProps& props);

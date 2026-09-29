@@ -56,6 +56,10 @@ namespace Yuicy {
 		virtual void Restore() = 0;
 		virtual bool IsMaximized() const = 0;
 
+		// 返回 true 表示窗口没有系统标题栏，客户端需自绘最小化 / 最大化 / 关闭按钮，
+		// 并通过 WindowTitleBarHitTestEvent 告知哪些区域可拖动
+		virtual bool HasCustomTitleBar() const { return false; }
+
 		static Scope<Window> Create(const WindowProps& props = WindowProps());
 	};
 

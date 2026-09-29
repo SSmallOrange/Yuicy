@@ -6,6 +6,12 @@ function(yuicy_collect_sources out_var dir)
 		"${dir}/*.h"
 		"${dir}/*.hpp"
 		"${dir}/*.cpp")
+
+	# Platform/<OS>/ 只在对应系统上编译；新增平台目录时在这里补充排除规则
+	if(NOT WIN32)
+		list(FILTER sources EXCLUDE REGEX "/Platform/Windows/")
+	endif()
+
 	set(${out_var} ${sources} PARENT_SCOPE)
 endfunction()
 

@@ -246,9 +246,12 @@ namespace Yuicy {
 	// 标题栏
 	float EditorLayer::UIDrawTitlebar()
 	{
+		auto& appWindow = Application::Get().GetWindow();
+		const bool drawWindowButtons = appWindow.HasCustomTitleBar();
+
 		const float titlebarHeight = 40.0f;
 		const float buttonWidth = 46.0f;
-		const float totalButtonsWidth = buttonWidth * 3;
+		const float totalButtonsWidth = drawWindowButtons ? buttonWidth * 3 : 0.0f;
 		const ImVec2 windowPadding = ImGui::GetCurrentWindow()->WindowPadding;
 
 		const ImVec2 titlebarMin = ImGui::GetCursorScreenPos();
@@ -337,8 +340,11 @@ namespace Yuicy {
 			drawList->AddText(ImVec2(textX, textY), IM_COL32(140, 140, 140, 255), title.c_str());
 		}
 
+		// 有系统标题栏时由系统提供窗口按钮
+		if (!drawWindowButtons)
+			return titlebarHeight;
+
 		// 窗口控制按钮
-		auto& appWindow = Application::Get().GetWindow();
 		bool isMaximized = appWindow.IsMaximized();
 		float buttonsStartX = windowWidth - totalButtonsWidth;
 

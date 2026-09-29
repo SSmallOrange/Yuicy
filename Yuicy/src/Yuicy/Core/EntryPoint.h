@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef PLATFORM_WINDOWS
-
 #include "Yuicy/Debug/Instrumentor.h"
 
 extern Yuicy::Application* Yuicy::CreateApplication();
@@ -21,5 +19,3 @@ int main(int argc, char** argv) {
 	delete app;
 	YUICY_PROFILE_END_SESSION();
 }
-
-#endif

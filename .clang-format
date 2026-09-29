@@ -15,6 +15,8 @@ UseTab: ForContinuationAndIndentation
 TabWidth: 4
 IndentWidth: 4
 ContinuationIndentWidth: 4
+# 嵌套的预处理指令在 # 前缩进（沿用 Core.h、Assert.h、Window.cpp 的手写风格）
+IndentPPDirectives: BeforeHash
 # 不强制行宽，保留作者手动折行
 ColumnLimit: 0
 
