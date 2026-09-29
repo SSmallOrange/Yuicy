@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "OpenGLShader.h"
+#include "OpenGLDebug.h"
 
 #include <fstream>
 #include <glad/glad.h>
@@ -172,6 +173,8 @@ namespace Yuicy {
 
 		for (auto id : glShaderIDs)
 			glDetachShader(program, id);
+
+		OpenGLCheckErrors("OpenGLShader::Compile");
 	}
 
 	void OpenGLShader::Bind() const

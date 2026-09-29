@@ -60,7 +60,7 @@ public:
 		m_SquareVA->SetIndexBuffer(squareIB);
 
 		std::string vertexSrc = R"(
-			#version 330 core
+			#version 410 core
 			
 			layout(location = 0) in vec3 a_Position;
 			layout(location = 1) in vec4 a_Color;
@@ -80,7 +80,7 @@ public:
 		)";
 
 		std::string fragmentSrc = R"(
-			#version 330 core
+			#version 410 core
 			
 			layout(location = 0) out vec4 color;
 
@@ -97,7 +97,7 @@ public:
 		m_Shader = Yuicy::Shader::Create("VertexPosColor", vertexSrc, fragmentSrc);
 
 		std::string flatColorShaderVertexSrc = R"(
-			#version 330 core
+			#version 410 core
 			
 			layout(location = 0) in vec3 a_Position;
 
@@ -114,7 +114,7 @@ public:
 		)";
 
 		std::string flatColorShaderFragmentSrc = R"(
-			#version 330 core
+			#version 410 core
 			
 			layout(location = 0) out vec4 color;
 

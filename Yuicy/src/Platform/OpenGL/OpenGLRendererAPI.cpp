@@ -12,6 +12,20 @@ namespace Yuicy {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glEnable(GL_DEPTH_TEST);
+
+		GLint contextFlags = 0;
+		glGetIntegerv(GL_CONTEXT_FLAGS, &contextFlags);
+		if (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT)
+		{
+			// 宽线在 forward-compatible 上下文中被移除，此时驱动报告的 GL_ALIASED_LINE_WIDTH_RANGE 不可作为依据
+			m_MaxLineWidth = 1.0f;
+		}
+		else
+		{
+			GLfloat lineWidthRange[2] = { 1.0f, 1.0f };
+			glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
+			m_MaxLineWidth = lineWidthRange[1];
+		}
 	}
 
 	void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -60,7 +74,8 @@ namespace Yuicy {
 
 	void OpenGLRendererAPI::SetLineWidth(float width)
 	{
-		glLineWidth(width);
+		// TODO: 需要粗线时改为用四边形绘制线段（macOS 上线宽固定为 1px）
+		glLineWidth(std::clamp(width, 1.0f, m_MaxLineWidth));
 	}
 
 	void OpenGLRendererAPI::BindDefaultFramebuffer()

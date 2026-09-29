@@ -55,7 +55,10 @@ namespace Yuicy {
 			YUICY_PROFILE_SCOPE("glfwCreateWindow");
 			// 无边框窗口的拖拽依赖平台实现（如 Win32 WM_NCHITTEST），这里没有，无边框会导致窗口无法移动
 			glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+			GraphicsContext::SetWindowHints();
 			m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+			// 失败原因（如驱动不支持请求的 GL 版本）已由 GLFWErrorCallback 输出
+			YUICY_CORE_ASSERT(m_Window, "Could not create GLFW window!");
 			++s_GLFWWindowCount;
 		}
 

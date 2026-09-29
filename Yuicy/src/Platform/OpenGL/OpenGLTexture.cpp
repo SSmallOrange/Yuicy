@@ -1,11 +1,34 @@
 #include "pch.h"
 #include "OpenGLTexture.h"
+#include "OpenGLDebug.h"
 
 #include "stb_image.h"
 
 #include <glad/glad.h>
 
 namespace Yuicy {
+
+	// 会临时占用当前活动纹理单元，结束后解绑；调用方不能依赖调用之后的纹理绑定状态
+	static void CreateTextureStorage(uint32_t& rendererID, GLenum internalFormat, GLenum dataFormat,
+		uint32_t width, uint32_t height, const void* data)
+	{
+		glGenTextures(1, &rendererID);
+		glBindTexture(GL_TEXTURE_2D, rendererID);
+
+		// Filter
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		// Wrap
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		// 只分配第 0 级：MIN_FILTER 改为 mipmap 过滤前必须先生成 mipmap，否则纹理不完整、采样结果为黑色
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		OpenGLCheckErrors("OpenGLTexture2D create");
+	}
 
 	OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)
 		: m_Width(width), m_Height(height)
@@ -15,14 +38,7 @@ namespace Yuicy {
 		m_InternalFormat = GL_RGBA8;
 		m_DataFormat = GL_RGBA;
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-		glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
-
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		CreateTextureStorage(m_RendererID, m_InternalFormat, m_DataFormat, m_Width, m_Height, nullptr);
 	}
 
 	OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
@@ -59,19 +75,8 @@ namespace Yuicy {
 
 		YUICY_ASSERT(internalFormat & dataFormat, "Format not supported!");
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-		glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
-
-		// Filter
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		// Wrap
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
 		// 向GPU提交纹理数据
-		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, data);
+		CreateTextureStorage(m_RendererID, internalFormat, dataFormat, m_Width, m_Height, data);
 
 		stbi_image_free(data);
 	}
@@ -90,13 +95,16 @@ namespace Yuicy {
 		// bytes per pixel
 		uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
 		YUICY_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
-		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+		glBindTexture(GL_TEXTURE_2D, m_RendererID);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	void OpenGLTexture2D::Bind(uint32_t slot) const
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		glBindTextureUnit(slot, m_RendererID);
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_2D, m_RendererID);
 	}
 }

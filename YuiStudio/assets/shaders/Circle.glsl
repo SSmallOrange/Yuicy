@@ -1,5 +1,5 @@
 #type vertex
-#version 330 core
+#version 410 core
 
 layout(location = 0) in vec3 a_WorldPosition;
 layout(location = 1) in vec2 a_LocalPosition;
@@ -27,7 +27,7 @@ void main()
 }
 
 #type fragment
-#version 330 core
+#version 410 core
 
 layout(location = 0) out vec4 o_Color;
 layout(location = 1) out int o_EntityID;

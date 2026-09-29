@@ -30,7 +30,7 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		glCreateVertexArrays(1, &m_RendererID);
+		glGenVertexArrays(1, &m_RendererID);
 	}
 
 	OpenGLVertexArray::~OpenGLVertexArray()
@@ -129,6 +129,8 @@ namespace Yuicy {
 
 		glBindVertexArray(m_RendererID);
 		indexBuffer->Bind();
+		// 不让 VAO 保持绑定：之后任何 GL_ELEMENT_ARRAY_BUFFER 绑定都会改写它的索引缓冲
+		glBindVertexArray(0);
 
 		m_IndexBuffer = indexBuffer;
 	}

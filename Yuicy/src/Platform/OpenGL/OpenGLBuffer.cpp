@@ -13,7 +13,7 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		glCreateBuffers(1, &m_RendererID);
+		glGenBuffers(1, &m_RendererID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
 		glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);  // 动态创建
 	}
@@ -22,7 +22,7 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		glCreateBuffers(1, &m_RendererID);
+		glGenBuffers(1, &m_RendererID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
 		glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
 	}
@@ -63,9 +63,11 @@ namespace Yuicy {
 	{
 		YUICY_PROFILE_FUNCTION();
 
-		glCreateBuffers(1, &m_RendererID);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(uint32_t), indices, GL_STATIC_DRAW);
+		glGenBuffers(1, &m_RendererID);
+		// 用 GL_ARRAY_BUFFER 上传数据：GL_ELEMENT_ARRAY_BUFFER 的绑定属于当前 VAO 的状态，
+		// 若创建时恰好有 VAO 处于绑定状态，会把它的索引缓冲替换掉；VAO 通过 SetIndexBuffer 关联
+		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
+		glBufferData(GL_ARRAY_BUFFER, count * sizeof(uint32_t), indices, GL_STATIC_DRAW);
 	}
 
 	OpenGLIndexBuffer::~OpenGLIndexBuffer()

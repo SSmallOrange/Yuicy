@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "OpenGLFramebuffer.h"
+#include "OpenGLDebug.h"
 
 #include <glad/glad.h>
 
@@ -41,13 +42,13 @@ namespace Yuicy {
 	}
 
 	// 创建纹理
-	static void CreateTextures(bool multisampled, uint32_t* outID, uint32_t count)
+	static void CreateTextures(uint32_t* outID, uint32_t count)
 	{
-		glCreateTextures(multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, count, outID);
+		glGenTextures(count, outID);
 	}
 
-	// 附加颜色纹理
-	static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format,
+	// 附加颜色纹理。调用前须已绑定目标纹理（BindTexture）；type 只用于满足 glTexImage2D 的格式校验，不上传数据
+	static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format, GLenum type,
 		uint32_t width, uint32_t height, int index)
 	{
 		bool multisampled = samples > 1;
@@ -60,19 +61,13 @@ namespace Yuicy {
 		else
 		{
 			// 普通纹理
-			// glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
-			glTextureStorage2D(id, 1, internalFormat, width, height);
+			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, nullptr);
 			// 设置纹理参数
-			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-			// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		}
 
 		// 附加到 Framebuffer
@@ -92,7 +87,8 @@ namespace Yuicy {
 		}
 		else
 		{
-			glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+			// format / type 按 DEPTH24STENCIL8 写死，新增深度格式时需要按 format 参数选择
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -146,7 +142,7 @@ namespace Yuicy {
 		}
 
 		// 创建 Framebuffer 对象
-		glCreateFramebuffers(1, &m_rendererID);
+		glGenFramebuffers(1, &m_rendererID);
 		glBindFramebuffer(GL_FRAMEBUFFER, m_rendererID);
 
 		bool multisample = m_specification.samples > 1;
@@ -155,27 +151,27 @@ namespace Yuicy {
 		if (!m_colorAttachmentSpecifications.empty())
 		{
 			m_colorAttachments.resize(m_colorAttachmentSpecifications.size());
-			CreateTextures(multisample, m_colorAttachments.data(), (uint32_t)m_colorAttachments.size());
+			CreateTextures(m_colorAttachments.data(), (uint32_t)m_colorAttachments.size());
 
 			for (size_t i = 0; i < m_colorAttachments.size(); i++)
 			{
-				BindTexture(multisample, m_colorAttachments[i]);  // TODO: 考虑使用OpenGL 4.+ API重写
+				BindTexture(multisample, m_colorAttachments[i]);
 
 				switch (m_colorAttachmentSpecifications[i].textureFormat)
 				{
 				case FramebufferTextureFormat::RGBA8:
 					AttachColorTexture(m_colorAttachments[i], m_specification.samples,
-						GL_RGBA8, GL_RGBA, m_specification.width, m_specification.height, (int)i);
+						GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, m_specification.width, m_specification.height, (int)i);
 					break;
 
 				case FramebufferTextureFormat::RGBA16F:
 					AttachColorTexture(m_colorAttachments[i], m_specification.samples,
-						GL_RGBA16F, GL_RGBA, m_specification.width, m_specification.height, (int)i);
+						GL_RGBA16F, GL_RGBA, GL_FLOAT, m_specification.width, m_specification.height, (int)i);
 					break;
 
 				case FramebufferTextureFormat::RED_INTEGER:
 					AttachColorTexture(m_colorAttachments[i], m_specification.samples,
-						GL_R32I, GL_RED_INTEGER, m_specification.width, m_specification.height, (int)i);
+						GL_R32I, GL_RED_INTEGER, GL_INT, m_specification.width, m_specification.height, (int)i);
 					break;
 
 				default:
@@ -187,7 +183,7 @@ namespace Yuicy {
 		// 创建深度附件
 		if (m_depthAttachmentSpecification.textureFormat != FramebufferTextureFormat::None)
 		{
-			CreateTextures(multisample, &m_depthAttachment, 1);
+			CreateTextures(&m_depthAttachment, 1);
 			BindTexture(multisample, m_depthAttachment);
 
 			switch (m_depthAttachmentSpecification.textureFormat)
@@ -221,8 +217,11 @@ namespace Yuicy {
 		YUICY_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
 			"Framebuffer is incomplete!");
 
-		// 解绑
+		// 解绑。附件纹理是绑在当前活动纹理单元上创建的，不解绑会残留在 Renderer2D 未使用的纹理槽里，
+		// 渲染到该 FBO 时形成"同一纹理既被采样又被写入"的反馈环（未定义行为）
+		BindTexture(multisample, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		OpenGLCheckErrors("OpenGLFramebuffer::Invalidate");
 	}
 
 	void OpenGLFramebuffer::Bind()
@@ -268,9 +267,18 @@ namespace Yuicy {
 	{
 		YUICY_CORE_ASSERT(attachmentIndex < m_colorAttachments.size(), "Attachment index out of bounds!");
 
-		auto& spec = m_colorAttachmentSpecifications[attachmentIndex];
+		// glClearBufferiv 作用于当前绘制 FBO：临时绑定自身并在结束后恢复，调用方无需先 Bind()；
+		// 与 glClear 一样受 scissor test 和 color mask 影响
+		GLint previousFramebuffer = 0;
+		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previousFramebuffer);
+		if ((uint32_t)previousFramebuffer != m_rendererID)
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_rendererID);
 
-		glClearTexImage(m_colorAttachments[attachmentIndex], 0, GL_RED_INTEGER, GL_INT, &value);  // 修改纹理值
+		// drawbuffer 参数是 glDrawBuffers 中的下标，Invalidate 按附件顺序一一对应设置
+		glClearBufferiv(GL_COLOR, (GLint)attachmentIndex, &value);
+
+		if ((uint32_t)previousFramebuffer != m_rendererID)
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)previousFramebuffer);
 	}
 
 }

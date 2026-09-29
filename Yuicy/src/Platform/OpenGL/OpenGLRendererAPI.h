@@ -19,6 +19,10 @@ namespace Yuicy {
 		virtual void DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;
 		virtual void SetLineWidth(float width) override;
 		virtual void BindDefaultFramebuffer() override;
+
+	private:
+		// Init 中按上下文查询；forward-compatible 上下文（macOS 必须）中为 1，超出会产生 GL_INVALID_VALUE
+		float m_MaxLineWidth = 1.0f;
 	};
 
 

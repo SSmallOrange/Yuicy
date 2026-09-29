@@ -14,6 +14,8 @@ namespace Yuicy {
 			None = 0, OpenGL = 1
 		};
 	public:
+		virtual ~RendererAPI() = default;
+
 		virtual void Init() = 0;
 		virtual void Clear() = 0;
 		virtual void SetClearColor(const glm::vec4& color) = 0;
@@ -26,6 +28,9 @@ namespace Yuicy {
 		virtual void BindDefaultFramebuffer() = 0;
 
 		inline static API GetAPI() { return s_API; }
+		// 按 GetAPI() 创建对应后端的实现；只创建对象，不调用任何图形 API，Init() 须在图形上下文就绪后调用
+		static Scope<RendererAPI> Create();
+
 	private:
 		static API s_API;
 	};

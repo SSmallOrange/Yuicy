@@ -30,7 +30,11 @@ namespace Yuicy {
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
+#ifndef PLATFORM_MACOS
+		// ImGui 1.88 + GLFW 在 macOS 上的多视口存在 Retina 缩放与闪烁问题
+		// TODO: 验证稳定后在 macOS 上开启（升级 ImGui 或修复 Retina 缩放时）
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // 多窗口
+#endif
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;     // 禁止ImGui修改光标
 
 		float fontSize = 18.0f;// *2.0f;

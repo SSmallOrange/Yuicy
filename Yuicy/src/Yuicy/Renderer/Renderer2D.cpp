@@ -46,7 +46,9 @@ namespace Yuicy {
 		static const uint32_t MaxCircles = 5000;
 		static const uint32_t MaxCircleVertices = MaxCircles * 4;
 		static const uint32_t MaxCircleIndices = MaxCircles * 6;
-		static const uint32_t MaxTextureSlots = 32;		// TODO: RenderCaps
+		// macOS 的 GL_MAX_TEXTURE_IMAGE_UNITS 只有 16；须与 Texture.glsl 中 u_Textures 的数组长度和 switch 分支同步修改
+		// TODO: 改为运行时查询并注入着色器（需要支持超过 16 个纹理槽时）
+		static const uint32_t MaxTextureSlots = 16;
 
 		// 矩形顶点
 		Ref<VertexArray> QuadVertexArray;
