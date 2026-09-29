@@ -16,7 +16,13 @@ Sandbox2D::Sandbox2D()
 
 void Sandbox2D::OnAttach()
 {
-	m_CheckerboardTexture = Yuicy::Texture2D::Create("assets/textures/Checkerboard.png");
+	// Sandbox 不加载 .yproj，以工作目录下的 assets/ 为资产目录创建内存项目：
+	// Scene 渲染依赖活动项目的 Sorting Layer 配置，纹理需经 AssetManager 以 AssetHandle 引用
+	auto project = Yuicy::CreateRef<Yuicy::Project>();
+	project->GetConfig().Name = "Sandbox";
+	project->GetConfig().ProjectDirectory = ".";
+	project->GetConfig().AssetDirectory = "assets";
+	Yuicy::Project::SetActive(project);
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
 
@@ -33,7 +39,7 @@ void Sandbox2D::OnAttach()
 	groundTransform.Scale = { 20.0f, 0.5f, 1.0f };
 
 	auto& groundSprite = groundEntity.AddComponent<Yuicy::SpriteRendererComponent>();
-	groundSprite.Texture = m_CheckerboardTexture;
+	groundSprite.TextureHandle = Yuicy::Project::GetEditorAssetManager()->GetAssetHandleFromFilePath("assets/textures/Checkerboard.png");
 	groundSprite.TilingFactor = 10.0f;
 	groundSprite.Color = { 0.4f, 0.4f, 0.4f, 1.0f };
 

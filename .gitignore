@@ -21,6 +21,8 @@ YuiStudio/assert/
 *.log
 *.filters
 /assets
+# Sandbox 内存项目运行时生成的资产注册表
+Sandbox/assets/AssetRegistry.yregistry
 /.vscode
 
 # Compilation database（CMake 生成于 build/<preset>/，根目录为指向它的符号链接）& clangd index
