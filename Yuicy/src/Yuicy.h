@@ -9,7 +9,7 @@
 #include "Yuicy/ImGui/ImGuiLayer.h"
 
 // Input
-#include "Yuicy/Core/input.h"
+#include "Yuicy/Core/Input.h"
 
 // Renderer
 #include "Yuicy/Renderer/Renderer.h"

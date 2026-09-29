@@ -9,6 +9,7 @@
 #include "../Editor/EditorRenderPipeline.h"
 #include "../Editor/EditorSceneController.h"
 
+#include "../Utils/ContentBrowserDragDrop.h"
 #include "../Utils/EditorIconUtils.h"
 
 #include "Yuicy/Events/Event.h"
@@ -143,12 +144,10 @@ namespace Yuicy {
 		// 接收从 ContentBrowser 拖拽过来的场景文件
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			if (std::optional<std::filesystem::path> filepath = ContentBrowserDragDrop::AcceptPayload())
 			{
-				const auto* pathData = (const std::filesystem::path::value_type*)payload->Data;
-				std::filesystem::path filepath(pathData);
-				if (filepath.extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
-					m_sceneController->OpenScene(filepath);
+				if (filepath->extension() == SceneSerializer::GetSceneSerializerDefaultExtension())
+					m_sceneController->OpenScene(*filepath);
 			}
 
 			ImGui::EndDragDropTarget();

@@ -5,6 +5,8 @@
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorAssetWorkflow.h"
 
+#include "../Utils/ContentBrowserDragDrop.h"
+
 #include "Yuicy/Asset/AssetExtensions.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
@@ -356,11 +358,7 @@ namespace Yuicy {
 			// 文件拖拽
 			if (!isDirectory && ImGui::BeginDragDropSource())
 			{
-				const auto& nativePath = entryPath.native();
-				ImGui::SetDragDropPayload(
-					"CONTENT_BROWSER_ITEM",
-					nativePath.c_str(),
-					(nativePath.size() + 1) * sizeof(std::filesystem::path::value_type));
+				ContentBrowserDragDrop::SetPayload(entryPath);
 				ImGui::TextUnformatted(filename.c_str());
 				ImGui::EndDragDropSource();
 			}

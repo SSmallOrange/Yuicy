@@ -9,7 +9,10 @@
 
 #include "Yuicy/Core/Base.h"
 #include <ostream>
-#pragma warning(push, 0)
+// clang / GCC 不需要对应的 pragma：spdlog 以 SYSTEM 方式引入（cmake/ThirdParty.cmake），其警告已被屏蔽
+#ifdef _MSC_VER
+	#pragma warning(push, 0)
+#endif
 
 #ifndef NDEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
@@ -19,7 +22,9 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
-#pragma warning(pop)
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
 
 namespace Yuicy {
 	class YUICY_API Log {

@@ -2,6 +2,7 @@
 
 #include "SpriteEditor.h"
 #include "../../Editor/EditorDirtyTracker.h"
+#include "../../Utils/ContentBrowserDragDrop.h"
 
 #include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
@@ -52,10 +53,9 @@ namespace Yuicy {
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
 			{
-				const wchar_t* droppedPath = (const wchar_t*)payload->Data;
-				std::filesystem::path filepath = droppedPath;
+				std::filesystem::path filepath = *droppedPath;
 
 				auto assetManager = Project::GetEditorAssetManager();
 				AssetType type = assetManager->GetAssetTypeFromPath(filepath);

@@ -2,6 +2,7 @@
 
 #include "AnimationEditor.h"
 #include "../../Editor/EditorDirtyTracker.h"
+#include "../../Utils/ContentBrowserDragDrop.h"
 #include "../../Utils/EditorIconUtils.h"
 
 #include "Yuicy/Asset/AssetManager.h"
@@ -132,8 +133,8 @@ namespace Yuicy {
 			if (ImGui::TreeNode("##clip", "%s", header.c_str()))
 			{
 				// Clip Name
-				char nameBuffer[256];
-				strncpy_s(nameBuffer, clipName.c_str(), sizeof(nameBuffer) - 1);
+				char nameBuffer[256] = {};
+				std::memcpy(nameBuffer, clipName.c_str(), std::min(clipName.size(), sizeof(nameBuffer) - 1));
 				if (ImGui::InputText("Clip Name", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
 				{
 					std::string newName(nameBuffer);
@@ -242,10 +243,9 @@ namespace Yuicy {
 				ImGui::Button("Drop Texture to Add Frame", ImVec2(ImGui::GetContentRegionAvail().x, 0));
 				if (ImGui::BeginDragDropTarget())
 				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
 					{
-						const wchar_t* droppedPath = (const wchar_t*)payload->Data;
-						std::filesystem::path filepath = droppedPath;
+						std::filesystem::path filepath = *droppedPath;
 
 						auto assetManager = Project::GetEditorAssetManager();
 						if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::Texture)
@@ -301,10 +301,9 @@ namespace Yuicy {
 				ImGui::Button("Drop Spritesheet Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
 				if (ImGui::BeginDragDropTarget())
 				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
 					{
-						const wchar_t* droppedPath = (const wchar_t*)payload->Data;
-						std::filesystem::path filepath = droppedPath;
+						std::filesystem::path filepath = *droppedPath;
 
 						auto assetManager = Project::GetEditorAssetManager();
 						if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::Texture)

@@ -89,18 +89,18 @@ namespace Yuicy {
 	sol::table LuaScriptEngine::CreateScriptInstance(const std::string& filepath)
 	{
 		if (!LoadScript(filepath))
-			return sol::nil;
+			return sol::lua_nil;
 
 		auto it = s_scriptCache.find(filepath);
 		if (it == s_scriptCache.end())
-			return sol::nil;
+			return sol::lua_nil;
 
 		sol::protected_function_result result = it->second();
 		if (!result.valid())
 		{
 			sol::error err = result;
 			YUICY_CORE_ERROR("LuaScriptEngine: Failed to execute script '{}': {}", filepath, err.what());
-			return sol::nil;
+			return sol::lua_nil;
 		}
 
 		// 固定脚本返回值
@@ -108,7 +108,7 @@ namespace Yuicy {
 		if (!obj.is<sol::table>())
 		{
 			YUICY_CORE_ERROR("LuaScriptEngine: Script '{}' did not return a table", filepath);
-			return sol::nil;
+			return sol::lua_nil;
 		}
 
 		sol::table classTable = obj.as<sol::table>();

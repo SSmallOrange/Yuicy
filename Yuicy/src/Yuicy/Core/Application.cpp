@@ -5,9 +5,6 @@
 #include "Yuicy/Scripting/LuaScriptEngine.h"
 
 #include "Yuicy/Renderer/Renderer.h"
-#include <glfw/glfw3.h>
-
-#include <glad/glad.h>
 
 namespace Yuicy {
 	Application* Application::_instance = nullptr;
@@ -63,12 +60,14 @@ namespace Yuicy {
 
 		WindowResizeEvent e(1280, 720);
 		YUICY_PROFILE_FUNCTION();
+		// 从进入主循环开始计时，首帧的 Timestep 不包含窗口创建与 Layer 初始化的耗时
+		_lastFrameTime = std::chrono::steady_clock::now();
 		while (_running) {
 			
 			YUICY_PROFILE_SCOPE("RunLoop");
 
-			float time = (float)glfwGetTime();
-			Timestep timestep = time - _lastFrameTime;
+			std::chrono::steady_clock::time_point time = std::chrono::steady_clock::now();
+			Timestep timestep = std::chrono::duration<float>(time - _lastFrameTime).count();
 			_lastFrameTime = time;
 
 			// YUICY_INFO("Timestep {}", timestep.GetSeconds());

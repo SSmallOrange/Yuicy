@@ -10,9 +10,38 @@
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Project/Project.h"
 
+#include <chrono>
+#include <ctime>
 #include <filesystem>
 
 namespace Yuicy {
+
+	// 不用 std::chrono::clock_cast：Apple libc++ 未实现。按两个时钟当前时间的差值换算，误差在微秒级
+	static std::chrono::system_clock::time_point ToSystemTime(std::filesystem::file_time_type fileTime)
+	{
+		auto offset = fileTime - std::filesystem::file_time_type::clock::now();
+		return std::chrono::system_clock::now() + std::chrono::duration_cast<std::chrono::system_clock::duration>(offset);
+	}
+
+	// std::localtime 返回共享的静态缓冲区，不是线程安全的；两端的线程安全版本参数顺序相反
+	static std::tm ToLocalTime(std::time_t time)
+	{
+		std::tm result{};
+#ifdef _MSC_VER
+		localtime_s(&result, &time);
+#else
+		localtime_r(&time, &result);
+#endif
+		return result;
+	}
+
+	static std::string FormatLastWriteTime(std::filesystem::file_time_type fileTime)
+	{
+		std::tm tm = ToLocalTime(std::chrono::system_clock::to_time_t(ToSystemTime(fileTime)));
+		char timeBuf[64];
+		std::strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", &tm);
+		return timeBuf;
+	}
 
 	void AssetInspectorPanel::OnImGuiRender()
 	{
@@ -209,15 +238,7 @@ namespace Yuicy {
 		// 最后修改时间
 		auto lastWrite = std::filesystem::last_write_time(fullPath, ec);
 		if (!ec)
-		{
-			auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(lastWrite);
-			auto time = std::chrono::system_clock::to_time_t(sctp);
-			std::tm tm{};
-			localtime_s(&tm, &time);
-			char timeBuf[64];
-			std::strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", &tm);
-			ImGui::Text("Last Modified: %s", timeBuf);
-		}
+			ImGui::Text("Last Modified: %s", FormatLastWriteTime(lastWrite).c_str());
 
 		ImGui::Spacing();
 
@@ -249,15 +270,7 @@ namespace Yuicy {
 		// 最后修改时间
 		auto lastWrite = std::filesystem::last_write_time(fullPath, ec);
 		if (!ec)
-		{
-			auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(lastWrite);
-			auto time = std::chrono::system_clock::to_time_t(sctp);
-			std::tm tm{};
-			localtime_s(&tm, &time);
-			char timeBuf[64];
-			std::strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", &tm);
-			ImGui::Text("Last Modified: %s", timeBuf);
-		}
+			ImGui::Text("Last Modified: %s", FormatLastWriteTime(lastWrite).c_str());
 
 		ImGui::Spacing();
 

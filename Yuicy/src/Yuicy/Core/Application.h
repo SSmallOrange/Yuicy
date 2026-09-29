@@ -5,6 +5,8 @@
 #include "Yuicy/Core/LayerStack.h"
 #include "Yuicy/ImGui/ImGuiLayer.h"
 
+#include <chrono>
+
 namespace Yuicy {
 	class Application
 	{
@@ -33,7 +35,7 @@ namespace Yuicy {
 		bool						_minimized = false;
 		bool						_running = true;
 		LayerStack					_layerStack;
-		float						_lastFrameTime = 0.0f;
+		std::chrono::steady_clock::time_point _lastFrameTime;
 
 	private:
 		static Application* _instance;

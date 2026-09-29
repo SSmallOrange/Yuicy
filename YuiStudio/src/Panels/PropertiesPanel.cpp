@@ -12,6 +12,8 @@
 #include "../Editor/Commands/AddComponentCommand.h"
 #include "../Editor/Commands/RemoveComponentCommand.h"
 
+#include "../Utils/ContentBrowserDragDrop.h"
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include <filesystem>
@@ -318,10 +320,9 @@ namespace Yuicy {
 			ImGui::Button(hasScript ? scriptLabel.c_str() : "Drop Script Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
 			if (ImGui::BeginDragDropTarget())
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
 				{
-					const wchar_t* droppedPath = (const wchar_t*)payload->Data;
-					std::filesystem::path filepath = droppedPath;
+					std::filesystem::path filepath = *droppedPath;
 
 					if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::LuaScript)
 					{
