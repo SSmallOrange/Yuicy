@@ -36,13 +36,23 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
+option(YUICY_BUILD_TESTS "构建单元测试（YuicyTests / YuiStudioTests）并注册到 CTest" ON)
+# enable_testing() 必须在根目录调用，否则 build/<preset>/ 下没有 CTestTestfile，ctest 找不到任何测试
+if(YUICY_BUILD_TESTS)
+	enable_testing()
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(YuicyHelpers)
 include(ThirdParty)
+include(YuicyTesting)
 
 add_subdirectory(Yuicy)
 add_subdirectory(Sandbox)
 add_subdirectory(YuiStudio)
+if(YUICY_BUILD_TESTS)
+	add_subdirectory(TestFramework)
+endif()
 
 set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT YuiStudio)
 

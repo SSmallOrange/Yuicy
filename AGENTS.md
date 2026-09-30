@@ -10,16 +10,23 @@
 - **Yuicy**：C++20 + OpenGL 4.5 的 2D 引擎（静态库），学习自 Hazel。
 - **YuiStudio**：基于 Yuicy + ImGui 的场景编辑器（默认启动项目）。
 - **Sandbox**：功能临时验证用的最小应用。
-- 依赖：GLFW、GLAD、ImGui(+ImGuizmo)、EnTT、Box2D、Lua + sol2、yaml-cpp、spdlog、glm、stb_image、tinyrefl。
+- 依赖：GLFW、GLAD、ImGui(+ImGuizmo)、EnTT、Box2D、Lua + sol2、yaml-cpp、spdlog、glm、stb_image、tinyrefl；测试框架 doctest。
 
 依赖方向（**禁止反向依赖**）：
 
 ```
-YuiStudio ──▶ Yuicy ◀── Sandbox
-                │
-                ▼
-          Yuicy/thirdparty
+YuiStudio ──▶ YuiStudioCore ──▶ Yuicy ◀── Sandbox
+                   ▲              ▲   │
+                   │              │   ▼
+            YuiStudioTests    YuicyTests    Yuicy/thirdparty（含 doctest）
+                   └──────┬───────┘
+                          ▼
+                 YuicyTestFramework ──▶ Yuicy
 ```
+
+`YuiStudio` 可执行文件只含入口 `YuiStudioApp.cpp`，其余编辑器代码在静态库 `YuiStudioCore` 中，供测试链接。
+`YuicyTestFramework` 位于根目录 `TestFramework/`，不属于引擎；各模块的测试用例放在模块自己的 `tests/` 下。
+`Yuicy/src`、`YuiStudio/src`、`Sandbox/src` 不得 include 测试代码与 doctest。
 
 `Yuicy/src/Yuicy/**` 不得 include 任何 `YuiStudio` 的代码；编辑器专属状态不得写入运行时 ECS 组件
 （例如锁定/隐藏存放在 `EditorEntityMetadata`，而不是 Component 里）。
@@ -33,9 +40,10 @@ YuiStudio ──▶ Yuicy ◀── Sandbox
 |---|---|
 | 可运行平台 | **目前仅 Windows**（这是现状与待办，不是设计目标，见第 3 节） |
 | 工具链 | Visual Studio 2022 / MSVC，C++20，`/utf-8`；CMake ≥ 3.21 |
-| 构建系统 | CMake。根 `CMakeLists.txt` + `Yuicy/`、`YuiStudio/`、`Sandbox/` 各一份子脚本；第三方 target 在 `cmake/ThirdParty.cmake`，公共设置在 `cmake/YuicyHelpers.cmake` |
+| 构建系统 | CMake。根 `CMakeLists.txt` + `Yuicy/`、`YuiStudio/`、`Sandbox/`、`TestFramework/` 各一份子脚本（两个 `tests/` 下另有测试工程的脚本）；第三方 target 在 `cmake/ThirdParty.cmake`，公共设置在 `cmake/YuicyHelpers.cmake` |
 | 预设 | `CMakePresets.json`：`debug` / `release`（Unix Makefiles，macOS / Linux）、`vs2022`（Windows）。构建目录 `build/<preset>/`（git 忽略） |
 | 常用命令 | `cmake --preset debug` → `cmake --build --preset debug [--target YuiStudio]`；运行用 `--target run-YuiStudio`（工作目录为工程目录）。Windows：`cmake --preset vs2022` 后打开 `build/vs2022/Yuicy.sln`，或 VS2022 直接打开文件夹 |
+| 单元测试 | 构建后 `ctest --preset debug`（Windows：`vs2022-debug`）。按模块 / 标签过滤：`-R "^YuicyTests\."`、`-L Scene`；单独调试：`build/debug/bin/YuicyTests --test-case="<名称>"`。`-DYUICY_BUILD_TESTS=OFF` 可关闭测试工程。详见第 6.6 节 |
 | 编译数据库 | Makefile 预设配置时自动生成 `build/<preset>/compile_commands.json`，并在根目录建立符号链接（git 忽略，含绝对路径需本机生成） |
 | 子模块 | `git submodule update --init --recursive` |
 | 配置 | `Debug`（`YUICY_PROFILE_DEBUG`、断言开启）/ `Release`（`NDEBUG`，由 CMake 自动定义） |
@@ -176,7 +184,8 @@ macOS / Linux 上 `cmake --preset debug` 可以完成配置，第三方库可以
 ## 4. 硬性规则（违反即视为错误）
 
 1. **不要修改** `Yuicy/thirdparty/**` 与 `Yuicy/src/Yuicy/ImGui/ImGuizmo.*`；不要升级/切换子模块版本，除非任务明确要求。
-2. 带 PCH 的工程（Yuicy、YuiStudio）中，每个 `.cpp` 的**第一行**必须是 `#include "pch.h"`（`ImGuizmo.cpp` 除外）。
+2. 带 PCH 的工程（Yuicy、YuiStudioCore、YuicyTests、YuiStudioTests）中，每个 `.cpp` 的**第一行**必须是 `#include "pch.h"`（`ImGuizmo.cpp` 除外）。
+   `YuicyTestFramework`（`TestFramework/`）没有 PCH。
 3. 所有源文件使用 **UTF-8（无 BOM）+ LF**；注释用简体中文，格式与内容要求见第 8 节。
 4. **平台专属代码（OS API / 图形后端 API）只能写在 `Yuicy/src/Platform/` 下，并通过第 3.2 节的既有分发机制接入**；
    平台无关层与客户端代码一律走抽象接口。详见第 3 节。
@@ -207,11 +216,13 @@ Yuicy/src/
   Yuicy/Debug/             # Instrumentor（YUICY_PROFILE_*）
   Platform/OpenGL/         # 渲染后端实现：RendererAPI / Buffer / VertexArray / Shader / Texture / Framebuffer / Context
   Platform/Windows/        # OS 平台实现：WindowsWindow（含 Win32 WndProc）/ WindowsInput
-Yuicy/thirdparty/          # 第三方依赖（子模块或拷贝源码），勿改
+Yuicy/thirdparty/          # 第三方依赖（子模块或拷贝源码），勿改；doctest 仅供测试使用
+Yuicy/tests/               # YuicyTests：引擎单元测试，目录结构对应 Yuicy/src/Yuicy/（Scene/、Asset/、Project/…）
+  data/                    #   只读测试数据（如参考场景 Scenes/Reference.yui），代码中经 YUICY_TEST_DATA_DIR 访问
 
-YuiStudio/src/
+YuiStudio/src/             # 除入口外全部编译进静态库 YuiStudioCore
   pch.h / pch.cpp          # 编辑器预编译头
-  YuiStudioApp.cpp         # 入口
+  YuiStudioApp.cpp         # 入口（唯一属于 YuiStudio 可执行文件的源文件）
   EditorLayer.*            # 编辑器主 Layer：组装各服务与面板、快捷键
   Editor/                  # 编辑器服务层（无 UI）
     EditorContext.h        #   全局共享状态：场景、运行模式、文档、选择、视口、实体元数据
@@ -224,14 +235,18 @@ YuiStudio/src/
   Panels/                  # ImGui 面板：Viewport, SceneHierarchy, Properties, ContentBrowser, AssetInspector
     ComponentEditors/      #   各组件在 Properties 面板中的编辑 UI
   Utils/
+YuiStudio/tests/           # YuiStudioTests：编辑器单元测试（Command、Undo/Redo、EntitySnapshot）
 YuiStudio/assets/          # 编辑器资源（shaders、textures、fonts）
 
-CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）并引入子目录
-CMakePresets.json              # 构建预设（debug / release / vs2022）
+TestFramework/YuicyTest/   # YuicyTestFramework：各测试工程共用的测试 main、日志初始化、夹具（临时目录 / 活动项目 / 场景）、glm 向量的近似比较与打印
+
+CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）、YUICY_BUILD_TESTS / enable_testing，并引入子目录
+CMakePresets.json              # 构建 / 测试预设（debug / release / vs2022）
 cmake/
-  ThirdParty.cmake             # 第三方依赖 target（GLFW / Box2D / yaml-cpp 用上游 CMake，GLAD / imgui / lua / 纯头文件库在此声明）
+  ThirdParty.cmake             # 第三方依赖 target（GLFW / Box2D / yaml-cpp / doctest 用上游 CMake，GLAD / imgui / lua / 纯头文件库在此声明）
   YuicyHelpers.cmake           # 自有工程公共函数：源文件收集、编译选项、调试工作目录与 run-<target>
-Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt  # 各工程的 target 定义
+  YuicyTesting.cmake           # yuicy_add_test()：创建 <Module>Tests 可执行文件并把每个用例注册到 CTest
+Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestFramework/CMakeLists.txt  # 各工程的 target 定义
 ```
 
 资源扩展名：场景 `.yui`、项目 `.yproj`（均为 YAML 文本），脚本 `.lua`，着色器 `.glsl`。
@@ -250,6 +265,8 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt  # 各�
 - [ ] 如 UI 较复杂：在 `YuiStudio/src/Panels/ComponentEditors/` 新建 `XxxEditor.{h,cpp}`。
 - [ ] 需要脚本访问时：`Yuicy/src/Yuicy/Scripting/LuaBindings.cpp` 注册 usertype 与 `Entity` 的 `GetXxx` / `HasXxx`。
 - [ ] 需要可视化时：`YuiStudio/src/Editor/EditorOverlayRenderer.cpp`。
+- [ ] 测试：`Yuicy/tests/Scene/SceneSerializerTests.cpp` 中覆盖全部字段的 round-trip 用例（字段取非默认值）、
+      `Yuicy/tests/data/Scenes/Reference.yui` 参考场景，以及 `YuiStudio/tests/Editor/EntitySnapshotTests.cpp` 都要加上新组件。
 
 ### 6.2 新增一个可撤销的编辑器操作
 
@@ -258,6 +275,7 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt  # 各�
 - [ ] 连续操作（如拖拽）只产生一条历史：参考 `EditorViewportPanel` 中 Gizmo 的做法，在拖拽开始时记录旧值、结束时提交一条 `SetTransformCommand`；
       或实现 `GetCommandID` + `TryMerge`，由 `EditorCommandHistory` 自动合并。
 - [ ] 调用方使用 `m_commandHistory->ExecuteCommandT<XxxCommand>(...)`，并标记脏状态。
+- [ ] 在 `YuiStudio/tests/Editor/EditorCommandsTests.cpp` 补用例：Undo 后场景回到 Execute 之前的状态，Redo 后与 Execute 之后一致；实现了 `TryMerge` 时覆盖合并。
 
 ### 6.3 新增一个编辑器面板
 
@@ -276,6 +294,34 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt  # 各�
       （参照 `Framebuffer.cpp` / `Texture.cpp`）。
 - [ ] 在 `Platform/OpenGL/` 实现 `OpenGLXxx.{h,cpp}`，`gl*` 调用只出现在这里。
 - [ ] 若用到 GL 4.5 DSA API，在 PR/说明中注明（会影响 macOS 移植，见 3.4 C）。
+
+### 6.6 编写单元测试
+
+结构参考 O3DE：被测模块是静态库，每个模块在自己目录下有 `tests/` 并产出一个 `<Module>Tests`，各测试工程共用的代码放在 `YuicyTestFramework`。
+
+| 被测代码 | 放在 | 链接 |
+|---|---|---|
+| `Yuicy/src/Yuicy/<Dir>/` | `Yuicy/tests/<Dir>/XxxTests.cpp` | `YuicyTests` → `Yuicy` |
+| `YuiStudio/src/<Dir>/` | `YuiStudio/tests/<Dir>/XxxTests.cpp` | `YuiStudioTests` → `YuiStudioCore` |
+
+- [ ] 新文件放进对应目录即可，无需改 CMake（`CONFIGURE_DEPENDS` 通配）；首行 `#include "pch.h"`，测试工程的 `pch.h` 已包含 `YuicyTest/YuicyTest.h`。
+- [ ] 用例放进 `TEST_SUITE("<模块>")`，现有：`Scene` / `Asset` / `Project` / `Editor`。`TEST_SUITE` 名会成为 CTest 标签（`ctest -L Scene`）。
+- [ ] 用例名用英文短句描述被验证的行为，它同时是 CTest 测试名与 `--test-case=` 的过滤参数；不要含逗号（`--test-case=` 用逗号分隔多个过滤条件）。
+- [ ] 需要场景时用 `TEST_CASE_FIXTURE(Test::SceneFixture, ...)`；只需要活动项目或临时文件时用 `Test::ScopedActiveProject` / `Test::ScopedTempDirectory`。
+      **不要**把文件写进源码树或工作目录，也不要依赖工作目录下的资源。
+- [ ] 浮点向量比较用 `CHECK(v == Test::ApproxVec(expected))`，标量用 `doctest::Approx`，失败时会打印两侧的值。
+- [ ] 只读测试数据放 `Yuicy/tests/data/`，路径以 `YUICY_TEST_DATA_DIR` 开头拼接。
+- [ ] **不能创建窗口与 GL 上下文**：不调用 `Renderer2D` / `Texture2D::Create` / `Shader::Create`。
+      组件里的 `AssetHandle` 只填未在资产注册表中登记的值，这样反序列化 `AnimationComponent` 时不会加载纹理，`Frames` 中对应元素为 `nullptr`。
+      需要 GPU 时等 Headless 后端（`AI_INFRA_ROADMAP.md` 2.3）。
+- [ ] 活动项目是 `Project` 的静态成员，用例之间会互相影响：只通过 `SceneFixture` / `ScopedActiveProject` 设置，不要直接调用 `Project::SetActive`；两者都不能嵌套使用。
+- [ ] 发现被测代码有 Bug 但不在本次任务内修复时，写一个复现用例并加 `* doctest::should_fail()`，上方一行注释说明问题，
+      再加 `// TODO: 删除 should_fail（<修复条件>）`。修复后用例中的断言全部通过，doctest 会把它判为失败，提醒删除 `should_fail`。
+- [ ] 新增一个模块的测试工程：在 `<Module>/tests/CMakeLists.txt` 调用 `yuicy_add_test(<Module>Tests SOURCE_DIR ... LINK <被测库>)`，
+      并在 `<Module>/CMakeLists.txt` 中 `if(YUICY_BUILD_TESTS) add_subdirectory(tests) endif()`；被测模块是可执行文件时先按 `YuiStudio` 的做法拆出 `<Module>Core` 静态库。
+- [ ] 排查时：`YUICY_TEST_LOG_LEVEL=trace build/debug/bin/YuicyTests --test-case="<名称>"` 输出全部引擎日志（默认只输出 warn 及以上）。
+      引擎的 `.cpp` 在 Debug 与 Release 下都开启 `YUICY_CORE_ASSERT`，断言失败会调用 `YUICY_DEBUGBREAK()`，没有挂调试器时测试进程直接退出，
+      CTest 报告的是进程异常退出而不是 doctest 断言失败，此时在输出中找 `Assertion` 开头的错误日志。
 
 ## 7. 代码风格
 
@@ -406,7 +452,9 @@ s_Data.TextureSlotIndex = 1;
 
 ## 10. 交付前自检
 
-当前仓库尚无自动化测试与 CI，提交前至少确认：
+当前仓库尚无 CI，提交前至少确认：
+
+- [ ] `cmake --build --preset debug && ctest --preset debug` 全部通过（Windows：`vs2022-debug`）。
 
 - [ ] 改动范围与任务一致，没有顺手重构 / 批量格式化 / 修改第三方代码 / 夹带平台移植改动。
 - [ ] 第 4 节硬性规则全部满足；涉及组件时第 6.1 节清单逐项核对。
@@ -415,3 +463,4 @@ s_Data.TextureSlotIndex = 1;
 - [ ] 新增和修改的注释满足第 8 节：没有傻瓜注释、东坡肉式注释和注释掉的代码，被改动影响的旧注释已同步更新。
 - [ ] 在 Windows 上 Debug 与 Release 均能编译；若无法编译验证，已明确告知并列出待人工验证的点。
 - [ ] 涉及序列化时：保存 → 重新打开场景，数据一致；涉及编辑操作时：执行 → Undo → Redo 结果一致。
+      能用单元测试覆盖的，按第 6.6 节补用例，而不是只做手动验证。

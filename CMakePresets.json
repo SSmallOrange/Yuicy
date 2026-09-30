@@ -35,5 +35,17 @@
     { "name": "release", "configurePreset": "release", "jobs": 0 },
     { "name": "vs2022-debug", "configurePreset": "vs2022", "configuration": "Debug" },
     { "name": "vs2022-release", "configurePreset": "vs2022", "configuration": "Release" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    { "name": "debug", "inherits": "test-base", "configurePreset": "debug" },
+    { "name": "release", "inherits": "test-base", "configurePreset": "release" },
+    { "name": "vs2022-debug", "inherits": "test-base", "configurePreset": "vs2022", "configuration": "Debug" },
+    { "name": "vs2022-release", "inherits": "test-base", "configurePreset": "vs2022", "configuration": "Release" }
   ]
 }

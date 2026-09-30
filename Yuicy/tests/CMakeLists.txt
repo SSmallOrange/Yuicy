@@ -1,0 +1,4 @@
+yuicy_add_test(YuicyTests
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+	DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data"
+	LINK Yuicy)

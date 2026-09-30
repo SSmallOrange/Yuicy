@@ -83,6 +83,15 @@ target_include_directories(yuicy_header_deps INTERFACE
 	"${YUICY_THIRDPARTY_DIR}/tinyrefl"
 	"${YUICY_THIRDPARTY_DIR}/stb_image")
 
+# ---- doctest 2.5（子模块，自带 CMake；仅测试工程使用） --------------------------------
+# 只取 INTERFACE target `doctest`；main 由 YuicyTestFramework 提供，不使用上游的 doctest_with_main
+if(YUICY_BUILD_TESTS)
+	set(DOCTEST_WITH_TESTS              OFF CACHE BOOL "" FORCE)
+	set(DOCTEST_WITH_MAIN_IN_STATIC_LIB OFF CACHE BOOL "" FORCE)
+	set(DOCTEST_NO_INSTALL              ON  CACHE BOOL "" FORCE)
+	add_subdirectory("${YUICY_THIRDPARTY_DIR}/doctest" EXCLUDE_FROM_ALL)
+endif()
+
 # ---- 统一处理 ----------------------------------------------------------------------
 set(YUICY_THIRDPARTY_TARGETS glfw box2d yaml-cpp glad imgui lua)
 foreach(dep IN LISTS YUICY_THIRDPARTY_TARGETS)

@@ -1,0 +1,76 @@
+Scene: ReferenceScene
+Entities:
+  - Entity: 1001
+    TagComponent:
+      Tag: Root
+    Parent: 0
+    Children:
+      - Handle: 1002
+    TransformComponent:
+      Position: [1, 2, 3]
+      Rotation: [0, 0, 0.5]
+      Scale: [2, 2, 1]
+    SpriteRendererComponent:
+      Color: [1, 0.5, 0.25, 1]
+      TextureHandle: 0
+      TilingFactor: 2
+      FlipX: true
+      FlipY: false
+      SortingLayer: Foreground
+      SortingOrder: 3
+    CameraComponent:
+      Camera:
+        OrthographicSize: 8
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+      DesignWidth: 640
+      DesignHeight: 480
+      ShowSafeArea: false
+      SafeAreaMargin: 0.05
+  - Entity: 1002
+    TagComponent:
+      Tag: Child
+    Parent: 1001
+    Children:
+      []
+    TransformComponent:
+      Position: [0.5, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LuaScriptComponent:
+      ScriptHandle: 5005
+    AnimationComponent:
+      DefaultClip: Walk
+      Clips:
+        - Name: Walk
+          FrameDuration: 0.125
+          Loop: false
+          Frames:
+            - TextureHandle: 0
+              UVMin: [0, 0]
+              UVMax: [0.5, 1]
+    Rigidbody2DComponent:
+      BodyType: 1
+      FixedRotation: true
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 1]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+      CategoryBits: 1
+      MaskBits: 3
+      IsTrigger: false
+    CircleCollider2DComponent:
+      Offset: [0, 0.5]
+      Radius: 0.25
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+      CategoryBits: 1
+      MaskBits: 65535
+      IsTrigger: true

@@ -59,17 +59,20 @@ Yuicy/
 │   │   └── Platform/
 │   │       ├── OpenGL/         # OpenGL 实现
 │   │       └── Windows/        # Windows 窗口与输入
+│   ├── tests/                  # 引擎单元测试 YuicyTests
 │   └── thirdparty/             # 第三方依赖
-├── YuiStudio/                  # 场景编辑器（默认启动项目）
+├── YuiStudio/                  # 场景编辑器（默认启动项目；除入口外编译为静态库 YuiStudioCore）
 │   ├── src/
 │   │   ├── EditorLayer.*       # 编辑器主 Layer
 │   │   ├── Editor/             # 编辑器服务：上下文、命令/撤销、场景控制、资源工作流、渲染管线
 │   │   └── Panels/             # ImGui 面板与组件编辑器
+│   ├── tests/                  # 编辑器单元测试 YuiStudioTests
 │   └── assets/                 # 编辑器资源（shaders / textures / fonts）
 ├── Sandbox/                    # 功能临时验证
-├── cmake/                      # CMake 辅助模块：第三方依赖 target（ThirdParty.cmake）、公共设置（YuicyHelpers.cmake）
-├── CMakeLists.txt              # 根构建脚本（Yuicy/、YuiStudio/、Sandbox/ 下各有一份子脚本）
-├── CMakePresets.json           # 构建预设：debug / release（Makefile）、vs2022
+├── TestFramework/              # 各测试工程共用的测试库 YuicyTestFramework（main、夹具、glm 向量比较）
+├── cmake/                      # CMake 辅助模块：第三方依赖 target（ThirdParty.cmake）、公共设置（YuicyHelpers.cmake）、测试（YuicyTesting.cmake）
+├── CMakeLists.txt              # 根构建脚本（Yuicy/、YuiStudio/、Sandbox/、TestFramework/ 下各有一份子脚本）
+├── CMakePresets.json           # 构建 / 测试预设：debug / release（Makefile）、vs2022
 └── AGENTS.md                   # AI 编码助手 / 贡献者工作约定
 ```
 
@@ -127,6 +130,20 @@ cmake --build --preset debug --target run-YuiStudio   # 以工程目录为工作
 
 > 新增 / 删除源文件无需修改 CMake 脚本（以通配方式收集 `src/**`，并带 `CONFIGURE_DEPENDS`，下次构建时自动重新配置）。
 
+### 单元测试
+
+测试基于 [doctest](https://github.com/doctest/doctest)，由 CTest 驱动，不创建窗口与 OpenGL 上下文。先构建，再运行：
+
+```bash
+cmake --build --preset debug
+ctest --preset debug                     # Windows：ctest --preset vs2022-debug
+ctest --preset debug -L Scene            # 只跑某个 TEST_SUITE（Scene / Asset / Project / Editor）
+ctest --preset debug -R "^YuiStudioTests\."
+```
+
+也可以直接运行 `build/<preset>/bin/YuicyTests`、`YuiStudioTests`（支持 doctest 的 `--test-case=`、`--help` 等参数）。
+配置时加 `-DYUICY_BUILD_TESTS=OFF` 可跳过测试工程。编写测试的约定见 `AGENTS.md` 第 6.6 节。
+
 ### 编译数据库（clangd / LSP）
 
 使用 Makefile 预设（`debug` / `release`）配置时，CMake 会生成 `build/<preset>/compile_commands.json`，
@@ -140,7 +157,7 @@ cmake --build --preset debug --target run-YuiStudio   # 以工程目录为工作
 ## 依赖
 
 依赖位于 `Yuicy/thirdparty/`，其 CMake target 统一在 `cmake/ThirdParty.cmake` 中声明
-（GLFW / Box2D / yaml-cpp 使用上游 CMakeLists，GLAD / imgui / Lua 在该文件中定义，其余为纯头文件）：
+（GLFW / Box2D / yaml-cpp / doctest 使用上游 CMakeLists，GLAD / imgui / Lua 在该文件中定义，其余为纯头文件）：
 
 | 库 | 用途 | 引入方式 |
 |---|---|---|
@@ -157,6 +174,7 @@ cmake --build --preset debug --target run-YuiStudio   # 以工程目录为工作
 | [glm](https://github.com/g-truc/glm) | 数学库 | 子模块 |
 | stb_image | 图片加载 | 源码 |
 | [TinyReflection](https://github.com/SSmallOrange/TinyReflection) | 反射 | 子模块 |
+| [doctest](https://github.com/doctest/doctest) 2.5.3 | 单元测试（仅测试工程） | 子模块 |
 
 ---
 

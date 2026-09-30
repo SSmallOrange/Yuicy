@@ -39,3 +39,7 @@ if(APPLE)
 endif()
 
 yuicy_configure_target(Yuicy)
+
+if(YUICY_BUILD_TESTS)
+	add_subdirectory(tests)
+endif()

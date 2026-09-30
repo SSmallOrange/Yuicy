@@ -19,3 +19,6 @@
 [submodule "Yuicy/thirdparty/yaml-cpp"]
 	path = Yuicy/thirdparty/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "Yuicy/thirdparty/doctest"]
+	path = Yuicy/thirdparty/doctest
+	url = https://github.com/doctest/doctest.git
