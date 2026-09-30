@@ -288,16 +288,18 @@ namespace Yuicy {
 
 				ImGui::Separator();
 
-				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
+				bool macStyle = ImGui::GetIO().ConfigMacOSXBehaviors;
+
+				if (ImGui::MenuItem("New Scene", macStyle ? "Cmd+N" : "Ctrl+N"))
 					m_sceneController.NewScene();
 
-				if (ImGui::MenuItem("Open Scene...", "Ctrl+O"))
+				if (ImGui::MenuItem("Open Scene...", macStyle ? "Cmd+O" : "Ctrl+O"))
 					m_sceneController.OpenSceneDialog();
 
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+				if (ImGui::MenuItem("Save Scene", macStyle ? "Cmd+S" : "Ctrl+S"))
 					m_sceneController.SaveScene();
 
-				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
+				if (ImGui::MenuItem("Save Scene As...", macStyle ? "Cmd+Shift+S" : "Ctrl+Shift+S"))
 					m_sceneController.SaveSceneAs();
 
 				ImGui::Separator();
@@ -450,27 +452,29 @@ namespace Yuicy {
 		if (ImGui::GetIO().WantTextInput)
 			return false;
 
-		bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool primary = Input::IsPrimaryModifierPressed();
 		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		// 与 ImGui 文本框一致：macOS 风格下 Redo 额外支持 Cmd+Shift+Z
+		bool macStyle = ImGui::GetIO().ConfigMacOSXBehaviors;
 
 		switch (e.GetKeyCode())
 		{
 		case Key::N:
-			if (ctrl) m_sceneController.NewScene();
+			if (primary) m_sceneController.NewScene();
 			break;
 		case Key::O:
-			if (ctrl) m_sceneController.OpenSceneDialog();
+			if (primary) m_sceneController.OpenSceneDialog();
 			break;
 		case Key::S:
-			if (ctrl && shift) m_sceneController.SaveSceneAs();
-			else if (ctrl) m_sceneController.SaveScene();
+			if (primary && shift) m_sceneController.SaveSceneAs();
+			else if (primary) m_sceneController.SaveScene();
 			break;
 		case Key::Z:
-			YUICY_CORE_INFO("ctrl: {}, shift: {}", ctrl, shift);
-			if (ctrl && !shift) m_commandHistory.Undo();
+			if (primary && !shift) m_commandHistory.Undo();
+			else if (primary && shift && macStyle) m_commandHistory.Redo();
 			break;
 		case Key::Y:
-			if (ctrl) m_commandHistory.Redo();
+			if (primary) m_commandHistory.Redo();
 			break;
 		}
 

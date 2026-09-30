@@ -12,6 +12,8 @@ namespace Yuicy {
 	{
 	public:
 		static bool IsKeyPressed(KeyCode key);
+		// 主修饰键（快捷键、多选等使用）：Windows / Linux 为 Ctrl，macOS 为 Cmd（Super），左右任一按下即返回 true
+		static bool IsPrimaryModifierPressed();
 
 		static bool IsMouseButtonPressed(MouseCode button);
 		// static glm::vec2 GetMousePosition();

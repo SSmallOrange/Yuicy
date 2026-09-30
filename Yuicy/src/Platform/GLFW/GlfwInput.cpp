@@ -13,6 +13,19 @@ namespace Yuicy {
 		return state == GLFW_PRESS;
 	}
 
+	bool Input::IsPrimaryModifierPressed()
+	{
+		// 不读取 ImGui 的 ConfigMacOSXBehaviors：Input 不能依赖 ImGui，修改该配置后两者会不一致
+#if defined(PLATFORM_MACOS)
+		return IsKeyPressed(Key::LeftSuper) || IsKeyPressed(Key::RightSuper);
+#elif defined(PLATFORM_WINDOWS) || defined(PLATFORM_LINUX)
+		return IsKeyPressed(Key::LeftControl) || IsKeyPressed(Key::RightControl);
+#else
+		YUICY_CORE_ASSERT(false, "Unknown platform!");
+		return false;
+#endif
+	}
+
 	bool Input::IsMouseButtonPressed(const MouseCode button)
 	{
 		GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());

@@ -80,9 +80,9 @@ namespace Yuicy {
 			// 点击空白处取消选择
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
 			{
-				bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+				bool primary = Input::IsPrimaryModifierPressed();
 				bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
-				if (!ctrl && !shift)
+				if (!primary && !shift)
 					SetSelectedEntity({});
 			}
 
@@ -112,9 +112,9 @@ namespace Yuicy {
 					// 点击空白 InvisibleButton 也清除选择
 					if (ImGui::IsItemClicked())
 					{
-						bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+						bool primary = Input::IsPrimaryModifierPressed();
 						bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
-						if (!ctrl && !shift)
+						if (!primary && !shift)
 							SetSelectedEntity({});
 					}
 
@@ -352,11 +352,11 @@ namespace Yuicy {
 		// 选择逻辑（仅在点击树节点区域、非按钮时触发）
 		if (treeNodeClicked && !hideToggled && !lockToggled)
 		{
-			bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+			bool primary = Input::IsPrimaryModifierPressed();
 			bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 			bool alreadySelected = m_editorSelection && m_editorSelection->IsEntitySelected(entityUUID);
 
-			if (ctrl)
+			if (primary)
 				m_editorSelection->ToggleEntity(entityUUID);
 			else if (shift)
 				m_editorSelection->AddEntity(entityUUID);

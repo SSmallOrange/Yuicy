@@ -210,9 +210,9 @@ namespace Yuicy {
 		glm::mat4 worldTransform = m_context->activeScene->GetWorldSpaceTransformMatrix(selectedEntity);
 
 		// 吸附：根据 Gizmo 操作类型从 EditorViewportSettings 读取吸附参数
-		// Ctrl 键作为吸附切换：设置中开启则 Ctrl 临时关闭，设置中关闭则 Ctrl 临时开启
+		// 按住主修饰键时临时反转吸附设置
 		auto& snapSettings = m_context->viewportSettings;
-		bool ctrlPressed = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool primaryPressed = Input::IsPrimaryModifierPressed();
 
 		bool snapEnabled = false;
 		float snapValue = 0.0f;
@@ -233,8 +233,7 @@ namespace Yuicy {
 			break;
 		}
 
-		// Ctrl 切换吸附状态
-		bool snap = ctrlPressed ? !snapEnabled : snapEnabled;
+		bool snap = primaryPressed ? !snapEnabled : snapEnabled;
 		float snapValues[3] = { snapValue, snapValue, snapValue };
 
 		ImGuizmo::Manipulate(
@@ -496,7 +495,7 @@ namespace Yuicy {
 			bool altPressed = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
 			if (m_context->viewport.hovered && !altPressed)
 			{
-				bool ctrlPressed = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+				bool primaryPressed = Input::IsPrimaryModifierPressed();
 				bool shiftPressed = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 
 				Entity hovered = m_context->viewport.hoveredEntity;
@@ -505,9 +504,9 @@ namespace Yuicy {
 				{
 					UUID hoveredUUID = hovered.GetUUID();
 
-					if (ctrlPressed)
+					if (primaryPressed)
 					{
-						// Ctrl 如果已经选择，则移除
+						// 主修饰键+Click：切换选中状态
 						m_context->selection.ToggleEntity(hoveredUUID);
 					}
 					else if (shiftPressed)
@@ -529,7 +528,7 @@ namespace Yuicy {
 					m_boxSelectStart = { mx - viewportState.bounds[0].x, my - viewportState.bounds[0].y };
 					m_boxSelectEnd = m_boxSelectStart;
 					m_boxSelectPending = true;
-					m_boxSelectAdditive = shiftPressed || ctrlPressed;
+					m_boxSelectAdditive = shiftPressed || primaryPressed;
 
 					if (m_boxSelectAdditive)
 						m_boxSelectSnapshot = m_context->selection.selectedEntities;
@@ -548,29 +547,29 @@ namespace Yuicy {
 		if (e.IsRepeat())
 			return false;
 
-		bool ctrl = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool primary = Input::IsPrimaryModifierPressed();
 		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 
 		switch (e.GetKeyCode())
 		{
 		case Key::Q:
-			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !primary && !shift)
 				m_gizmoType = -1;
 			break;
 		case Key::W:
-			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !primary && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 		case Key::E:
-			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !primary && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::ROTATE;
 			break;
 		case Key::R:
-			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !primary && !shift)
 				m_gizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		case Key::F:
-			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !ctrl && !shift)
+			if (m_context->runtime.IsEditing() && m_context->viewport.hovered && !primary && !shift)
 			{
 				UUID selectedUUID = m_context->selection.GetPrimarySelectedEntityUUID();
 				if (selectedUUID != 0)
