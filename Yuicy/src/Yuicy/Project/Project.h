@@ -50,6 +50,7 @@ namespace Yuicy {
 
 		// 活动项目管理
 		static Ref<Project> GetActive() { return s_activeProject; }
+		// 每次调用都会新建 EditorAssetManager；传入 nullptr 表示关闭项目，并释放已加载的资源
 		static void SetActive(const Ref<Project>& project);
 
 		// 资源管理

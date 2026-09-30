@@ -3,6 +3,7 @@
 #include "Yuicy/Core/Application.h"
 #include "Yuicy/Events/ApplicationEvent.h"
 #include "Yuicy/Scripting/LuaScriptEngine.h"
+#include "Yuicy/Project/Project.h"
 
 #include "Yuicy/Renderer/Renderer.h"
 
@@ -30,6 +31,10 @@ namespace Yuicy {
 		YUICY_PROFILE_FUNCTION();
 
 		LuaScriptEngine::Shutdown();
+
+		// 静态对象持有的 GPU 资源必须在 _window 析构（销毁图形上下文）之前释放
+		Project::SetActive(nullptr);
+		Renderer::Shutdown();
 	}
 
 	void Application::OnEvent(Event& e) {

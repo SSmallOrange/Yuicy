@@ -7,9 +7,7 @@ namespace Yuicy {
 	void Project::SetActive(const Ref<Project>& project)
 	{
 		s_activeProject = project;
-
-		// 初始化 AssetManager
-		s_assetManager = CreateRef<EditorAssetManager>();
+		s_assetManager = project ? CreateRef<EditorAssetManager>() : nullptr;
 	}
 
 }

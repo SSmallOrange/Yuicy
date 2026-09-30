@@ -10,6 +10,8 @@ namespace Yuicy {
 	{
 	public:
 		static void Init();
+		// 须在图形上下文销毁前调用
+		static void Shutdown();
 		// 单位为像素（Window::GetFramebufferWidth / Height），不是窗口坐标
 		static void OnWindowResize(uint32_t width, uint32_t height);
 

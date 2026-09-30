@@ -3,6 +3,7 @@
 #include "Yuicy/Core/Log.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -102,6 +103,9 @@ namespace Yuicy {
 			static Instrumentor instance;
 			return instance;
 		}
+
+		// 为 true 时不得再调用 Get()：静态析构阶段 Instrumentor 可能先于调用方被销毁
+		static bool IsDestroyed() { return s_Destroyed.load(); }
 	private:
 		Instrumentor()
 			: m_CurrentSession(nullptr)
@@ -111,6 +115,7 @@ namespace Yuicy {
 		~Instrumentor()
 		{
 			EndSession();
+			s_Destroyed = true;
 		}		
 
 		void WriteHeader()
@@ -141,6 +146,9 @@ namespace Yuicy {
 		std::mutex m_Mutex;
 		InstrumentationSession* m_CurrentSession;
 		std::ofstream m_OutputStream;
+
+		// 不属于实例且可平凡析构，实例销毁后仍可安全读取
+		inline static std::atomic<bool> s_Destroyed{ false };
 	};
 
 	class InstrumentationTimer
@@ -164,7 +172,8 @@ namespace Yuicy {
 			auto highResStart = FloatingPointMicroseconds{ m_StartTimepoint.time_since_epoch() };
 			auto elapsedTime = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch() - std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch();
 
-			Instrumentor::Get().WriteProfile({ m_Name, highResStart, elapsedTime, std::this_thread::get_id() });
+			if (!Instrumentor::IsDestroyed())
+				Instrumentor::Get().WriteProfile({ m_Name, highResStart, elapsedTime, std::this_thread::get_id() });
 
 			m_Stopped = true;
 		}

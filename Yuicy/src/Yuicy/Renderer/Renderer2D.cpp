@@ -184,6 +184,9 @@ namespace Yuicy {
 		delete[] s_Data.QuadVertexBufferBase;
 		delete[] s_Data.LineVertexBufferBase;
 		delete[] s_Data.CircleVertexBufferBase;
+
+		// s_Data 在 main 返回后才析构，那时图形上下文已销毁，GPU 资源必须在这里提前释放
+		s_Data = Renderer2DData();
 	}
 
 	void Renderer2D::BeginScene(const glm::mat4& viewProjection)
