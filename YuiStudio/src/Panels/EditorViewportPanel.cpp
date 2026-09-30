@@ -52,14 +52,15 @@ namespace Yuicy {
 
 		auto& viewportState = m_context->viewport;
 
-		// Viewport resize
+		// Framebuffer 按像素尺寸创建；场景与编辑器相机用窗口坐标，与鼠标坐标保持同一单位
 		auto fbSpec = m_renderPipeline->GetFramebuffer()->GetSpecification();
-		if (viewportState.size.x > 0.0f && viewportState.size.y > 0.0f
-			&& (fbSpec.width != (uint32_t)viewportState.size.x || fbSpec.height != (uint32_t)viewportState.size.y))
+		glm::uvec2 framebufferSize = GetViewportFramebufferSize();
+		if (framebufferSize.x > 0 && framebufferSize.y > 0
+			&& (fbSpec.width != framebufferSize.x || fbSpec.height != framebufferSize.y))
 		{
 			uint32_t width = (uint32_t)viewportState.size.x;
 			uint32_t height = (uint32_t)viewportState.size.y;
-			m_renderPipeline->OnViewportResize(width, height);
+			m_renderPipeline->OnViewportResize(framebufferSize.x, framebufferSize.y);
 			m_context->activeScene->OnViewportResize(width, height);
 			m_editorCamera.SetViewportSize(width, height);
 		}
@@ -84,6 +85,13 @@ namespace Yuicy {
 		UpdateMousePicking();
 	}
 
+	glm::uvec2 EditorViewportPanel::GetViewportFramebufferSize() const
+	{
+		ImVec2 scale = ImGui::GetIO().DisplayFramebufferScale;
+		const glm::vec2& size = m_context->viewport.size;
+		return { (uint32_t)(size.x * scale.x), (uint32_t)(size.y * scale.y) };
+	}
+
 	void EditorViewportPanel::UpdateMousePicking()
 	{
 		auto& viewportState = m_context->viewport;
@@ -95,11 +103,14 @@ namespace Yuicy {
 		glm::vec2 viewportBoundsSize = viewportState.bounds[1] - viewportState.bounds[0];
 		my = viewportBoundsSize.y - my;
 
-		int mouseX = (int)mx;
-		int mouseY = (int)my;
+		// 鼠标是窗口坐标，ReadPixel 需要 Framebuffer 的像素坐标
+		ImVec2 framebufferScale = ImGui::GetIO().DisplayFramebufferScale;
+		int mouseX = (int)(mx * framebufferScale.x);
+		int mouseY = (int)(my * framebufferScale.y);
 
+		auto fbSpec = m_renderPipeline->GetFramebuffer()->GetSpecification();
 		if (mouseX >= 0 && mouseY >= 0
-			&& mouseX < (int)viewportBoundsSize.x && mouseY < (int)viewportBoundsSize.y)
+			&& mouseX < (int)fbSpec.width && mouseY < (int)fbSpec.height)
 		{
 			int pixelData = m_renderPipeline->ReadEntityIDAtPixel(mouseX, mouseY);
 			Entity picked = pixelData == -1 ? Entity{} : Entity((entt::entity)pixelData, m_context->activeScene.get());

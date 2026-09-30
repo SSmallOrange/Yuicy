@@ -28,6 +28,7 @@ namespace Yuicy {
 	private:
 		bool OnWindowClose(Event& e);
 		bool OnWindowResize(WindowResizeEvent& e);
+		bool OnWindowFramebufferResize(WindowFramebufferResizeEvent& e);
 
 	private:
 		std::unique_ptr<Window>		_window;

@@ -24,6 +24,33 @@ namespace Yuicy {
 		unsigned int _width, _height;
 	};
 
+	// 窗口 framebuffer 的像素尺寸变化，高 DPI 屏上与 WindowResizeEvent 的窗口坐标尺寸不同。
+	// 窗口移到缩放比不同的显示器时，可能只有此事件而没有 WindowResizeEvent。
+	class WindowFramebufferResizeEvent : public Event
+	{
+	public:
+		WindowFramebufferResizeEvent(unsigned int width, unsigned int height)
+			: m_Width(width),
+			  m_Height(height)
+		{
+		}
+
+		unsigned int GetWidth() const { return m_Width; }
+		unsigned int GetHeight() const { return m_Height; }
+
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "WindowFramebufferResizeEvent: " << m_Width << ", " << m_Height;
+			return ss.str();
+		}
+
+		EVENT_CLASS_TYPE(WindowFramebufferResize)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	private:
+		unsigned int m_Width, m_Height;
+	};
+
 	class WindowCloseEvent : public Event {
 	public:
 		WindowCloseEvent() = default;

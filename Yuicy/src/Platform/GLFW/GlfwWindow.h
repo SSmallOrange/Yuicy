@@ -20,6 +20,8 @@ namespace Yuicy {
 
 		uint32_t GetWidth() const override { return m_Data.Width; }
 		uint32_t GetHeight() const override { return m_Data.Height; }
+		uint32_t GetFramebufferWidth() const override { return m_Data.FramebufferWidth; }
+		uint32_t GetFramebufferHeight() const override { return m_Data.FramebufferHeight; }
 
 		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 		void SetVSync(bool enabled) override;
@@ -53,6 +55,8 @@ namespace Yuicy {
 			std::string Title;
 			uint32_t Width = 0;
 			uint32_t Height = 0;
+			uint32_t FramebufferWidth = 0;
+			uint32_t FramebufferHeight = 0;
 			bool VSync = false;
 
 			EventCallbackFn EventCallback;

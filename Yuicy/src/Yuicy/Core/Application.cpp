@@ -37,6 +37,7 @@ namespace Yuicy {
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Application::OnWindowResize, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowFramebufferResizeEvent>(std::bind(&Application::OnWindowFramebufferResize, this, std::placeholders::_1));
 
 		for (auto it = _layerStack.rbegin(); it != _layerStack.rend(); ++it) {  // 事件反向冒泡
 			if (e.Handled)
@@ -123,6 +124,21 @@ namespace Yuicy {
 		}
 
 		_minimized = false;
+		// 视口按像素设置，不能用事件里的窗口坐标尺寸
+		// TODO: 改为只由 OnWindowFramebufferResize 设置视口（WindowsWindow 发送 WindowFramebufferResizeEvent 后）
+		Renderer::OnWindowResize(_window->GetFramebufferWidth(), _window->GetFramebufferHeight());
+
+		return false;
+	}
+
+	bool Application::OnWindowFramebufferResize(WindowFramebufferResizeEvent& e)
+	{
+		YUICY_PROFILE_FUNCTION();
+
+		// 尺寸为 0 表示最小化，_minimized 由 OnWindowResize 维护，这里只跳过
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+			return false;
+
 		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
 
 		return false;

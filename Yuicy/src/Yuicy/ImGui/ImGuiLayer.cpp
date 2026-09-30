@@ -37,9 +37,19 @@ namespace Yuicy {
 #endif
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;     // 禁止ImGui修改光标
 
-		float fontSize = 18.0f;// *2.0f;
+		Application& app = Application::Get();
+
+		// 字体按像素尺寸光栅化，再用 FontGlobalScale 缩回窗口坐标，否则高 DPI 屏上字形被拉伸发虚。
+		// 缩放比取 framebuffer / 窗口尺寸而非 glfwGetWindowContentScale：后者在 Windows 上是 UI 放大倍数，不是像素密度。
+		// TODO: 缩放比变化时重建字体图集（支持窗口在缩放比不同的显示器间移动时）
+		const Window& appWindow = app.GetWindow();
+		float framebufferScale = 1.0f;
+		if (appWindow.GetWidth() > 0 && appWindow.GetFramebufferWidth() > 0)
+			framebufferScale = (float)appWindow.GetFramebufferWidth() / (float)appWindow.GetWidth();
+		float fontSize = 18.0f * framebufferScale;
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
+		io.FontGlobalScale = 1.0f / framebufferScale;
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -55,7 +65,6 @@ namespace Yuicy {
 
 		SetDarkThemeColors();
 
-		Application& app = Application::Get();
 		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
 
 		//// Setup Platform/Renderer bindings

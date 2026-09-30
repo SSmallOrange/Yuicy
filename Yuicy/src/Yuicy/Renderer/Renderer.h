@@ -10,6 +10,7 @@ namespace Yuicy {
 	{
 	public:
 		static void Init();
+		// 单位为像素（Window::GetFramebufferWidth / Height），不是窗口坐标
 		static void OnWindowResize(uint32_t width, uint32_t height);
 
 		static void BeginScene(OrthographicCamera& camera);

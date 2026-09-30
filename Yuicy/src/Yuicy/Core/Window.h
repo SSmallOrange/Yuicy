@@ -33,8 +33,14 @@ namespace Yuicy {
 
 		virtual void OnUpdate() = 0;
 
+		// 窗口坐标尺寸，与鼠标坐标、ImGui 布局同一单位
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
+
+		// 窗口 framebuffer 的像素尺寸，设置渲染视口用它，高 DPI 屏上大于窗口坐标尺寸。
+		// 默认实现适用于窗口坐标即像素的平台。
+		virtual uint32_t GetFramebufferWidth() const { return GetWidth(); }
+		virtual uint32_t GetFramebufferHeight() const { return GetHeight(); }
 
 		// Window attributes
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;

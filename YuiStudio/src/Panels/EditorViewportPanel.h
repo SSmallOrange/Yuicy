@@ -59,6 +59,9 @@ namespace Yuicy {
 		void DrawOverlaySettingsPopup();
 		void UpdateMousePicking();
 
+		// 视口 Framebuffer 应有的像素尺寸（viewport.size 是窗口坐标）
+		glm::uvec2 GetViewportFramebufferSize() const;
+
 		// 框选
 		void UpdateBoxSelection();
 		void DrawBoxSelectionOverlay();

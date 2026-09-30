@@ -62,6 +62,11 @@ namespace Yuicy {
 			++s_GLFWWindowCount;
 		}
 
+		int framebufferWidth = 0, framebufferHeight = 0;
+		glfwGetFramebufferSize(m_Window, &framebufferWidth, &framebufferHeight);
+		m_Data.FramebufferWidth = framebufferWidth;
+		m_Data.FramebufferHeight = framebufferHeight;
+
 		m_Context = GraphicsContext::Create(m_Window);
 		m_Context->Init();
 
@@ -74,6 +79,15 @@ namespace Yuicy {
 			data.Height = height;
 
 			WindowResizeEvent event(width, height);
+			data.EventCallback(event);
+		});
+
+		glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
+			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+			data.FramebufferWidth = width;
+			data.FramebufferHeight = height;
+
+			WindowFramebufferResizeEvent event(width, height);
 			data.EventCallback(event);
 		});
 
