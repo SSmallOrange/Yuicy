@@ -13,7 +13,24 @@
 // TEMPORARY
 #include <GLFW/glfw3.h>
 
+#include <filesystem>
+#include <system_error>
+
 namespace Yuicy {
+
+	// ImGui 会把布局写回 IniFilename，直接指向 imgui.default.ini 会改掉默认布局，因此复制一份再用。
+	// 必须在第一次 ImGui::NewFrame 之前调用，ImGui 在那时读取 ini。
+	static void EnsureImGuiIniFile(const std::filesystem::path& iniPath)
+	{
+		const std::filesystem::path defaultIniPath = "imgui.default.ini";
+		std::error_code error;
+		if (std::filesystem::exists(iniPath, error) || !std::filesystem::exists(defaultIniPath, error))
+			return;
+
+		std::filesystem::copy_file(defaultIniPath, iniPath, error);
+		if (error)
+			YUICY_CORE_WARN("Failed to copy {0} to {1}: {2}", defaultIniPath.string(), iniPath.string(), error.message());
+	}
 
 	ImGuiLayer::ImGuiLayer()
 		: Layer("ImGuiLayer")
@@ -28,6 +45,8 @@ namespace Yuicy {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		if (io.IniFilename)
+			EnsureImGuiIniFile(io.IniFilename);
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // 键盘IO
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // 拖动窗口
 #ifndef PLATFORM_MACOS
