@@ -12,10 +12,30 @@
 #include <box2d/b2_body.h>
 #include <glm/glm.hpp>
 
+#include <charconv>
+#include <optional>
+
 namespace Yuicy {
 
-	namespace LuaBindings
-	{
+	namespace {
+		std::string UUIDToLua(UUID uuid)
+		{
+			return std::to_string((uint64_t)uuid);
+		}
+
+		// 不是完整的十进制 uint64 时返回 std::nullopt
+		std::optional<UUID> UUIDFromLua(const std::string& text)
+		{
+			uint64_t value = 0;
+			const char* end = text.data() + text.size();
+			auto [ptr, ec] = std::from_chars(text.data(), end, value);
+			if (text.empty() || ec != std::errc() || ptr != end)
+				return std::nullopt;
+			return UUID(value);
+		}
+	}
+
+	namespace LuaBindings {
 		// Individual binding functions
 		void RegisterMath(sol::state& lua);        // glm::vec2, vec3, vec4
 		void RegisterInput(sol::state& lua);       // Input::IsKeyPressed, Key codes
@@ -288,7 +308,7 @@ namespace Yuicy {
 				}
 			);
 		}
-
+		
 		void RegisterEntity(sol::state& lua)
 		{
 			lua.new_usertype<Entity>("Entity",
@@ -329,8 +349,8 @@ namespace Yuicy {
 				"IsValid", [](Entity& e) -> bool {
 					return (bool)e;
 				},
-				"GetUUID", [](Entity& e) -> uint64_t {
-					return (uint64_t)e.GetUUID();
+				"GetUUID", [](Entity& e) -> std::string {
+					return UUIDToLua(e.GetUUID());
 				},
 				// 父子关系
 				"GetParent", [](Entity& e) -> Entity {
@@ -339,8 +359,12 @@ namespace Yuicy {
 				"SetParent", [](Entity& e, Entity parent) {
 					e.SetParent(parent);
 				},
-				"GetChildren", [](Entity& e) -> std::vector<UUID> {
-					return e.Children();
+				"GetChildren", [](Entity& e) {
+					std::vector<std::string> children;
+					children.reserve(e.Children().size());
+					for (UUID child : e.Children())
+						children.push_back(UUIDToLua(child));
+					return sol::as_table(std::move(children));
 				},
 				"IsAncestorOf", [](Entity& e, Entity other) -> bool {
 					return e.IsAncestorOf(other);
@@ -357,15 +381,8 @@ namespace Yuicy {
 			);
 		}
 
-	void RegisterScene(sol::state& lua)
+		void RegisterScene(sol::state& lua)
 		{
-			// Scene usertype
-			lua.new_usertype<Scene>("Scene",
-				sol::no_constructor,
-				"FindEntityByName", &Scene::FindEntityByName,
-				"FindEntityByUUID", &Scene::FindEntityByUUID
-			);
-
 			// Global Scene table with static-like functions
 			// These use the entity's scene reference
 			sol::table sceneTable = lua.create_named_table("Scene");
@@ -376,6 +393,17 @@ namespace Yuicy {
 				Scene* scene = self.GetScene();
 				if (scene)
 					return scene->FindEntityByName(name);
+				return Entity{};
+			});
+
+			// uuid 取自 GetUUID / GetChildren；格式不合法或找不到时返回无效实体（IsValid() 为 false）
+			sceneTable.set_function("FindEntityByUUID", [](Entity& self, const std::string& uuid) -> Entity {
+				if (!self)
+					return Entity{};
+				Scene* scene = self.GetScene();
+				std::optional<UUID> id = UUIDFromLua(uuid);
+				if (scene && id)
+					return scene->FindEntityByUUID(*id);
 				return Entity{};
 			});
 
