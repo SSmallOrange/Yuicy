@@ -55,8 +55,6 @@ namespace Yuicy {
 	// Vec3 编辑控件
 	void PropertiesPanel::DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue, float columnWidth)
 	{
-		ImGuiIO& io = ImGui::GetIO();
-
 		ImGui::PushID(label.c_str());
 
 		ImGui::Columns(2);

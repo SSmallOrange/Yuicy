@@ -304,7 +304,6 @@ namespace Yuicy {
 
 		auto& runtime = m_context->runtime;
 		bool isEditing = runtime.IsEditing();
-		bool isRunning = runtime.IsRunning();
 
 		const float edgeOffset = 8.0f;
 		const float iconSize = 24.0f;

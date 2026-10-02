@@ -23,7 +23,6 @@ namespace Yuicy {
 		UUID ID = 0;
 
 		IDComponent() = default;
-		IDComponent(const IDComponent&) = default;
 	};
 
 	struct TagComponent
@@ -31,7 +30,6 @@ namespace Yuicy {
 		std::string Tag;
 
 		TagComponent() = default;
-		TagComponent(const TagComponent&) = default;
 		TagComponent(const std::string& tag)
 			: Tag(tag) {
 		}
@@ -43,7 +41,6 @@ namespace Yuicy {
 		std::vector<UUID> Children;
 
 		RelationshipComponent() = default;
-		RelationshipComponent(const RelationshipComponent&) = default;
 		RelationshipComponent(UUID parent)
 			: ParentHandle(parent) {}
 	};
@@ -55,7 +52,6 @@ namespace Yuicy {
 		glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
-		TransformComponent(const TransformComponent&) = default;
 		TransformComponent(const glm::vec3& translation)
 			: Translation(translation) {
 		}
@@ -110,7 +106,6 @@ namespace Yuicy {
 		int SortingOrder = 0;
 
 		SpriteRendererComponent() = default;
-		SpriteRendererComponent(const SpriteRendererComponent&) = default;
 
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {
@@ -136,7 +131,6 @@ namespace Yuicy {
 		float SafeAreaMargin = 0.05f;
 
 		CameraComponent() = default;
-		CameraComponent(const CameraComponent&) = default;
 	};
 
 	struct NativeScriptComponent
@@ -153,8 +147,9 @@ namespace Yuicy {
 				return static_cast<ScriptableEntity*>(new T());
 			};
 
+			// 通过 T 删除：本文件只有 ScriptableEntity 的前向声明，delete 不完整类型是未定义行为
 			DestroyScript = [](NativeScriptComponent* nsc) {
-				delete nsc->Instance;
+				delete static_cast<T*>(nsc->Instance);
 				nsc->Instance = nullptr;
 			};
 		}
@@ -177,7 +172,6 @@ namespace Yuicy {
 		bool IsLoaded = false;
 
 		LuaScriptComponent() = default;
-		LuaScriptComponent(const LuaScriptComponent&) = default;
 	};
 
 	// 动画帧定义
@@ -248,7 +242,6 @@ namespace Yuicy {
 		AnimationState State;                                  // 当前播放状态
 
 		AnimationComponent() = default;
-		AnimationComponent(const AnimationComponent&) = default;
 
 		// 添加动画剪辑
 		void AddClip(const AnimationClip& clip)
@@ -354,7 +347,6 @@ namespace Yuicy {
 		void* RuntimeBody = nullptr;
 
 		Rigidbody2DComponent() = default;
-		Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
 	};
 
 	// 矩形碰撞体组件
@@ -380,7 +372,6 @@ namespace Yuicy {
 		void* RuntimeFixture = nullptr;
 
 		BoxCollider2DComponent() = default;
-		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
 	};
 
 	// 圆形碰撞体组件
@@ -406,7 +397,6 @@ namespace Yuicy {
 		void* RuntimeFixture = nullptr;
 
 		CircleCollider2DComponent() = default;
-		CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
 	};
 
 }

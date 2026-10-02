@@ -31,7 +31,6 @@ namespace Yuicy {
 // 		uint32_t GetActiveWidgetID() const;
 	private:
 		bool _blockEvents = true;
-		float _time = 0.0f;
 	};
 
 }

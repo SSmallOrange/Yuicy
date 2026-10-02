@@ -14,6 +14,11 @@ tab_width = 4
 indent_style = tab
 indent_size = 4
 
+# Python 按 PEP 8 使用 4 空格缩进
+[*.py]
+indent_style = space
+indent_size = 4
+
 # Lua 脚本当前使用 4 空格缩进
 [*.lua]
 indent_style = space

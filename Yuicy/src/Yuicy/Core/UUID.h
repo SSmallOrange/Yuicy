@@ -14,7 +14,6 @@ namespace Yuicy {
 	public:
 		UUID();
 		UUID(uint64_t uuid);
-		UUID(const UUID& other);
 
 		operator uint64_t () { return m_UUID; }
 		operator const uint64_t () const { return m_UUID; }
@@ -27,7 +26,6 @@ namespace Yuicy {
 	public:
 		UUID32();
 		UUID32(uint32_t uuid);
-		UUID32(const UUID32& other);
 
 		operator uint32_t () { return m_UUID; }
 		operator const uint32_t() const { return m_UUID; }

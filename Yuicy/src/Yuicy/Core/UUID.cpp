@@ -22,11 +22,6 @@ namespace Yuicy {
 	{
 	}
 
-	UUID::UUID(const UUID& other)
-		: m_UUID(other.m_UUID)
-	{
-	}
-
 
 	UUID32::UUID32()
 		: m_UUID(s_uniformDistribution32(s_engine32))
@@ -37,10 +32,4 @@ namespace Yuicy {
 		: m_UUID(uuid)
 	{
 	}
-
-	UUID32::UUID32(const UUID32& other)
-		: m_UUID(other.m_UUID)
-	{
-	}
-
 }

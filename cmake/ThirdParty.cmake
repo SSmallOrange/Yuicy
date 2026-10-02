@@ -4,6 +4,32 @@
 
 set(YUICY_THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/Yuicy/thirdparty")
 
+function(yuicy_check_submodules)
+	set(gitmodules "${CMAKE_SOURCE_DIR}/.gitmodules")
+	if(NOT EXISTS "${gitmodules}")
+		return()
+	endif()
+
+	file(STRINGS "${gitmodules}" path_lines REGEX "^[ \t]*path[ \t]*=")
+	set(missing "")
+	foreach(line IN LISTS path_lines)
+		string(REGEX REPLACE "^[ \t]*path[ \t]*=[ \t]*" "" submodule_path "${line}")
+		string(STRIP "${submodule_path}" submodule_path)
+		file(GLOB entries "${CMAKE_SOURCE_DIR}/${submodule_path}/*")
+		if(NOT entries)
+			list(APPEND missing "${submodule_path}")
+		endif()
+	endforeach()
+
+	if(missing)
+		list(JOIN missing "\n  " missing_text)
+		message(FATAL_ERROR
+			"以下子模块未初始化：\n  ${missing_text}\n"
+			"在仓库根目录执行：git submodule update --init --recursive")
+	endif()
+endfunction()
+yuicy_check_submodules()
+
 # 第三方库一律编译为静态库
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 

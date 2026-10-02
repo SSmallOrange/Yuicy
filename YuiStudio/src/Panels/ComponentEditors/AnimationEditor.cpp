@@ -27,15 +27,6 @@ namespace Yuicy {
 		return CreateRef<SubTexture2D>(texture, def.UVMin, def.UVMax);
 	}
 
-	// 根据 FrameDefinitions 重建所有运行时 Frame
-	static void ResolveAllFrames(AnimationClip& clip)
-	{
-		clip.Frames.clear();
-		clip.Frames.reserve(clip.FrameDefinitions.size());
-		for (const auto& def : clip.FrameDefinitions)
-			clip.Frames.push_back(ResolveFrame(def));
-	}
-
 	// 获取纹理显示名称
 	static std::string GetTextureName(AssetHandle handle)
 	{

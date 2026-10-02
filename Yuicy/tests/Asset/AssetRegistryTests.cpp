@@ -58,6 +58,20 @@ TEST_SUITE("Asset")
 		}
 	}
 
+	TEST_CASE("AssetRegistry asserts on mismatched or zero handles")
+	{
+		AssetRegistry registry;
+		Test::ScopedAssertCapture asserts;
+
+		registry.Set(0, MakeMetadata(0, AssetType::Scene, "Scenes/A.yui"));
+		CHECK(asserts.GetCount() == 1);
+		CHECK(asserts.GetLastExpression() == "handle != 0");
+
+		registry.Set(100, MakeMetadata(200, AssetType::Scene, "Scenes/B.yui"));
+		CHECK(asserts.GetCount() == 2);
+		CHECK(asserts.GetLastExpression() == "metadata.handle == handle");
+	}
+
 	TEST_CASE("EditorAssetManager registry persists across project reopen")
 	{
 		Test::ScopedTempDirectory tempDirectory;

@@ -20,6 +20,7 @@ namespace Yuicy {
 		case Yuicy::ShaderDataType::Int3:     return GL_INT;
 		case Yuicy::ShaderDataType::Int4:     return GL_INT;
 		case Yuicy::ShaderDataType::Bool:     return GL_BOOL;
+		case Yuicy::ShaderDataType::None:     break;
 		}
 
 		YUICY_ASSERT(false, "Unknown ShaderDataType!");

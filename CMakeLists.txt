@@ -37,6 +37,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 option(YUICY_BUILD_TESTS "构建单元测试（YuicyTests / YuiStudioTests）并注册到 CTest" ON)
+# 只作用于自有工程（yuicy_configure_target），第三方头文件以 SYSTEM 引入，不受影响；新编译器引入新警告时可临时关闭
+option(YUICY_WARNINGS_AS_ERRORS "自有工程的编译警告视为错误（目前只对 clang / GCC 生效）" ON)
 # enable_testing() 必须在根目录调用，否则 build/<preset>/ 下没有 CTestTestfile，ctest 找不到任何测试
 if(YUICY_BUILD_TESTS)
 	enable_testing()

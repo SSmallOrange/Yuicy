@@ -25,8 +25,18 @@ function(yuicy_configure_target target)
 	target_compile_definitions(${target} PRIVATE
 		$<$<CONFIG:Debug>:YUICY_PROFILE_DEBUG>)
 
+	# 不开 unused-parameter：虚函数的默认空实现、GLFW / GL 回调的参数由签名决定，逐个标注收益很低（与 LLVM 的做法一致）
 	if(MSVC)
-		target_compile_options(${target} PRIVATE /utf-8)
+		# TODO: 清零 MSVC /W4 警告后同样启用 /WX（Windows 回归时）
+		target_compile_options(${target} PRIVATE /utf-8 /W4 /wd4100)
+	else()
+		target_compile_options(${target} PRIVATE -Wall -Wextra -Wno-unused-parameter)
+		if(YUICY_WARNINGS_AS_ERRORS)
+			target_compile_options(${target} PRIVATE -Werror)
+		endif()
+	endif()
+
+	if(MSVC)
 		if(CMAKE_GENERATOR MATCHES "Visual Studio")
 			target_compile_options(${target} PRIVATE /MP)
 		endif()

@@ -10,7 +10,8 @@
 namespace Yuicy {
 
 	EditorCamera::EditorCamera(float aspectRatio, float zoomLevel)
-		: m_aspectRatio(aspectRatio), m_zoomLevel(zoomLevel)
+		: m_zoomLevel(zoomLevel),
+		  m_aspectRatio(aspectRatio)
 	{
 		UpdateProjection();
 		UpdateView();

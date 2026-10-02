@@ -21,20 +21,6 @@ namespace Yuicy {
 		}
 	}
 
-	// 将格式转换为 OpenGL 纹理格式
-	static GLenum TextureFormatToGL(FramebufferTextureFormat format)
-	{
-		switch (format)
-		{
-		case FramebufferTextureFormat::RGBA8:       return GL_RGBA8;
-		case FramebufferTextureFormat::RGBA16F:     return GL_RGBA16F;
-		case FramebufferTextureFormat::RED_INTEGER: return GL_R32I;
-		default:
-			YUICY_CORE_ASSERT(false, "Unknown texture format!");
-			return 0;
-		}
-	}
-
 	// 绑定纹理到 Framebuffer
 	static void BindTexture(bool multisampled, uint32_t id)
 	{

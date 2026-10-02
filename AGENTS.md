@@ -44,8 +44,10 @@ YuiStudio ──▶ YuiStudioCore ──▶ Yuicy ◀── Sandbox
 | 预设 | `CMakePresets.json`：`debug` / `release`（Unix Makefiles，macOS / Linux）、`vs2022`（Windows）。构建目录 `build/<preset>/`（git 忽略） |
 | 常用命令 | `cmake --preset debug` → `cmake --build --preset debug [--target YuiStudio]`；运行用 `--target run-YuiStudio`（工作目录为工程目录）。Windows：`cmake --preset vs2022` 后打开 `build/vs2022/Yuicy.sln`，或 VS2022 直接打开文件夹 |
 | 单元测试 | 构建后 `ctest --preset debug`（Windows：`vs2022-debug`）。按模块 / 标签过滤：`-R "^YuicyTests\."`、`-L Scene`；单独调试：`build/debug/bin/YuicyTests --test-case="<名称>"`。`-DYUICY_BUILD_TESTS=OFF` 可关闭测试工程。详见第 6.6 节 |
+| 一键自检 | `python3 scripts/check.py`（Windows：`py scripts\check.py`）：依次执行改动行格式检查（含未跟踪的新文件）、配置、构建、单元测试，全部通过时退出码为 0。常用参数：`--config release`、`--skip format`、`--format-base main`（检查整个分支）。需要 Python ≥ 3.8 与 `clang-format` / `git-clang-format` |
 | 编译数据库 | Makefile 预设配置时自动生成 `build/<preset>/compile_commands.json`，并在根目录建立符号链接（git 忽略，含绝对路径需本机生成） |
-| 子模块 | `git submodule update --init --recursive` |
+| 子模块 | `git submodule update --init --recursive`。未初始化时配置阶段直接报错并列出缺失的子模块（`cmake/ThirdParty.cmake` 按 `.gitmodules` 检查） |
+| 编译警告 | 自有工程（经 `yuicy_configure_target`）开启 `-Wall -Wextra`（MSVC：`/W4`），关闭 unused-parameter；clang / GCC 下**警告视为错误**（`-Werror`，选项 `YUICY_WARNINGS_AS_ERRORS`，默认 ON）。第三方库与 `ImGuizmo.cpp` 关闭警告。MSVC 尚未启用 `/WX` |
 | 配置 | `Debug`（`YUICY_PROFILE_DEBUG`、断言开启）/ `Release`（`NDEBUG`，由 CMake 自动定义） |
 | MSVC 运行时 | 全部工程与第三方库统一静态 CRT（`/MT`、`/MTd`），由根脚本 `CMAKE_MSVC_RUNTIME_LIBRARY` 控制，不要在单个 target 上改 |
 | 输出 | 可执行文件 `build/<preset>/bin/`（VS 多配置为 `bin/<Config>/`），静态库 `build/<preset>/lib/` |
@@ -188,7 +190,7 @@ Windows 上 `Yuicy/CMakeLists.txt` 还会以 PUBLIC 定义 `PLATFORM_WINDOWS`，
 
 ### 3.5 跨平台工作方式
 
-- 在 macOS 上改完代码要在本机完成验证：`cmake --build --preset debug && ctest --preset debug`；
+- 在 macOS 上改完代码要在本机完成验证：`python3 scripts/check.py`；
   涉及运行期行为时用 `cmake --build --preset debug --target run-YuiStudio` 启动检查。
 - **Windows 代码在 macOS 上不参与编译**。改动 `Platform/Windows/**`、`_MSC_VER` 分支，或共享代码中可能受 MSVC 影响的写法时，
   必须在结果中明确说明"Windows 未经编译验证"，并列出需要人工在 Windows 上验证的点。
@@ -262,13 +264,14 @@ YuiStudio/tests/           # YuiStudioTests：编辑器单元测试（Command、
 YuiStudio/assets/          # 编辑器资源（shaders、textures、fonts）
 YuiStudio/imgui.default.ini  # 默认窗口布局（Sandbox/ 下同样有一份）；运行时读写的 imgui.ini 被 git 忽略
 
-TestFramework/YuicyTest/   # YuicyTestFramework：各测试工程共用的测试 main、日志初始化、夹具（临时目录 / 活动项目 / 场景）、glm 向量的近似比较与打印
+TestFramework/YuicyTest/   # YuicyTestFramework：各测试工程共用的测试 main（日志初始化、断言转用例失败）、夹具（临时目录 / 活动项目 / 场景 / 断言捕获）、glm 向量的近似比较与打印
 
-CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）、YUICY_BUILD_TESTS / enable_testing，并引入子目录
+scripts/check.py               # 一键自检（格式 / 配置 / 构建 / 测试），仓库脚本统一用 Python 编写以兼容各平台
+CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）、YUICY_BUILD_TESTS / YUICY_WARNINGS_AS_ERRORS 选项，并引入子目录
 CMakePresets.json              # 构建 / 测试预设（debug / release / vs2022）
 cmake/
-  ThirdParty.cmake             # 第三方依赖 target（GLFW / Box2D / yaml-cpp / doctest 用上游 CMake，GLAD / imgui / lua / 纯头文件库在此声明）
-  YuicyHelpers.cmake           # 自有工程公共函数：源文件收集、编译选项、调试工作目录与 run-<target>
+  ThirdParty.cmake             # 子模块检查；第三方依赖 target（GLFW / Box2D / yaml-cpp / doctest 用上游 CMake，GLAD / imgui / lua / 纯头文件库在此声明）
+  YuicyHelpers.cmake           # 自有工程公共函数：源文件收集、编译选项（含警告门禁）、调试工作目录与 run-<target>
   YuicyTesting.cmake           # yuicy_add_test()：创建 <Module>Tests 可执行文件并把每个用例注册到 CTest
 Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestFramework/CMakeLists.txt  # 各工程的 target 定义
 ```
@@ -347,9 +350,11 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestF
       再加 `// TODO: 删除 should_fail（<修复条件>）`。修复后用例中的断言全部通过，doctest 会把它判为失败，提醒删除 `should_fail`。
 - [ ] 新增一个模块的测试工程：在 `<Module>/tests/CMakeLists.txt` 调用 `yuicy_add_test(<Module>Tests SOURCE_DIR ... LINK <被测库>)`，
       并在 `<Module>/CMakeLists.txt` 中 `if(YUICY_BUILD_TESTS) add_subdirectory(tests) endif()`；被测模块是可执行文件时先按 `YuiStudio` 的做法拆出 `<Module>Core` 静态库。
+- [ ] 引擎的 `.cpp` 在 Debug 与 Release 下都开启 `YUICY_CORE_ASSERT`。测试中触发的断言会报告为当前用例失败（`FATAL ERROR: YUICY_ASSERT failed: <表达式>`，
+      位置指向断言所在的源文件与行号），并中止该用例的剩余部分；不会调用 `YUICY_DEBUGBREAK()`，进程继续执行后面的用例。
+- [ ] 验证"非法输入会触发断言"时用 `Test::ScopedAssertCapture`：生存期内的断言只计数（`GetCount()` / `GetLastExpression()`），不判失败，被测代码继续执行。
+      不能嵌套；断言之后的代码仍会运行，被测函数在断言后访问非法数据（如越界的 `at()`）时不要用它。示例见 `Yuicy/tests/Asset/AssetRegistryTests.cpp`。
 - [ ] 排查时：`YUICY_TEST_LOG_LEVEL=trace build/debug/bin/YuicyTests --test-case="<名称>"` 输出全部引擎日志（默认只输出 warn 及以上）。
-      引擎的 `.cpp` 在 Debug 与 Release 下都开启 `YUICY_CORE_ASSERT`，断言失败会调用 `YUICY_DEBUGBREAK()`，没有挂调试器时测试进程直接退出，
-      CTest 报告的是进程异常退出而不是 doctest 断言失败，此时在输出中找 `Assertion` 开头的错误日志。
 
 ## 7. 代码风格
 
@@ -361,6 +366,11 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestF
 - 成员变量：`m_` 前缀，**跟随所在模块已有风格**——引擎 Core/Renderer/Scene 多为 `m_PascalCase`，YuiStudio 与 Asset 为 `m_camelCase`；静态成员 `s_`，常量 `k` 前缀（如 `kDefaultMaxStackSize`）。
 - 指针/引用贴类型：`const Ref<Texture2D>& texture`。
 - 头文件使用 `#pragma once`；能前置声明的不在头文件中 include，重型头文件放到 `.cpp`。
+- 编译警告直接修代码，不要用 `#pragma` 或 `-Wno-*` 压掉，也不要为了通过构建关闭 `YUICY_WARNINGS_AS_ERRORS`。常见几类：
+  - `switch` 枚举时列全所有值（包括 `None`），不要靠 `default` 吞掉，否则新增枚举值时编译器无法提醒；
+  - 覆盖虚函数一律写 `override`；
+  - 只有 `= default` 的拷贝构造不要写，写了会让隐式拷贝赋值变成 deprecated；
+  - 成员初始化列表按成员声明顺序书写；未使用的函数、变量、成员直接删除。
 - 只格式化改动部分：
 
   ```bash
@@ -482,13 +492,12 @@ s_Data.TextureSlotIndex = 1;
 
 当前仓库尚无 CI，提交前至少确认：
 
-- [ ] `cmake --build --preset debug && ctest --preset debug` 全部通过（Windows：`vs2022-debug`）。
-
+- [ ] `python3 scripts/check.py` 输出"自检通过"（格式、配置、构建、单元测试全部通过）。
 - [ ] 改动范围与任务一致，没有顺手重构 / 批量格式化 / 修改第三方代码 / 夹带平台移植改动。
 - [ ] 第 4 节硬性规则全部满足；涉及组件时第 6.1 节清单逐项核对。
 - [ ] 平台相关代码满足第 3 节：没有在 `Yuicy/src/Yuicy/**` 或 `YuiStudio/src/**` 新增 Win32 / 裸 `gl*` 调用，
       没有新增 MSVC 专属 CRT 函数，路径处理走 `std::filesystem`，新文件名大小写与 `#include` 一致。
 - [ ] 新增和修改的注释满足第 8 节：没有傻瓜注释、东坡肉式注释和注释掉的代码，被改动影响的旧注释已同步更新。
-- [ ] 本机 Debug 与 Release 均能编译（`cmake --build --preset release`）；涉及 Windows 代码时已注明"Windows 未经编译验证"并列出待人工验证的点（第 3.5 节）。
+- [ ] 本机 Release 同样通过（`python3 scripts/check.py --config release`）；涉及 Windows 代码时已注明"Windows 未经编译验证"并列出待人工验证的点（第 3.5 节）。
 - [ ] 涉及序列化时：保存 → 重新打开场景，数据一致；涉及编辑操作时：执行 → Undo → Redo 结果一致。
       能用单元测试覆盖的，按第 6.6 节补用例，而不是只做手动验证。

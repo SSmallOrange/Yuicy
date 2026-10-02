@@ -21,6 +21,7 @@
 
 # Shell 脚本必须使用 LF，否则 bash 会把 \r 当作命令的一部分
 *.sh      text eol=lf
+*.py      text eol=lf diff=python
 *.ps1     text eol=crlf
 
 # Windows 批处理必须使用 CRLF，否则 cmd 解析标签/跳转可能出错

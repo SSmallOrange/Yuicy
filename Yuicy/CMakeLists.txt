@@ -40,6 +40,12 @@ endif()
 
 yuicy_configure_target(Yuicy)
 
+# 外部拷贝进来的源码按原样编译，不参与自有代码的警告门禁
+set_source_files_properties(
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Yuicy/ImGui/ImGuizmo.cpp"
+	"${YUICY_THIRDPARTY_DIR}/stb_image/stb_image.cpp"
+	PROPERTIES COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>")
+
 if(YUICY_BUILD_TESTS)
 	add_subdirectory(tests)
 endif()
