@@ -1,10 +1,13 @@
 #include "pch.h"
 #include "AssetImporter.h"
 
+#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Renderer/Texture.h"
 #include "Yuicy/Scene/Scene.h"
 #include "Yuicy/Scene/SceneSerializer.h"
+#include "Yuicy/Scripting/LuaScriptAsset.h"
+#include "Yuicy/Scripting/LuaScriptEngine.h"
 
 namespace Yuicy {
 	// TextureAssetSerializer
@@ -104,9 +107,13 @@ namespace Yuicy {
 
 		virtual bool TryLoadData(const AssetMetadata& metadata, Ref<Asset>& asset) const override
 		{
-			// TODO
-			YUICY_CORE_WARN("LuaScriptAssetSerializer: Lua script loading not yet implemented for: {0}", metadata.filePath.string());
-			return false;
+			// 总是重新编译：ReloadData 与 Reimport 都经由这里，需要绕过 LuaScriptEngine 的缓存
+			if (!LuaScriptEngine::ReloadScript(EditorAssetManager::GetFileSystemPath(metadata)))
+				return false;
+
+			asset = CreateRef<LuaScriptAsset>();
+			asset->handle = metadata.handle;
+			return true;
 		}
 	};
 

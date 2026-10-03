@@ -835,6 +835,20 @@ namespace Yuicy {
 		return Entity{};
 	}
 
+	// 返回脚本文件的绝对路径；没有活动项目或 Handle 未登记时返回空路径
+	static std::filesystem::path ResolveScriptPath(AssetHandle scriptHandle)
+	{
+		auto assetManager = Project::GetEditorAssetManager();
+		if (!assetManager)
+			return {};
+
+		const auto& metadata = assetManager->GetMetadata(scriptHandle);
+		if (!metadata.IsValid())
+			return {};
+
+		return EditorAssetManager::GetFileSystemPath(metadata);
+	}
+
 	// Lua Scripting
 	void Scene::InitializeLuaScripts()
 	{
@@ -845,16 +859,7 @@ namespace Yuicy {
 			if (lsc.ScriptHandle == 0 || lsc.IsLoaded)
 				continue;
 
-			// ScriptHandle → 文件路径解析
-			std::string scriptPath;
-			auto assetManager = Project::GetEditorAssetManager();
-			if (assetManager)
-			{
-				const auto& metadata = assetManager->GetMetadata(lsc.ScriptHandle);
-				if (metadata.IsValid())
-					scriptPath = metadata.filePath.string();
-			}
-
+			const std::filesystem::path scriptPath = ResolveScriptPath(lsc.ScriptHandle);
 			if (scriptPath.empty())
 			{
 				YUICY_CORE_ERROR("[Scene] Failed to resolve script path for handle: {}", (uint64_t)lsc.ScriptHandle);
@@ -885,7 +890,7 @@ namespace Yuicy {
 			}
 			else
 			{
-				YUICY_CORE_ERROR("[Scene] Failed to load Lua script: {}", scriptPath);
+				YUICY_CORE_ERROR("[Scene] Failed to load Lua script: {}", scriptPath.string());
 			}
 		}
 	}
@@ -900,15 +905,7 @@ namespace Yuicy {
 			// 运行时初始化：处理新添加的脚本组件
 			if (lsc.ScriptHandle != 0 && !lsc.IsLoaded)
 			{
-				std::string scriptPath;
-				auto assetManager = Project::GetEditorAssetManager();
-				if (assetManager)
-				{
-					const auto& metadata = assetManager->GetMetadata(lsc.ScriptHandle);
-					if (metadata.IsValid())
-						scriptPath = metadata.filePath.string();
-				}
-
+				const std::filesystem::path scriptPath = ResolveScriptPath(lsc.ScriptHandle);
 				if (!scriptPath.empty())
 				{
 					lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(scriptPath);
@@ -930,7 +927,7 @@ namespace Yuicy {
 					}
 					else
 					{
-						YUICY_CORE_ERROR("[Scene] Failed to load runtime Lua script: {}", scriptPath);
+						YUICY_CORE_ERROR("[Scene] Failed to load runtime Lua script: {}", scriptPath.string());
 					}
 				}
 			}

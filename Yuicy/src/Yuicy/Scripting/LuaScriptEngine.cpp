@@ -5,12 +5,30 @@
 
 #include <fstream>
 #include <sstream>
+#include <system_error>
 
 namespace Yuicy {
 
 	sol::state* LuaScriptEngine::s_luaState = nullptr;
-	std::unordered_map<std::string, sol::load_result> LuaScriptEngine::s_scriptCache;
+	std::unordered_map<std::string, LuaScriptEngine::ScriptEntry> LuaScriptEngine::s_scriptCache;
+	uint32_t LuaScriptEngine::s_globalScriptVersion = 0;
 	bool LuaScriptEngine::s_initialized = false;
+
+	namespace {
+
+		bool ReadScriptFile(const std::filesystem::path& filepath, std::string& outContent)
+		{
+			std::ifstream file(filepath, std::ios::binary);
+			if (!file.is_open())
+				return false;
+
+			std::ostringstream buffer;
+			buffer << file.rdbuf();
+			outContent = buffer.str();
+			return true;
+		}
+
+	}
 
 	LuaScriptEngine::~LuaScriptEngine()
 	{
@@ -56,50 +74,119 @@ namespace Yuicy {
 		LuaBindings::RegisterAll(*s_luaState);
 	}
 
-	bool LuaScriptEngine::LoadScript(const std::string& filepath)
+	std::string LuaScriptEngine::NormalizePath(const std::filesystem::path& filepath)
 	{
-		if (s_scriptCache.find(filepath) != s_scriptCache.end())
-			return true;
+		std::error_code error;
+		std::filesystem::path normalized = std::filesystem::weakly_canonical(filepath, error);
+		// 例如没有访问权限时 weakly_canonical 会失败，退化为纯字符串规范化，保证同一写法仍得到同一个 key
+		if (error)
+			normalized = filepath.lexically_normal();
 
-		std::ifstream file(filepath);
-		if (!file.is_open())
+		return normalized.generic_string();
+	}
+
+	bool LuaScriptEngine::CompileScript(const std::filesystem::path& filepath, const std::string& normalizedPath,
+		sol::protected_function& outChunk, std::string& outError)
+	{
+		if (!s_initialized)
 		{
-			YUICY_CORE_ERROR("LuaScriptEngine: Failed to open script file: {}", filepath);
+			outError = "LuaScriptEngine is not initialized";
 			return false;
 		}
 
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string scriptContent = buffer.str();
-		file.close();
+		std::string source;
+		if (!ReadScriptFile(filepath, source))
+		{
+			outError = "Failed to open script file";
+			return false;
+		}
 
-		sol::load_result loadResult = s_luaState->load(scriptContent, filepath);
+		// '@' 前缀让 Lua 把 chunkname 当作文件名，报错格式为 "<路径>:<行号>: <信息>"
+		sol::load_result loadResult = s_luaState->load(source, "@" + normalizedPath);
 		if (!loadResult.valid())
 		{
 			sol::error err = loadResult;
-			YUICY_CORE_ERROR("LuaScriptEngine: Failed to load script '{}': {}", filepath, err.what());
+			outError = err.what();
 			return false;
 		}
-
-		s_scriptCache[filepath] = std::move(loadResult);
-		YUICY_CORE_TRACE("LuaScriptEngine: Loaded script: {}", filepath);
+		
+		outChunk = loadResult.get<sol::protected_function>();
 		return true;
 	}
 
-	sol::table LuaScriptEngine::CreateScriptInstance(const std::string& filepath)
+	LuaScriptEngine::ScriptEntry* LuaScriptEngine::LoadScriptEntry(const std::filesystem::path& filepath, const std::string& normalizedPath)
 	{
-		if (!LoadScript(filepath))
+		if (auto it = s_scriptCache.find(normalizedPath); it != s_scriptCache.end())
+			return &it->second;
+
+		sol::protected_function chunk;
+		std::string error;
+		if (!CompileScript(filepath, normalizedPath, chunk, error))
+		{
+			YUICY_CORE_ERROR("LuaScriptEngine: Failed to load script '{}': {}", normalizedPath, error);
+			return nullptr;
+		}
+
+		ScriptEntry& entry = s_scriptCache[normalizedPath];
+		entry.Chunk = std::move(chunk);
+		entry.Version = 1;
+		YUICY_CORE_TRACE("LuaScriptEngine: Loaded script: {}", normalizedPath);
+		return &entry;
+	}
+
+	bool LuaScriptEngine::LoadScript(const std::filesystem::path& filepath)
+	{
+		return LoadScriptEntry(filepath, NormalizePath(filepath)) != nullptr;
+	}
+
+	bool LuaScriptEngine::ReloadScript(const std::filesystem::path& filepath)
+	{
+		const std::string normalizedPath = NormalizePath(filepath);
+
+		sol::protected_function chunk;
+		std::string error;
+		if (!CompileScript(filepath, normalizedPath, chunk, error))
+		{
+			YUICY_CORE_ERROR("LuaScriptEngine: Failed to reload script '{}': {}", normalizedPath, error);
+			return false;
+		}
+
+		auto [it, inserted] = s_scriptCache.try_emplace(normalizedPath);
+		ScriptEntry& entry = it->second;
+		entry.Chunk = std::move(chunk);
+		entry.Version = inserted ? 1 : entry.Version + 1;
+		++s_globalScriptVersion;
+
+		YUICY_CORE_INFO("LuaScriptEngine: Reloaded script '{}' (version {})", normalizedPath, entry.Version);
+		return true;
+	}
+
+	bool LuaScriptEngine::ValidateScript(const std::filesystem::path& filepath, std::string& outError)
+	{
+		outError.clear();
+		sol::protected_function chunk;
+		return CompileScript(filepath, NormalizePath(filepath), chunk, outError);
+	}
+
+	uint32_t LuaScriptEngine::GetScriptVersion(const std::string& normalizedPath)
+	{
+		if (auto it = s_scriptCache.find(normalizedPath); it != s_scriptCache.end())
+			return it->second.Version;
+		return 0;
+	}
+
+	sol::table LuaScriptEngine::CreateScriptInstance(const std::filesystem::path& filepath)
+	{
+		const std::string normalizedPath = NormalizePath(filepath);
+		ScriptEntry* entry = LoadScriptEntry(filepath, normalizedPath);
+		if (!entry)
 			return sol::lua_nil;
 
-		auto it = s_scriptCache.find(filepath);
-		if (it == s_scriptCache.end())
-			return sol::lua_nil;
-
-		sol::protected_function_result result = it->second();
+		sol::protected_function_result result = entry->Chunk();
 		if (!result.valid())
 		{
 			sol::error err = result;
-			YUICY_CORE_ERROR("LuaScriptEngine: Failed to execute script '{}': {}", filepath, err.what());
+			YUICY_CORE_ERROR("LuaScriptEngine: Failed to execute script '{}': {}", normalizedPath, err.what());
 			return sol::lua_nil;
 		}
 
@@ -107,7 +194,7 @@ namespace Yuicy {
 		sol::object obj = result;
 		if (!obj.is<sol::table>())
 		{
-			YUICY_CORE_ERROR("LuaScriptEngine: Script '{}' did not return a table", filepath);
+			YUICY_CORE_ERROR("LuaScriptEngine: Script '{}' did not return a table", normalizedPath);
 			return sol::lua_nil;
 		}
 

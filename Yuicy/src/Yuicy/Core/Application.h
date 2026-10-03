@@ -6,6 +6,9 @@
 #include "Yuicy/ImGui/ImGuiLayer.h"
 
 #include <chrono>
+#include <functional>
+#include <mutex>
+#include <vector>
 
 namespace Yuicy {
 	class Application
@@ -20,6 +23,8 @@ namespace Yuicy {
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 
+		void SubmitToMainThread(std::function<void()> task);
+
 		Window& GetWindow() { return *_window; }
 		ImGuiLayer* GetImGuiLayer() { return _imGuiLayer; }
 
@@ -30,11 +35,17 @@ namespace Yuicy {
 		bool OnWindowResize(WindowResizeEvent& e);
 		bool OnWindowFramebufferResize(WindowFramebufferResizeEvent& e);
 
+		void ExecuteMainThreadQueue();
+
 	private:
 		std::unique_ptr<Window>		_window;
 		ImGuiLayer*					_imGuiLayer;
 		bool						_minimized = false;
 		bool						_running = true;
+		// Thread
+		std::vector<std::function<void()>> _mainThreadQueue;
+		std::mutex _mainThreadQueueMutex;
+		
 		LayerStack					_layerStack;
 		std::chrono::steady_clock::time_point _lastFrameTime;
 

@@ -78,6 +78,8 @@ namespace Yuicy {
 
 			// YUICY_INFO("Timestep {}", timestep.GetSeconds());
 
+			ExecuteMainThreadQueue();
+
 			RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 			RenderCommand::Clear();
 
@@ -102,6 +104,26 @@ namespace Yuicy {
 
 			_window->OnUpdate();
 		}
+	}
+
+	void Application::SubmitToMainThread(std::function<void()> task)
+	{
+		std::scoped_lock lock(_mainThreadQueueMutex);
+		_mainThreadQueue.emplace_back(std::move(task));
+	}
+
+	void Application::ExecuteMainThreadQueue()
+	{
+		YUICY_PROFILE_SCOPE("MainThreadQueue");
+		// 防止任务内部再次调用 SubmitToMainThread 导致死锁，新任务会在下一帧执行
+		std::vector<std::function<void()>> tasks;
+		{
+			std::scoped_lock lock(_mainThreadQueueMutex);
+			tasks.swap(_mainThreadQueue);
+		}
+
+		for (auto& task : tasks)
+			task();
 	}
 
 	void Application::PushLayer(Layer* layer) {
