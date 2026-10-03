@@ -4,8 +4,10 @@
 #include "EditorContext.h"
 #include "EditorDirtyTracker.h"
 
+#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Project/ProjectSceneContext.h"
 #include "Yuicy/Project/ProjectSerializer.h"
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/FileDialogs.h"
@@ -79,6 +81,15 @@ namespace Yuicy {
 	{
 		if (m_onSceneChanged)
 			m_onSceneChanged();
+	}
+
+	void EditorSceneController::AttachSceneContext(const Ref<Scene>& scene) const
+	{
+		if (!scene)
+			return;
+
+		const Ref<Project> project = Project::GetActive();
+		scene->SetContext(project ? MakeSceneContext(project->GetConfig(), Project::GetEditorAssetManager()) : SceneContext{});
 	}
 
 	// Dirty 检查与确认流程
@@ -168,6 +179,7 @@ namespace Yuicy {
 			return;
 
 		m_context->editorScene = CreateRef<Scene>();
+		AttachSceneContext(m_context->editorScene);
 		CreateDefaultSceneContent(m_context->editorScene);
 
 		auto& viewportState = m_context->viewport;
@@ -217,6 +229,8 @@ namespace Yuicy {
 		SceneSerializer serializer(scene);
 		if (!serializer.Deserialize(filepath))
 			return false;
+
+		AttachSceneContext(scene);
 
 		auto& viewportState = m_context->viewport;
 		scene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
@@ -326,6 +340,7 @@ namespace Yuicy {
 		}
 
 		Project::SetActive(project);
+		AttachSceneContext(m_context->editorScene);
 		m_context->document.currentProjectPath = projectPath.lexically_normal();
 
 		if (!m_context->editorScene)
@@ -362,6 +377,8 @@ namespace Yuicy {
 			return;
 
 		Project::SetActive(project);
+		// 加载起始场景可能被未保存确认推迟，期间仍会渲染当前场景，需要先换成新项目的上下文
+		AttachSceneContext(m_context->editorScene);
 		m_context->document.currentProjectPath = filepath;
 
 		bool sceneLoaded = false;

@@ -3,14 +3,14 @@
 
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
-#include "Yuicy/Asset/AssetManager.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
-#include "Yuicy/Project/Project.h"
+#include "Yuicy/Asset/AssetManagerBase.h"
 #include "Yuicy/Renderer/Renderer2D.h"
 #include "Yuicy/Renderer/EditorCamera.h"
 #include "Yuicy/Renderer/RenderCommand.h"
 #include "Yuicy/Scene/ContactListener.h"
 #include "Yuicy/Scene/ScriptableEntity.h"
+#include "Yuicy/Scene/SpriteDrawOrder.h"
+#include "Yuicy/Scripting/LuaScriptAsset.h"
 
 #include <glm/glm.hpp>
 
@@ -60,6 +60,70 @@ namespace Yuicy {
 		}
 	}
 
+	namespace {
+
+		struct SpriteDrawItem
+		{
+			glm::mat4 Transform;
+			const SpriteRendererComponent* Sprite;
+			int EntityID;
+		};
+
+		// entityFilter 为空时不过滤；返回的指针在 registry 增删 SpriteRendererComponent 前有效
+		std::vector<SpriteDrawItem> CollectSpritesInDrawOrder(Scene& scene, entt::registry& registry,
+			const SortingLayerConfig& sortingLayers, const std::function<bool(entt::entity)>& entityFilter)
+		{
+			std::vector<SpriteDrawItem> drawQueue;
+
+			auto group = registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+			drawQueue.reserve(group.size());
+
+			for (auto entity : group)
+			{
+				if (entityFilter && !entityFilter(entity))
+					continue;
+
+				const auto& sprite = group.get<SpriteRendererComponent>(entity);
+				drawQueue.push_back({ scene.GetWorldSpaceTransformMatrix({ entity, &scene }), &sprite, (int)entity });
+			}
+
+			std::ranges::sort(drawQueue, [&sortingLayers](const SpriteDrawItem& a, const SpriteDrawItem& b) {
+				return IsSpriteDrawnBefore(*a.Sprite, *b.Sprite, sortingLayers);
+			});
+
+			return drawQueue;
+		}
+
+		// 调用者负责 Renderer2D::BeginScene / EndScene；assetManager 为空或纹理加载失败时画成纯色方块
+		void DrawSprites(const std::vector<SpriteDrawItem>& drawQueue, AssetManagerBase* assetManager)
+		{
+			for (const auto& item : drawQueue)
+			{
+				const auto& sprite = *item.Sprite;
+
+				if (sprite.SubTexture)
+				{
+					Renderer2D::DrawSprite(item.Transform,
+						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, item.EntityID);
+				}
+				else if (sprite.TextureHandle != 0 && assetManager)
+				{
+					Ref<Texture2D> texture = assetManager->GetAsset<Texture2D>(sprite.TextureHandle);
+					if (texture)
+						Renderer2D::DrawSprite(item.Transform,
+							texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, item.EntityID);
+					else
+						Renderer2D::DrawQuad(item.Transform, sprite.Color, item.EntityID);
+				}
+				else
+				{
+					Renderer2D::DrawQuad(item.Transform, sprite.Color, item.EntityID);
+				}
+			}
+		}
+
+	}
+
 	Scene::Scene()
 	{
 	}
@@ -79,6 +143,7 @@ namespace Yuicy {
 		newScene->m_name = source->m_name;
 		newScene->m_ViewportWidth = source->m_ViewportWidth;
 		newScene->m_ViewportHeight = source->m_ViewportHeight;
+		newScene->m_Context = source->m_Context;
 
 		auto& srcRegistry = source->m_Registry;
 		auto& dstRegistry = newScene->m_Registry;
@@ -675,54 +740,8 @@ namespace Yuicy {
 
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
 
-			struct SpriteRenderData
-			{
-				glm::mat4 Transform;
-				SpriteRendererComponent* Sprite;
-				int EntityID;
-			};
-			std::vector<SpriteRenderData> renderQueue;
-
-			auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-			renderQueue.reserve(group.size());
-
-			for (auto entity : group)
-			{
-				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-				renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
-			}
-
-			const auto& sortingLayers = Project::GetActive()->GetConfig().SortingLayers;
-			std::ranges::sort(renderQueue, [&sortingLayers](const SpriteRenderData& a, const SpriteRenderData& b) {
-				int layerA = sortingLayers.GetLayerOrder(a.Sprite->SortingLayer);
-				int layerB = sortingLayers.GetLayerOrder(b.Sprite->SortingLayer);
-				if (layerA != layerB) return layerA < layerB;
-				return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
-			});
-
-			for (const auto& data : renderQueue)
-			{
-				const auto& sprite = *data.Sprite;
-
-				if (sprite.SubTexture)
-				{
-					Renderer2D::DrawSprite(data.Transform, 
-						sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
-				}
-				else if (sprite.TextureHandle != 0)
-				{
-					Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle);
-					if (texture)
-						Renderer2D::DrawSprite(data.Transform,
-							texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
-					else
-						Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
-				}
-				else
-				{
-					Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
-				}
-			}
+			const Ref<AssetManagerBase> assetManager = m_Context.AssetManager.lock();
+			DrawSprites(CollectSpritesInDrawOrder(*this, m_Registry, m_Context.Renderer2D.SortingLayers, nullptr), assetManager.get());
 
 			Renderer2D::EndScene();
 
@@ -737,58 +756,8 @@ namespace Yuicy {
 
 		Renderer2D::BeginScene(camera);
 
-		struct SpriteRenderData
-		{
-			glm::mat4 Transform;
-			SpriteRendererComponent* Sprite;
-			int EntityID;
-		};
-		std::vector<SpriteRenderData> renderQueue;
-
-		auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-		renderQueue.reserve(group.size());
-
-		for (auto entity : group)
-		{
-			// 编辑器过滤
-			if (entityFilter && !entityFilter(entity))
-				continue;
-
-			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-			renderQueue.push_back({ GetWorldSpaceTransformMatrix({ entity, this }), &sprite, (int)entity });
-		}
-
-		const auto& sortingLayers = Project::GetActive()->GetConfig().SortingLayers;
-		std::ranges::sort(renderQueue, [&sortingLayers](const SpriteRenderData& a, const SpriteRenderData& b) {
-			int layerA = sortingLayers.GetLayerOrder(a.Sprite->SortingLayer);
-			int layerB = sortingLayers.GetLayerOrder(b.Sprite->SortingLayer);
-			if (layerA != layerB) return layerA < layerB;
-			return a.Sprite->SortingOrder < b.Sprite->SortingOrder;
-		});
-
-		for (const auto& data : renderQueue)
-		{
-			const auto& sprite = *data.Sprite;
-
-			if (sprite.SubTexture)
-			{
-				Renderer2D::DrawSprite(data.Transform,
-					sprite.SubTexture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
-			}
-			else if (sprite.TextureHandle != 0)
-			{
-				Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.TextureHandle);
-				if (texture)
-					Renderer2D::DrawSprite(data.Transform,
-						texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, data.EntityID);
-				else
-					Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
-			}
-			else
-			{
-				Renderer2D::DrawQuad(data.Transform, sprite.Color, data.EntityID);
-			}
-		}
+		const Ref<AssetManagerBase> assetManager = m_Context.AssetManager.lock();
+		DrawSprites(CollectSpritesInDrawOrder(*this, m_Registry, m_Context.Renderer2D.SortingLayers, entityFilter), assetManager.get());
 
 		Renderer2D::EndScene();
 
@@ -835,23 +804,11 @@ namespace Yuicy {
 		return Entity{};
 	}
 
-	// 返回脚本文件的绝对路径；没有活动项目或 Handle 未登记时返回空路径
-	static std::filesystem::path ResolveScriptPath(AssetHandle scriptHandle)
-	{
-		auto assetManager = Project::GetEditorAssetManager();
-		if (!assetManager)
-			return {};
-
-		const auto& metadata = assetManager->GetMetadata(scriptHandle);
-		if (!metadata.IsValid())
-			return {};
-
-		return EditorAssetManager::GetFileSystemPath(metadata);
-	}
-
 	// Lua Scripting
 	void Scene::InitializeLuaScripts()
 	{
+		const Ref<AssetManagerBase> assetManager = m_Context.AssetManager.lock();
+
 		auto view = m_Registry.view<LuaScriptComponent>();
 		for (auto e : view)
 		{
@@ -859,13 +816,14 @@ namespace Yuicy {
 			if (lsc.ScriptHandle == 0 || lsc.IsLoaded)
 				continue;
 
-			const std::filesystem::path scriptPath = ResolveScriptPath(lsc.ScriptHandle);
-			if (scriptPath.empty())
+			const Ref<LuaScriptAsset> script = assetManager ? assetManager->GetAssetAs<LuaScriptAsset>(lsc.ScriptHandle) : nullptr;
+			if (!script)
 			{
-				YUICY_CORE_ERROR("[Scene] Failed to resolve script path for handle: {}", (uint64_t)lsc.ScriptHandle);
+				YUICY_CORE_ERROR("[Scene] Failed to resolve script asset for handle: {}", (uint64_t)lsc.ScriptHandle);
 				continue;
 			}
 
+			const std::filesystem::path& scriptPath = script->GetFilePath();
 			lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(scriptPath);
 			if (lsc.ScriptInstance.valid())
 			{
@@ -897,6 +855,8 @@ namespace Yuicy {
 
 	void Scene::UpdateLuaScripts(Timestep ts)
 	{
+		const Ref<AssetManagerBase> assetManager = m_Context.AssetManager.lock();
+
 		auto view = m_Registry.view<LuaScriptComponent>();
 		for (auto e : view)
 		{
@@ -905,9 +865,10 @@ namespace Yuicy {
 			// 运行时初始化：处理新添加的脚本组件
 			if (lsc.ScriptHandle != 0 && !lsc.IsLoaded)
 			{
-				const std::filesystem::path scriptPath = ResolveScriptPath(lsc.ScriptHandle);
-				if (!scriptPath.empty())
+				const Ref<LuaScriptAsset> script = assetManager ? assetManager->GetAsset<LuaScriptAsset>(lsc.ScriptHandle) : nullptr;
+				if (script)
 				{
+					const std::filesystem::path& scriptPath = script->GetFilePath();
 					lsc.ScriptInstance = LuaScriptEngine::CreateScriptInstance(scriptPath);
 					if (lsc.ScriptInstance.valid())
 					{

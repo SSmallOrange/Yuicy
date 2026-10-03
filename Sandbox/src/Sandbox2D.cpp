@@ -6,6 +6,7 @@
 
 #include "Platform/OpenGL/OpenGLShader.h"
 #include "Yuicy/Debug/Instrumentor.h"
+#include "Yuicy/Project/ProjectSceneContext.h"
 
 Sandbox2D::Sandbox2D()
 	: Layer("Sandbox2D"), m_CameraController(1280.0f / 720.0f, true), m_ParticleSystem(2000)
@@ -16,8 +17,6 @@ Sandbox2D::Sandbox2D()
 
 void Sandbox2D::OnAttach()
 {
-	// Sandbox 不加载 .yproj，以工作目录下的 assets/ 为资产目录创建内存项目：
-	// Scene 渲染依赖活动项目的 Sorting Layer 配置，纹理需经 AssetManager 以 AssetHandle 引用
 	auto project = Yuicy::CreateRef<Yuicy::Project>();
 	project->GetConfig().Name = "Sandbox";
 	project->GetConfig().ProjectDirectory = ".";
@@ -25,6 +24,7 @@ void Sandbox2D::OnAttach()
 	Yuicy::Project::SetActive(project);
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
+	m_ActiveScene->SetContext(Yuicy::MakeSceneContext(project->GetConfig(), Yuicy::Project::GetEditorAssetManager()));
 
 	// ==================== 创建基本测试实体 ====================
 

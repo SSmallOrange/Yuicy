@@ -25,13 +25,13 @@ namespace Yuicy {
 		WriteRegistryToFile();
 	}
 
-	AssetType EditorAssetManager::GetAssetType(AssetHandle assetHandle)
+	AssetType EditorAssetManager::GetAssetType(AssetHandle assetHandle) const
 	{
 		if (!IsAssetHandleValid(assetHandle))
 			return AssetType::None;
 
-		if (IsMemoryAsset(assetHandle))
-			return GetAsset(assetHandle)->GetAssetType();
+		if (auto it = m_memoryAssets.find(assetHandle); it != m_memoryAssets.end())
+			return it->second->GetAssetType();
 
 		const auto& metadata = GetMetadata(assetHandle);
 		return metadata.type;
@@ -75,18 +75,18 @@ namespace Yuicy {
 		return asset;
 	}
 
-	bool EditorAssetManager::IsAssetHandleValid(AssetHandle assetHandle)
+	bool EditorAssetManager::IsAssetHandleValid(AssetHandle assetHandle) const
 	{
 		return (m_memoryAssets.find(assetHandle) != m_memoryAssets.end())
 			|| GetMetadata(assetHandle).IsValid();
 	}
 
-	bool EditorAssetManager::IsAssetLoaded(AssetHandle assetHandle)
+	bool EditorAssetManager::IsAssetLoaded(AssetHandle assetHandle) const
 	{
 		return m_loadedAssets.find(assetHandle) != m_loadedAssets.end();
 	}
 
-	bool EditorAssetManager::IsMemoryAsset(AssetHandle assetHandle)
+	bool EditorAssetManager::IsMemoryAsset(AssetHandle assetHandle) const
 	{
 		return m_memoryAssets.find(assetHandle) != m_memoryAssets.end();
 	}
@@ -152,9 +152,11 @@ namespace Yuicy {
 			m_assetRegistry.Remove(assetHandle);
 	}
 
-	void EditorAssetManager::AddMemoryOnlyAsset(Ref<Asset> asset)
+	AssetHandle EditorAssetManager::AddMemoryOnlyAsset(const Ref<Asset>& asset)
 	{
+		asset->handle = AssetHandle();
 		m_memoryAssets[asset->handle] = asset;
+		return asset->handle;
 	}
 
 	AssetHandle EditorAssetManager::GetAssetHandleFromFilePath(const std::filesystem::path& filepath)

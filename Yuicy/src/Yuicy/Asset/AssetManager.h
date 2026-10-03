@@ -43,9 +43,7 @@ namespace Yuicy {
 		static AssetHandle AddMemoryOnlyAsset(Ref<TAsset> asset)
 		{
 			static_assert(std::is_base_of<Asset, TAsset>::value, "AddMemoryOnlyAsset only works for types derived from Asset");
-			asset->handle = AssetHandle(); // 生成新 UUID
-			Project::GetEditorAssetManager()->AddMemoryOnlyAsset(asset);
-			return asset->handle;
+			return Project::GetEditorAssetManager()->AddMemoryOnlyAsset(asset);
 		}
 
 		template<typename T>

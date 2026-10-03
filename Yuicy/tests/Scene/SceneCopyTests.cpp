@@ -1,5 +1,8 @@
 #include "pch.h"
 
+#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
+
 using namespace Yuicy;
 using Yuicy::Test::ApproxVec;
 
@@ -58,5 +61,26 @@ TEST_SUITE("Scene")
 		CHECK(entity.GetComponent<TransformComponent>().Translation == ApproxVec(glm::vec3{ 1.0f, 0.0f, 0.0f }));
 		CHECK(m_Scene->GetAllEntitiesWith<IDComponent>().size() == 1);
 		CHECK(m_Scene->FindEntityByUUID(entity.GetUUID()));
+	}
+
+	// Play / Simulate 只拿到副本，副本丢失上下文会导致纹理、排序层与 Lua 脚本全部失效
+	TEST_CASE_FIXTURE(Test::SceneFixture, "Scene::Copy keeps the scene context")
+	{
+		const Ref<AssetManagerBase> assetManager = Project::GetEditorAssetManager();
+		REQUIRE(assetManager);
+
+		SceneContext context;
+		context.AssetManager = assetManager;
+		context.Renderer2D.SortingLayers.Layers = { { "Back", -5 }, { "Front", 5 } };
+		m_Scene->SetContext(context);
+
+		Ref<Scene> copy = Scene::Copy(m_Scene);
+		REQUIRE(copy);
+		CHECK(copy->GetContext().AssetManager.lock() == assetManager);
+
+		const SortingLayerConfig& sortingLayers = copy->GetContext().Renderer2D.SortingLayers;
+		REQUIRE(sortingLayers.Layers.size() == 2);
+		CHECK(sortingLayers.GetLayerOrder("Back") == -5);
+		CHECK(sortingLayers.GetLayerOrder("Front") == 5);
 	}
 }

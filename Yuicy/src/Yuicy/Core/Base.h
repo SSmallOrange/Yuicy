@@ -21,4 +21,7 @@ namespace Yuicy {
 	constexpr Ref<T> CreateRef(Args&& ... args) {
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
+	template<typename T>
+	using WeakRef = std::weak_ptr<T>;
 }

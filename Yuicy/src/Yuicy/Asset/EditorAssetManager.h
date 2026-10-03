@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Yuicy/Asset/AssetImporter.h"
+#include "Yuicy/Asset/AssetManagerBase.h"
 #include "Yuicy/Asset/AssetRegistry.h"
 
 #include <filesystem>
@@ -8,32 +9,25 @@
 
 namespace Yuicy {
 
-	class EditorAssetManager
+	class EditorAssetManager : public AssetManagerBase
 	{
 	public:
 		EditorAssetManager();
-		~EditorAssetManager();
+		~EditorAssetManager() override;
 
 		// 资源查询
-		AssetType GetAssetType(AssetHandle assetHandle);
-		Ref<Asset> GetAsset(AssetHandle assetHandle);		// 懒加载
+		Ref<Asset> GetAsset(AssetHandle assetHandle) override;
 
-		template<typename T>
-		Ref<T> GetAsset(AssetHandle assetHandle)
-		{
-			Ref<Asset> asset = GetAsset(assetHandle);
-			return std::dynamic_pointer_cast<T>(asset);
-		}
-
-		bool IsAssetHandleValid(AssetHandle assetHandle);
-		bool IsAssetLoaded(AssetHandle assetHandle);
-		bool IsMemoryAsset(AssetHandle assetHandle);
+		AssetType GetAssetType(AssetHandle assetHandle) const override;
+		bool IsAssetHandleValid(AssetHandle assetHandle) const override;
+		bool IsAssetLoaded(AssetHandle assetHandle) const override;
+		bool IsMemoryAsset(AssetHandle assetHandle) const;
 
 		// 资源管理
 		AssetHandle ImportAsset(const std::filesystem::path& filepath);  // 只导入、不Load
 		bool ReloadData(AssetHandle assetHandle);
 		void RemoveAsset(AssetHandle assetHandle);
-		void AddMemoryOnlyAsset(Ref<Asset> asset);						 // 只存储句柄，不初始化资源
+		AssetHandle AddMemoryOnlyAsset(const Ref<Asset>& asset) override;
 
 		// 路径工具
 		AssetHandle GetAssetHandleFromFilePath(const std::filesystem::path& filepath);

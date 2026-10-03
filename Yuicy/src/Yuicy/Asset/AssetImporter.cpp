@@ -107,11 +107,13 @@ namespace Yuicy {
 
 		virtual bool TryLoadData(const AssetMetadata& metadata, Ref<Asset>& asset) const override
 		{
+			std::filesystem::path scriptPath = EditorAssetManager::GetFileSystemPath(metadata);
+
 			// 总是重新编译：ReloadData 与 Reimport 都经由这里，需要绕过 LuaScriptEngine 的缓存
-			if (!LuaScriptEngine::ReloadScript(EditorAssetManager::GetFileSystemPath(metadata)))
+			if (!LuaScriptEngine::ReloadScript(scriptPath))
 				return false;
 
-			asset = CreateRef<LuaScriptAsset>();
+			asset = CreateRef<LuaScriptAsset>(std::move(scriptPath));
 			asset->handle = metadata.handle;
 			return true;
 		}

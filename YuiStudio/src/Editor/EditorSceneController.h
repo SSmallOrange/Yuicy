@@ -3,10 +3,13 @@
 #include <filesystem>
 #include <functional>
 
+#include "Yuicy/Core/Base.h"
+
 namespace Yuicy {
 
 	struct EditorContext;
 	class EditorDirtyTracker;
+	class Scene;
 
 	// 编辑器场景/项目生命周期管理器
 	class EditorSceneController
@@ -48,6 +51,9 @@ namespace Yuicy {
 
 	private:
 		void NotifySceneChanged();
+
+		// 新场景交给 EditorContext 之前、以及切换项目之后都必须调用，否则场景拿不到资源与排序层配置
+		void AttachSceneContext(const Ref<Scene>& scene) const;
 
 		// 未保存提示：检查 dirty 并触发对话框
 		enum class PendingAction { None, NewScene, OpenScene, OpenProject, NewProject };

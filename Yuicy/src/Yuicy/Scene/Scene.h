@@ -8,6 +8,7 @@
 #include "Yuicy/Core/Timestep.h"
 #include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Scene/Components.h"
+#include "Yuicy/Scene/SceneContext.h"
 #include "Yuicy/Physics/Physics2D.h"
 
 class b2World;
@@ -66,6 +67,10 @@ namespace Yuicy {
 		const std::string& GetName() const { return m_name; }
 		void SetName(const std::string& name) { m_name = name; }
 
+		// 新建的场景使用默认构造的上下文；Copy 得到的副本沿用源场景的上下文
+		void SetContext(SceneContext context) { m_Context = std::move(context); }
+		const SceneContext& GetContext() const { return m_Context; }
+
 		// 物理系统
 		b2World* GetPhysicsWorld() { return m_PhysicsWorld; }
 		Physics2D& GetPhysics2D() { return m_Physics2D; }
@@ -105,6 +110,7 @@ namespace Yuicy {
 		entt::registry m_Registry;
 		std::string m_name;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+		SceneContext m_Context;
 
 		// UUID -> Entity 映射
 		std::unordered_map<UUID, entt::entity> m_EntityIDMap;
