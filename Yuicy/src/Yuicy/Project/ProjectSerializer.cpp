@@ -3,53 +3,77 @@
 
 #include "yaml-cpp/yaml.h"
 
-#include <filesystem>
 #include <fstream>
+#include <sstream>
 
 namespace Yuicy {
 
-	ProjectSerializer::ProjectSerializer(const Ref<Project>& project)
-		: m_project(project)
+	// 路径以 UTF-8 存储；path::string() 在 Windows 上使用 ANSI 代码页
+	static std::string PathToYaml(const std::filesystem::path& path)
 	{
+		const std::u8string utf8 = path.generic_u8string();
+		return std::string(reinterpret_cast<const char*>(utf8.data()), utf8.size());
 	}
 
-	bool ProjectSerializer::Serialize(const std::filesystem::path& filepath)
+	// 键缺失或值为空时返回 std::nullopt；yaml-cpp 对空值调用 as<std::string>() 返回 "null"
+	static std::optional<std::filesystem::path> ReadOptionalPath(const YAML::Node& node)
+	{
+		if (!node || node.IsNull())
+			return std::nullopt;
+
+		const std::string text = node.as<std::string>();
+		return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(text.data()), text.size()));
+	}
+
+	static void SerializeRenderer2D(YAML::Emitter& out, const Renderer2DSettings& settings)
+	{
+		out << YAML::BeginMap;
+		out << YAML::Key << "SortingLayers" << YAML::Value << YAML::BeginSeq;
+		for (const auto& layer : settings.SortingLayers.Layers)
+		{
+			out << YAML::Flow << YAML::BeginMap;
+			out << YAML::Key << "Name" << YAML::Value << layer.Name;
+			out << YAML::Key << "Order" << YAML::Value << layer.Order;
+			out << YAML::EndMap;
+		}
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
+	}
+
+	static void SerializePhysics2D(YAML::Emitter& out, const Physics2DSettings& settings)
+	{
+		out << YAML::BeginMap;
+		out << YAML::Key << "CollisionLayers" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+		for (const std::string& layerName : settings.CollisionLayers.LayerNames)
+			out << layerName;
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
+	}
+
+	bool ProjectSerializer::Serialize(const ProjectSettings& settings, const std::filesystem::path& filepath)
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Project" << YAML::Value;
-		{
-			out << YAML::BeginMap;
 
-			out << YAML::Key << "Name" << YAML::Value << m_project->m_config.Name;
-			out << YAML::Key << "AssetDirectory" << YAML::Value << m_project->m_config.AssetDirectory;
-			out << YAML::Key << "ScriptDirectory" << YAML::Value << m_project->m_config.ScriptDirectory;
-			out << YAML::Key << "StartScene" << YAML::Value << m_project->m_config.StartScene;
-			out << YAML::Key << "AutoSave" << YAML::Value << m_project->m_config.EnableAutoSave;
-			out << YAML::Key << "AutoSaveInterval" << YAML::Value << m_project->m_config.AutoSaveIntervalSeconds;
-
-			// Sorting Layers
-			out << YAML::Key << "SortingLayers";
-			out << YAML::Value << YAML::BeginSeq;
-			for (const auto& layer : m_project->m_config.SortingLayers.Layers)
-			{
-				out << YAML::BeginMap;
-				out << YAML::Key << "Name" << YAML::Value << layer.Name;
-				out << YAML::Key << "Order" << YAML::Value << layer.Order;
-				out << YAML::EndMap;
-			}
-			out << YAML::EndSeq;
-
-			// Collision Layers
-			out << YAML::Key << "CollisionLayers";
-			out << YAML::Value << YAML::BeginSeq;
-			for (int i = 0; i < CollisionLayerConfig::MaxLayers; i++)
-				out << m_project->m_config.CollisionLayers.LayerNames[i];
-			out << YAML::EndSeq;
-
-			out << YAML::EndMap;
-		}
+		out << YAML::Key << "Project" << YAML::Value << YAML::BeginMap;
+		out << YAML::Key << "Name" << YAML::Value << settings.Name;
+		out << YAML::Key << "AssetDirectory" << YAML::Value << PathToYaml(settings.AssetDirectory);
+		out << YAML::Key << "StartScene" << YAML::Value << PathToYaml(settings.StartScene);
 		out << YAML::EndMap;
+
+		out << YAML::Key << "Renderer2D" << YAML::Value;
+		SerializeRenderer2D(out, settings.Renderer2D);
+
+		out << YAML::Key << "Physics2D" << YAML::Value;
+		SerializePhysics2D(out, settings.Physics2D);
+
+		out << YAML::EndMap;
+
+		if (!out.good())
+		{
+			YUICY_CORE_ERROR("[Project] Failed to emit project file '{}': {}", filepath.string(), out.GetLastError());
+			return false;
+		}
 
 		std::ofstream fout(filepath);
 		if (!fout.is_open())
@@ -69,75 +93,116 @@ namespace Yuicy {
 		return true;
 	}
 
-	bool ProjectSerializer::Deserialize(const std::filesystem::path& filepath)
+	// 结构错误时记录错误并返回 false；值的类型错误由 yaml-cpp 抛出 YAML::Exception，交给调用方处理
+	static bool DeserializeRenderer2D(const YAML::Node& node, Renderer2DSettings& settings, const std::filesystem::path& filepath)
+	{
+		const YAML::Node sortingLayersNode = node["SortingLayers"];
+		if (!sortingLayersNode)
+			return true;
+
+		if (!sortingLayersNode.IsSequence())
+		{
+			YUICY_CORE_ERROR("[Project] Invalid project file, 'Renderer2D.SortingLayers' must be a sequence: {}", filepath.string());
+			return false;
+		}
+
+		settings.SortingLayers.Layers.clear();
+		for (const YAML::Node layerNode : sortingLayersNode)
+			settings.SortingLayers.Layers.push_back({ layerNode["Name"].as<std::string>(), layerNode["Order"].as<int>() });
+
+		return true;
+	}
+
+	static bool DeserializePhysics2D(const YAML::Node& node, Physics2DSettings& settings, const std::filesystem::path& filepath)
+	{
+		const YAML::Node collisionLayersNode = node["CollisionLayers"];
+		if (!collisionLayersNode)
+			return true;
+
+		if (!collisionLayersNode.IsSequence())
+		{
+			YUICY_CORE_ERROR("[Project] Invalid project file, 'Physics2D.CollisionLayers' must be a sequence: {}", filepath.string());
+			return false;
+		}
+
+		if (collisionLayersNode.size() > CollisionLayerConfig::MaxLayers)
+		{
+			YUICY_CORE_WARN("[Project] 'Physics2D.CollisionLayers' has {} entries, only the first {} are used: {}",
+				collisionLayersNode.size(), CollisionLayerConfig::MaxLayers, filepath.string());
+		}
+
+		// 条目少于 MaxLayers 时，其余层保留默认名
+		const size_t count = std::min(collisionLayersNode.size(), static_cast<size_t>(CollisionLayerConfig::MaxLayers));
+		for (size_t i = 0; i < count; i++)
+			settings.CollisionLayers.LayerNames[i] = collisionLayersNode[i].as<std::string>();
+
+		return true;
+	}
+
+	static std::optional<ProjectSettings> DeserializeProjectSettings(const YAML::Node& data, const std::filesystem::path& filepath)
+	{
+		const YAML::Node projectNode = data.IsMap() ? data["Project"] : YAML::Node();
+		if (!projectNode || !projectNode.IsMap())
+		{
+			YUICY_CORE_ERROR("[Project] Invalid project file, missing 'Project' section: {}", filepath.string());
+			return std::nullopt;
+		}
+
+		const YAML::Node nameNode = projectNode["Name"];
+		if (!nameNode || !nameNode.IsScalar())
+		{
+			YUICY_CORE_ERROR("[Project] Invalid project file, missing project name: {}", filepath.string());
+			return std::nullopt;
+		}
+
+		ProjectSettings settings;
+		settings.Name = nameNode.as<std::string>();
+		if (std::optional<std::filesystem::path> assetDirectory = ReadOptionalPath(projectNode["AssetDirectory"]))
+			settings.AssetDirectory = std::move(*assetDirectory);
+		if (std::optional<std::filesystem::path> startScene = ReadOptionalPath(projectNode["StartScene"]))
+			settings.StartScene = std::move(*startScene);
+
+		if (const YAML::Node renderer2DNode = data["Renderer2D"])
+		{
+			if (!DeserializeRenderer2D(renderer2DNode, settings.Renderer2D, filepath))
+				return std::nullopt;
+		}
+
+		if (const YAML::Node physics2DNode = data["Physics2D"])
+		{
+			if (!DeserializePhysics2D(physics2DNode, settings.Physics2D, filepath))
+				return std::nullopt;
+		}
+
+		return settings;
+	}
+
+	std::optional<ProjectSettings> ProjectSerializer::Deserialize(const std::filesystem::path& filepath)
 	{
 		std::ifstream stream(filepath);
 		if (!stream.is_open())
 		{
 			YUICY_CORE_ERROR("[Project] Failed to open project file: {}", filepath.string());
-			return false;
+			return std::nullopt;
 		}
 
 		std::stringstream strStream;
 		strStream << stream.rdbuf();
 
-		YAML::Node data;
+		std::optional<ProjectSettings> settings;
 		try
 		{
-			data = YAML::Load(strStream.str());
+			settings = DeserializeProjectSettings(YAML::Load(strStream.str()), filepath);
 		}
 		catch (const YAML::Exception& e)
 		{
 			YUICY_CORE_ERROR("[Project] Failed to parse project file '{}': {}", filepath.string(), e.what());
-			return false;
+			return std::nullopt;
 		}
 
-		if (!data["Project"])
-		{
-			YUICY_CORE_ERROR("[Project] Invalid project file, missing 'Project' root node: {}", filepath.string());
-			return false;
-		}
+		if (settings)
+			YUICY_CORE_INFO("[Project] Loaded project '{}' from: {}", settings->Name, filepath.string());
 
-		YAML::Node rootNode = data["Project"];
-		if (!rootNode["Name"])
-		{
-			YUICY_CORE_ERROR("[Project] Invalid project file, missing project name: {}", filepath.string());
-			return false;
-		}
-
-		auto& config = m_project->m_config;
-		config.Name = rootNode["Name"].as<std::string>();
-		config.AssetDirectory = rootNode["AssetDirectory"].as<std::string>(config.AssetDirectory);
-		config.ScriptDirectory = rootNode["ScriptDirectory"].as<std::string>(config.ScriptDirectory);
-		config.StartScene = rootNode["StartScene"].as<std::string>("");
-		config.EnableAutoSave = rootNode["AutoSave"].as<bool>(false);
-		config.AutoSaveIntervalSeconds = rootNode["AutoSaveInterval"].as<int>(300);
-
-		// Sorting Layers
-		if (auto sortingLayersNode = rootNode["SortingLayers"]; sortingLayersNode && sortingLayersNode.IsSequence())
-		{
-			config.SortingLayers.Layers.clear();
-			for (auto layerNode : sortingLayersNode)
-			{
-				std::string name = layerNode["Name"].as<std::string>("Default");
-				int order = layerNode["Order"].as<int>(0);
-				config.SortingLayers.Layers.push_back({ name, order });
-			}
-		}
-
-		// Collision Layers
-		if (auto collisionLayersNode = rootNode["CollisionLayers"]; collisionLayersNode && collisionLayersNode.IsSequence())
-		{
-			for (int i = 0; i < CollisionLayerConfig::MaxLayers && i < (int)collisionLayersNode.size(); i++)
-				config.CollisionLayers.LayerNames[i] = collisionLayersNode[i].as<std::string>("Layer " + std::to_string(i));
-		}
-
-		std::filesystem::path projectPath = filepath.lexically_normal();
-		config.ProjectFileName = projectPath.filename().string();
-		config.ProjectDirectory = projectPath.parent_path().string();
-
-		YUICY_CORE_INFO("[Project] Loaded project '{}' from: {}", config.Name, filepath.string());
-		return true;
+		return settings;
 	}
-
 }

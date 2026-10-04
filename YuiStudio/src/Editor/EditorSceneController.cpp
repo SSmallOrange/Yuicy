@@ -368,9 +368,9 @@ namespace Yuicy {
 		Ref<Scene> startScene;
 		std::filesystem::path startScenePath;
 		const Project& project = m_context->project->GetProject();
-		if (!project.GetConfig().StartScene.empty())
+		if (!project.GetSettings().StartScene.empty())
 		{
-			startScenePath = (project.GetAssetDirectory() / project.GetConfig().StartScene).lexically_normal();
+			startScenePath = (project.GetAssetDirectory() / project.GetSettings().StartScene).lexically_normal();
 			if (std::filesystem::exists(startScenePath))
 			{
 				startScene = CreateRef<Scene>();
@@ -407,10 +407,10 @@ namespace Yuicy {
 		}
 
 		Project& project = session->GetProject();
-		auto& config = project.GetConfig();
+		ProjectSettings& settings = project.GetSettings();
 		if (!m_context->editorScene)
 		{
-			config.StartScene.clear();
+			settings.StartScene.clear();
 		}
 		else
 		{
@@ -437,7 +437,7 @@ namespace Yuicy {
 
 			if (TryGetPathRelativeToDirectory(m_context->document.currentScenePath, project.GetAssetDirectory(), relativeScenePath))
 			{
-				config.StartScene = relativeScenePath.generic_string();
+				settings.StartScene = relativeScenePath;
 			}
 			else
 			{

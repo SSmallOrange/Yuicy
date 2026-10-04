@@ -3,7 +3,7 @@
 #include "Yuicy/Asset/AssetLoader.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/BuiltinAssetLoaders.h"
-#include "Yuicy/Project/Project.h"
+#include "Yuicy/Project/ProjectSettings.h"
 #include "Yuicy/Project/ProjectSceneContext.h"
 #include "Yuicy/Scripting/LuaScriptAsset.h"
 #include "Yuicy/Scripting/LuaScriptEngine.h"
@@ -35,7 +35,7 @@ TEST_SUITE("Scene")
 		REQUIRE((uint64_t)scriptHandle != 0);
 
 		Ref<Scene> scene = CreateRef<Scene>();
-		scene->SetContext(MakeSceneContext(ProjectConfig{}, assetManager));
+		scene->SetContext(MakeSceneContext(ProjectSettings{}, assetManager));
 		Entity entity = scene->CreateEntity("Player");
 		entity.AddComponent<LuaScriptComponent>().ScriptHandle = scriptHandle;
 
@@ -78,7 +78,7 @@ TEST_SUITE("Scene")
 		Ref<Scene> scene = CreateRef<Scene>();
 		{
 			const Ref<EditorAssetManager> assetManager = CreateAssetManager(assetDirectory, CreateRef<AssetLoaderRegistry>());
-			scene->SetContext(MakeSceneContext(ProjectConfig{}, assetManager));
+			scene->SetContext(MakeSceneContext(ProjectSettings{}, assetManager));
 			CHECK_FALSE(scene->GetContext().AssetManager.expired());
 		}
 

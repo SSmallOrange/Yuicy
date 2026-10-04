@@ -1,63 +1,28 @@
 #pragma once
 
-#include "Yuicy/Renderer/SortingLayerConfig.h"
-#include "Yuicy/Physics/CollisionLayerConfig.h"
+#include "Yuicy/Project/ProjectSettings.h"
 
 #include <filesystem>
-#include <string>
 
 namespace Yuicy {
-
-	struct ProjectConfig
-	{
-		std::string Name = "Untitled";
-
-		// 资产目录
-		std::string AssetDirectory = "Assets";
-
-		// Lua 脚本目录
-		std::string ScriptDirectory = "Assets/Scripts";
-
-		// 起始场景路径
-		std::string StartScene;
-
-		// 自动保存
-		bool EnableAutoSave = false;
-		int AutoSaveIntervalSeconds = 300;
-
-		std::string ProjectFileName;
-		std::string ProjectDirectory;
-
-		// Sorting Layer 配置
-		SortingLayerConfig SortingLayers;
-
-		// Collision Layer 配置
-		CollisionLayerConfig CollisionLayers;
-	};
 
 	class Project
 	{
 	public:
-		Project() = default;
-		~Project() = default;
+		// projectFile 为相对路径时按当前工作目录转为绝对路径
+		Project(const std::filesystem::path& projectFile, ProjectSettings settings);
 
-		const ProjectConfig& GetConfig() const { return m_config; }
-		ProjectConfig& GetConfig() { return m_config; }
+		const std::filesystem::path& GetProjectFile() const { return m_projectFile; }
+		std::filesystem::path GetProjectDirectory() const { return m_projectFile.parent_path(); }
+		std::filesystem::path GetAssetDirectory() const { return GetProjectDirectory() / m_settings.AssetDirectory; }
+		std::filesystem::path GetAssetRegistryPath() const { return GetAssetDirectory() / "AssetRegistry.yregistry"; }
 
-		std::filesystem::path GetAssetDirectory() const
-		{
-			return std::filesystem::path(m_config.ProjectDirectory) / m_config.AssetDirectory;
-		}
-
-		std::filesystem::path GetAssetRegistryPath() const
-		{
-			return GetAssetDirectory() / "AssetRegistry.yregistry";
-		}
+		ProjectSettings& GetSettings() { return m_settings; }
+		const ProjectSettings& GetSettings() const { return m_settings; }
 
 	private:
-		ProjectConfig m_config;
-
-		friend class ProjectSerializer;
+		std::filesystem::path m_projectFile;  // 绝对路径，已规范化
+		ProjectSettings m_settings;
 	};
 
 }

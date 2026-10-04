@@ -118,7 +118,7 @@ namespace Yuicy {
 		// Sorting Layer
 		{
 			static const SortingLayerConfig kDefaultSortingLayers;
-			const SortingLayerConfig& sortingLayers = project ? project->GetProject().GetConfig().SortingLayers : kDefaultSortingLayers;
+			const SortingLayerConfig& sortingLayers = project ? project->GetProject().GetSettings().Renderer2D.SortingLayers : kDefaultSortingLayers;
 			if (ImGui::BeginCombo("Sorting Layer", component.SortingLayer.c_str()))
 			{
 				for (const auto& layer : sortingLayers.Layers)

@@ -69,7 +69,7 @@ namespace Yuicy {
 		const EditorProjectSession* project = m_editorContext ? m_editorContext->project.get() : nullptr;
 		if (!project) return;
 
-		const auto& layerConfig = project->GetProject().GetConfig().CollisionLayers;
+		const auto& layerConfig = project->GetProject().GetSettings().Physics2D.CollisionLayers;
 
 		// Category：单选下拉框
 		int currentLayer = GetLowestBitIndex(categoryBits);

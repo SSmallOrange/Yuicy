@@ -4,13 +4,15 @@
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Scene/SceneContext.h"
 
+#include "EditorProjectUserSettings.h"
+
 #include <filesystem>
 
 namespace Yuicy {
 
 	class EditorAssetManager;
 
-	// 编辑器中已打开的项目：持有 Project 与该项目的资源管理器；析构时资源管理器把注册表写回本项目的资产目录
+	// 析构时资源管理器把资产注册表写到 Project::GetAssetRegistryPath()
 	class EditorProjectSession
 	{
 		struct ConstructionKey
@@ -19,31 +21,32 @@ namespace Yuicy {
 		};
 
 	public:
-		// 创建资产目录与脚本目录并写出 .yproj；失败时返回 nullptr
+		// 创建资产目录与 Scripts 目录，写出 .yproj 与个人设置文件；目录创建或 .yproj 写入失败时返回 nullptr
 		static Scope<EditorProjectSession> Create(const std::filesystem::path& projectFile);
-		// .yproj 无法读取或资产目录不存在时返回 nullptr
+		// .yproj 无法读取或资产目录不存在时返回 nullptr；个人设置文件缺失时写出默认值，无法解析时使用默认值
 		static Scope<EditorProjectSession> Open(const std::filesystem::path& projectFile);
 
 		// 只能经由 Create / Open 构造：资产目录不存在时 EditorAssetManager 扫描目录会抛出异常
-		EditorProjectSession(ConstructionKey, std::filesystem::path projectFile, Ref<Project> project);
+		EditorProjectSession(ConstructionKey, Project project, EditorProjectUserSettings userSettings);
 		~EditorProjectSession();
 
 		EditorProjectSession(const EditorProjectSession&) = delete;
 		EditorProjectSession& operator=(const EditorProjectSession&) = delete;
 
-		Project& GetProject() { return *m_project; }
-		const Project& GetProject() const { return *m_project; }
-		const std::filesystem::path& GetProjectFile() const { return m_projectFile; }
+		Project& GetProject() { return m_project; }
+		const Project& GetProject() const { return m_project; }
 		const Ref<EditorAssetManager>& GetAssetManager() const { return m_assetManager; }
+		EditorProjectUserSettings& GetUserSettings() { return m_userSettings; }
+		const EditorProjectUserSettings& GetUserSettings() const { return m_userSettings; }
 
 		SceneContext MakeSceneContext() const;
 
-		// 把配置写回 .yproj，失败时返回 false；资产注册表不在这里写出
+		// 只写 .yproj，失败时返回 false
 		bool Save();
 
 	private:
-		std::filesystem::path m_projectFile;
-		Ref<Project> m_project;
+		Project m_project;
+		EditorProjectUserSettings m_userSettings;
 		Ref<EditorAssetManager> m_assetManager;
 	};
 

@@ -2,7 +2,6 @@
 
 #include "EditorDirtyTracker.h"
 #include "EditorContext.h"
-#include "Yuicy/Project/Project.h"
 
 namespace Yuicy {
 
@@ -54,13 +53,13 @@ namespace Yuicy {
 		if (!m_context->project)
 			return;
 
-		const ProjectConfig& config = m_context->project->GetProject().GetConfig();
-		if (!config.EnableAutoSave)
+		const EditorAutoSaveSettings& autoSave = m_context->project->GetUserSettings().autoSave;
+		if (!autoSave.enabled)
 			return;
 
 		m_autoSaveTimer += deltaTime;
 
-		float interval = static_cast<float>(config.AutoSaveIntervalSeconds);
+		float interval = static_cast<float>(autoSave.intervalSeconds);
 		if (m_autoSaveTimer < interval)
 			return;
 

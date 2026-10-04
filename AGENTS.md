@@ -232,8 +232,8 @@ Yuicy/src/
   Yuicy/Renderer/          # Renderer2D, RenderCommand/RendererAPI, GraphicsContext, Shader, Texture, Framebuffer, Camera, SortingLayer
   Yuicy/Scene/             # Scene, Entity, Components.h, SceneSerializer, SceneCamera, ContactListener
   Yuicy/Asset/             # Asset, AssetHandle, AssetRegistry, EditorAssetManager, AssetImporter, 扩展名映射
-  Yuicy/Project/           # Project(.yproj) 与序列化，SortingLayers / CollisionLayers 配置
-  Yuicy/Physics/           # Box2D 封装, CollisionLayerConfig
+  Yuicy/Project/           # Project（.yproj 位置与路径推导）、ProjectSettings（按模块分节：Renderer2D / Physics2D）与序列化
+  Yuicy/Physics/           # Box2D 封装, CollisionLayerConfig, Physics2DSettings
   Yuicy/Scripting/         # LuaScriptEngine, LuaBindings（sol2）
   Yuicy/ImGui/             # ImGuiLayer，ImGuizmo（外部拷贝代码，勿改）
   Yuicy/Debug/             # Instrumentor（YUICY_PROFILE_*）
@@ -336,7 +336,7 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestF
 | `YuiStudio/src/<Dir>/` | `YuiStudio/tests/<Dir>/XxxTests.cpp` | `YuiStudioTests` → `YuiStudioCore` |
 
 - [ ] 新文件放进对应目录即可，无需改 CMake（`CONFIGURE_DEPENDS` 通配）；首行 `#include "pch.h"`，测试工程的 `pch.h` 已包含 `YuicyTest/YuicyTest.h`。
-- [ ] 用例放进 `TEST_SUITE("<模块>")`，现有：`Scene` / `Asset` / `Project` / `Editor`。`TEST_SUITE` 名会成为 CTest 标签（`ctest -L Scene`）。
+- [ ] 用例放进 `TEST_SUITE("<模块>")`，现有：`Scene` / `Asset` / `Project` / `Renderer` / `Physics` / `Scripting` / `Editor`。`TEST_SUITE` 名会成为 CTest 标签（`ctest -L Scene`）。
 - [ ] 用例名用英文短句描述被验证的行为，它同时是 CTest 测试名与 `--test-case=` 的过滤参数；不要含逗号（`--test-case=` 用逗号分隔多个过滤条件）。
 - [ ] 需要场景时用 `TEST_CASE_FIXTURE(Test::SceneFixture, ...)`（场景使用默认上下文，不加载资源）；只需要临时文件时用 `Test::ScopedTempDirectory`。
       需要资源时在临时目录上直接构造 `EditorAssetManager`，需要场景上下文时调用 `Scene::SetContext`。
@@ -423,7 +423,7 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestF
 
 ### 8.4 应该写的注释
 
-- **为什么**这样做，以及为什么不用看起来更直观的写法。
+- **为什么**这样做，以及为什么不用看起来更直观的写法。原因要写成客观的约束或后果（见 8.6 节"客观可验证"）。
 - 代码表达不了的约束：单位（像素 / 世界单位、弧度 / 角度）、坐标系、取值范围、特殊值的含义（如 `-1` 表示未知、`nullptr` 表示未加载）、调用顺序、生命周期。
 - 接口边界：会不会返回 `nullptr`、是否接管所有权或长期持有引用、输出参数是追加还是覆盖、有没有明显的性能代价。
 - 警示后果：删掉某行或调换顺序会出什么问题。
@@ -463,6 +463,16 @@ s_Data.TextureSlotIndex = 1;
 **判断方法：假设从零重写这段代码，这条注释还会存在吗？不会，就不要写。**
 注释只描述代码当前的行为和约束，改动过程写进提交信息（第 9 节）。
 
+**客观可验证**：注释里的每一句话，都应该能对照当前代码或所依赖库的行为判断真假。
+使用场景、动机推演、方案比较、未来计划都没法这样验证，不要写进注释。设计取舍写进设计文档或提交信息。
+
+| 差 | 好 | 说明 |
+|---|---|---|
+| `// 个人设置不进版本库，刚克隆下来的项目没有这个文件` | `// 个人设置文件缺失时写出默认值` | 只写行为，不写"什么情况下会碰到" |
+| `// 放在目录内部而不是改写项目根目录的 .gitignore：项目可能……` | （删除） | 方案比较和设计讨论 |
+| `// 编辑器偏好不放在这里`、`// 资产注册表不在这里写出` | `// 只写 .yproj` | 用"只做 X"划定范围，不列举它不做的事 |
+| `// 用 UTF-8 是为了修复 Windows 上非 ASCII 路径出错的问题` | `// path::string() 在 Windows 上使用 ANSI 代码页` | 原因写成可以查证的外部事实，不写成修复动机 |
+
 禁止的写法：
 
 - 改动记录：`// 新增：`、`// 修改：`、`// 优化：`、`// 重构后`、`// v2`、`// 2026-09-29 改`。
@@ -473,6 +483,10 @@ s_Data.TextureSlotIndex = 1;
 - 署名和日期：`// Added by xxx`、`// @author`，这些由 `git blame` 负责。
 - 注释掉的代码：直接删除，版本库里查得到。确实需要保留的调试代码，用 `#if 0` … `#endif` 包起来，并在上方写一行说明原因。
 - 非本地信息：在调用处解释被调函数内部的实现，或者写出由别处决定的值（如 `// 默认 60 帧`）。别处一改，这里就成了错误信息。
+- 使用场景与动机：`// 刚克隆下来时……`、`// 这样项目搬家后仍能打开`、`// 为了让 X 也能用`。
+- 方案比较：`// 用 X 而不是 Y`、`// 不用 Z，因为……`。确实需要防止别人"顺手改回"时，只写改回去的后果（8.4 节）。
+- 对比式否定：`// 不写进 X`、`// Y 不放在这里`。这类句子是在和别的方案或旧代码对比，换成正面描述职责范围。
+- 测试用例上方复述用例名或断言的注释：用例名和断言本身就是说明。
 
 改代码时，同时维护受影响的注释：
 

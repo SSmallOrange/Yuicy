@@ -24,7 +24,7 @@ namespace {
 
 TEST_SUITE("Editor")
 {
-	TEST_CASE("EditorProjectSession keeps the config after Create then Save then Open")
+	TEST_CASE("EditorProjectSession keeps the settings after Create then Save then Open")
 	{
 		Test::ScopedTempDirectory tempDirectory;
 		const std::filesystem::path projectFile = tempDirectory.GetPath() / "Game.yproj";
@@ -34,24 +34,25 @@ TEST_SUITE("Editor")
 			REQUIRE(session);
 			CHECK(std::filesystem::is_regular_file(projectFile));
 			CHECK(std::filesystem::is_directory(session->GetProject().GetAssetDirectory()));
-			CHECK(session->GetProject().GetConfig().Name == "Game");
+			CHECK(std::filesystem::is_directory(session->GetProject().GetAssetDirectory() / "Scripts"));
+			CHECK(session->GetProject().GetSettings().Name == "Game");
 
-			ProjectConfig& config = session->GetProject().GetConfig();
-			config.StartScene = "Scenes/Main.yui";
-			config.SortingLayers.AddLayer("Particles", 150);
-			config.CollisionLayers.LayerNames[3] = "Enemy";
+			ProjectSettings& settings = session->GetProject().GetSettings();
+			settings.StartScene = "Scenes/Main.yui";
+			settings.Renderer2D.SortingLayers.AddLayer("Particles", 150);
+			settings.Physics2D.CollisionLayers.LayerNames[3] = "Enemy";
 			REQUIRE(session->Save());
 		}
 
 		Scope<EditorProjectSession> reopened = EditorProjectSession::Open(projectFile);
 		REQUIRE(reopened);
-		CHECK(reopened->GetProjectFile() == projectFile.lexically_normal());
+		CHECK(reopened->GetProject().GetProjectFile() == projectFile.lexically_normal());
 
-		const ProjectConfig& config = reopened->GetProject().GetConfig();
-		CHECK(config.Name == "Game");
-		CHECK(config.StartScene == "Scenes/Main.yui");
-		CHECK(config.SortingLayers.GetLayerOrder("Particles") == 150);
-		CHECK(config.CollisionLayers.LayerNames[3] == "Enemy");
+		const ProjectSettings& settings = reopened->GetProject().GetSettings();
+		CHECK(settings.Name == "Game");
+		CHECK(settings.StartScene == "Scenes/Main.yui");
+		CHECK(settings.Renderer2D.SortingLayers.GetLayerOrder("Particles") == 150);
+		CHECK(settings.Physics2D.CollisionLayers.LayerNames[3] == "Enemy");
 
 		REQUIRE(reopened->GetAssetManager());
 		CHECK(reopened->GetAssetManager()->GetAssetDirectory() == reopened->GetProject().GetAssetDirectory());
@@ -59,6 +60,62 @@ TEST_SUITE("Editor")
 		const SceneContext context = reopened->MakeSceneContext();
 		CHECK(context.AssetManager.lock() == reopened->GetAssetManager());
 		CHECK(context.Renderer2D.SortingLayers.GetLayerOrder("Particles") == 150);
+	}
+
+	TEST_CASE("EditorProjectSession keeps editor user settings out of the project file")
+	{
+		Test::ScopedTempDirectory tempDirectory;
+		const std::filesystem::path projectFile = tempDirectory.GetPath() / "Game.yproj";
+		const std::filesystem::path userSettingsFile = EditorProjectUserSettingsSerializer::GetFilePath(tempDirectory.GetPath());
+
+		{
+			Scope<EditorProjectSession> session = EditorProjectSession::Create(projectFile);
+			REQUIRE(session);
+			CHECK(std::filesystem::is_regular_file(userSettingsFile));
+			CHECK(std::filesystem::is_regular_file(userSettingsFile.parent_path() / ".gitignore"));
+			CHECK(ReadTextFile(projectFile).find("AutoSave") == std::string::npos);
+		}
+
+		EditorProjectUserSettings userSettings;
+		userSettings.autoSave.enabled = true;
+		userSettings.autoSave.intervalSeconds = 42;
+		REQUIRE(EditorProjectUserSettingsSerializer::Serialize(userSettings, tempDirectory.GetPath()));
+
+		Scope<EditorProjectSession> reopened = EditorProjectSession::Open(projectFile);
+		REQUIRE(reopened);
+		CHECK(reopened->GetUserSettings().autoSave.enabled);
+		CHECK(reopened->GetUserSettings().autoSave.intervalSeconds == 42);
+	}
+
+	TEST_CASE("EditorProjectSession Open uses default user settings when the file is missing or malformed")
+	{
+		Test::ScopedTempDirectory tempDirectory;
+		const std::filesystem::path projectFile = tempDirectory.GetPath() / "Game.yproj";
+		const std::filesystem::path userSettingsFile = EditorProjectUserSettingsSerializer::GetFilePath(tempDirectory.GetPath());
+		REQUIRE(EditorProjectSession::Create(projectFile));
+
+		const EditorAutoSaveSettings defaults;
+
+		SUBCASE("missing file is generated")
+		{
+			std::filesystem::remove_all(userSettingsFile.parent_path());
+
+			Scope<EditorProjectSession> session = EditorProjectSession::Open(projectFile);
+			REQUIRE(session);
+			CHECK(session->GetUserSettings().autoSave.enabled == defaults.enabled);
+			CHECK(session->GetUserSettings().autoSave.intervalSeconds == defaults.intervalSeconds);
+			CHECK(std::filesystem::is_regular_file(userSettingsFile));
+		}
+
+		SUBCASE("malformed file does not block opening the project")
+		{
+			tempDirectory.WriteFile(".yuistudio/EditorUserSettings.yaml", "AutoSave: [unclosed\n");
+
+			Scope<EditorProjectSession> session = EditorProjectSession::Open(projectFile);
+			REQUIRE(session);
+			CHECK(session->GetUserSettings().autoSave.enabled == defaults.enabled);
+			CHECK(session->GetUserSettings().autoSave.intervalSeconds == defaults.intervalSeconds);
+		}
 	}
 
 	TEST_CASE("EditorProjectSession Open returns nullptr for invalid projects")
@@ -81,6 +138,7 @@ TEST_SUITE("Editor")
 			const auto projectFile = tempDirectory.WriteFile("Game.yproj", "Project:\n  Name: Game\n  AssetDirectory: Missing\n");
 			CHECK_FALSE(EditorProjectSession::Open(projectFile));
 			CHECK_FALSE(std::filesystem::exists(tempDirectory.GetPath() / "Missing"));
+			CHECK_FALSE(std::filesystem::exists(EditorProjectUserSettingsSerializer::GetFilePath(tempDirectory.GetPath())));
 		}
 	}
 

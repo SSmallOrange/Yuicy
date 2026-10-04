@@ -573,7 +573,7 @@ namespace Yuicy {
 		std::vector<std::pair<std::string, std::filesystem::path>> segments;
 
 		// 根段（资源目录名）
-		const std::string rootLabel = m_context->project->GetProject().GetConfig().AssetDirectory;
+		const std::string rootLabel = m_context->project->GetProject().GetSettings().AssetDirectory.generic_string();
 		segments.emplace_back(rootLabel, normalizedBase);
 
 		// Sub-segments

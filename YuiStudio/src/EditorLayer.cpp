@@ -329,7 +329,7 @@ namespace Yuicy {
 			std::string title = "YuiStudio";
 			if (m_editorContext.project)
 			{
-				const std::string& projectName = m_editorContext.project->GetProject().GetConfig().Name;
+				const std::string& projectName = m_editorContext.project->GetProject().GetSettings().Name;
 				if (!projectName.empty())
 					title += " - " + projectName;
 			}
