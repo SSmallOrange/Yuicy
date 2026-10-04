@@ -3,11 +3,8 @@
 
 #include "Yuicy/Asset/AssetExtensions.h"
 #include "Yuicy/Asset/AssetLoader.h"
-
-#include <map>
-#include <ranges>
-#include <fstream>
-#include <yaml-cpp/yaml.h>
+#include "Yuicy/Asset/AssetRegistrySerializer.h"
+#include "Yuicy/Core/Log.h"
 
 namespace Yuicy {
 
@@ -16,7 +13,7 @@ namespace Yuicy {
 	EditorAssetManager::EditorAssetManager(EditorAssetManagerSpecification specification)
 		: m_specification(std::move(specification))
 	{
-		YUICY_CORE_ASSERT(m_specification.Loaders, "EditorAssetManager requires an AssetLoaderRegistry");
+		YUICY_ASSERT(m_specification.Loaders, "EditorAssetManager requires an AssetLoaderRegistry");
 		LoadAssetRegistry();
 		ReloadAssets();
 	}
@@ -66,11 +63,11 @@ namespace Yuicy {
 
 			m_loadedAssets[assetHandle] = asset;
 
-			YUICY_CORE_INFO("[AssetManager] Loaded asset: {0}", metadata.filePath.string());
+			YUICY_INFO("[AssetManager] Loaded asset: {0}", metadata.filePath.string());
 		}
 		else
 		{
-			YUICY_CORE_ERROR("[AssetManager] Failed to load asset: {0}", metadata.filePath.string());
+			YUICY_ERROR("[AssetManager] Failed to load asset: {0}", metadata.filePath.string());
 		}
 
 		return asset;
@@ -122,7 +119,7 @@ namespace Yuicy {
 		const auto& metadata = GetMetadata(assetHandle);
 		if (!metadata.IsValid())
 		{
-			YUICY_CORE_ERROR("[AssetManager] Trying to reload invalid asset");
+			YUICY_ERROR("[AssetManager] Trying to reload invalid asset");
 			return false;
 		}
 
@@ -134,11 +131,11 @@ namespace Yuicy {
 		{
 			m_loadedAssets[assetHandle] = asset;
 			m_assetRegistry.Set(assetHandle, updatedMetadata);
-			YUICY_CORE_INFO("[AssetManager] Reloaded asset: {0}", updatedMetadata.filePath.string());
+			YUICY_INFO("[AssetManager] Reloaded asset: {0}", updatedMetadata.filePath.string());
 		}
 		else
 		{
-			YUICY_CORE_ERROR("[AssetManager] Failed to reload asset: {0}", updatedMetadata.filePath.string());
+			YUICY_ERROR("[AssetManager] Failed to reload asset: {0}", updatedMetadata.filePath.string());
 		}
 
 		return updatedMetadata.isDataLoaded;
@@ -199,7 +196,7 @@ namespace Yuicy {
 
 		// 判断：filepath 是否位于 assetDir 下
 		auto fileIt = normalizedFile.begin();
-		auto dirIt  = normalizedAssetDir.begin();
+		auto dirIt = normalizedAssetDir.begin();
 
 		for (; dirIt != normalizedAssetDir.end() && fileIt != normalizedFile.end(); ++dirIt, ++fileIt)
 		{
@@ -273,61 +270,38 @@ namespace Yuicy {
 	// 注册表持久化
 	void EditorAssetManager::LoadAssetRegistry()
 	{
-		YUICY_CORE_INFO("[AssetManager] Loading Asset Registry");
+		YUICY_INFO("[AssetManager] Loading Asset Registry");
 
-		const auto& assetRegistryPath = m_specification.RegistryPath;
-		if (!std::filesystem::exists(assetRegistryPath))
+		if (!std::filesystem::exists(m_specification.RegistryPath))
 			return;
 
-		std::ifstream stream(assetRegistryPath);
-		YUICY_CORE_ASSERT(stream);
-		std::stringstream strStream;
-		strStream << stream.rdbuf();
-
-		YAML::Node data = YAML::Load(strStream.str());
-		auto handles = data["Assets"];
-		if (!handles)
-		{
-			YUICY_CORE_ERROR("[AssetManager] Asset Registry appears to be corrupted!");
+		std::optional<AssetRegistry> registry = AssetRegistrySerializer::Deserialize(m_specification.RegistryPath);
+		if (!registry)
 			return;
-		}
 
-		for (auto entry : handles)
+		for (const auto& [handle, storedMetadata] : *registry)
 		{
-			std::string filepath = entry["FilePath"].as<std::string>();
-
-			AssetMetadata metadata;
-			metadata.handle = entry["Handle"].as<uint64_t>();
-			metadata.filePath = filepath;
-			metadata.type = Utils::AssetTypeFromString(entry["Type"].as<std::string>());
-
-			if (metadata.type == AssetType::None)
-				continue;
+			AssetMetadata metadata = storedMetadata;
 
 			// 验证扩展名和记录的类型是否匹配
-			if (metadata.type != GetAssetTypeFromPath(filepath))
+			const AssetType typeFromPath = GetAssetTypeFromPath(metadata.filePath);
+			if (metadata.type != typeFromPath)
 			{
-				YUICY_CORE_WARN("[AssetManager] Mismatch between stored AssetType and extension type!");
-				metadata.type = GetAssetTypeFromPath(filepath);
+				YUICY_WARN("[AssetManager] Mismatch between stored AssetType and extension type!");
+				metadata.type = typeFromPath;
 			}
 
 			// 检查文件是否依然存在
 			if (!std::filesystem::exists(GetFileSystemPath(metadata)))
 			{
-				YUICY_CORE_WARN("[AssetManager] Missing asset '{0}' detected in registry", metadata.filePath.string());
+				YUICY_WARN("[AssetManager] Missing asset '{0}' detected in registry", metadata.filePath.string());
 				continue;
 			}
 
-			if (metadata.handle == 0)
-			{
-				YUICY_CORE_WARN("[AssetManager] AssetHandle for {0} is 0, skipping", metadata.filePath.string());
-				continue;
-			}
-
-			m_assetRegistry.Set(metadata.handle, metadata);
+			m_assetRegistry.Set(handle, metadata);
 		}
 
-		YUICY_CORE_INFO("[AssetManager] Loaded {0} asset entries", m_assetRegistry.Count());
+		YUICY_INFO("[AssetManager] Loaded {0} asset entries", m_assetRegistry.Count());
 	}
 
 	void EditorAssetManager::ProcessDirectory(const std::filesystem::path& directoryPath)
@@ -349,43 +323,15 @@ namespace Yuicy {
 
 	void EditorAssetManager::WriteRegistryToFile()
 	{
-		// 按 UUID 排序以便于项目管理
-		struct AssetRegistryEntry
+		AssetRegistry existingAssets;
+		for (const auto& [handle, metadata] : m_assetRegistry)
 		{
-			std::string filePath;
-			AssetType type;
-		};
-
-		std::map<UUID, AssetRegistryEntry> sortedMap;
-		for (auto& [handle, metadata] : m_assetRegistry)
-		{
-			if (!std::filesystem::exists(GetFileSystemPath(metadata)))
-				continue;
-
-			std::string pathToSerialize = metadata.filePath.string();
-			std::replace(pathToSerialize.begin(), pathToSerialize.end(), '\\', '/');
-			sortedMap[metadata.handle] = { pathToSerialize, metadata.type };
+			if (std::filesystem::exists(GetFileSystemPath(metadata)))
+				existingAssets.Set(handle, metadata);
 		}
 
-		YUICY_CORE_INFO("[AssetManager] Serializing asset registry with {0} entries", sortedMap.size());
-
-		YAML::Emitter out;
-		out << YAML::BeginMap;
-
-		out << YAML::Key << "Assets" << YAML::BeginSeq;
-		for (auto& [handle, entry] : sortedMap)
-		{
-			out << YAML::BeginMap;
-			out << YAML::Key << "Handle" << YAML::Value << handle;
-			out << YAML::Key << "FilePath" << YAML::Value << entry.filePath;
-			out << YAML::Key << "Type" << YAML::Value << Utils::AssetTypeToString(entry.type);
-			out << YAML::EndMap;
-		}
-		out << YAML::EndSeq;
-		out << YAML::EndMap;
-
-		std::ofstream fout(m_specification.RegistryPath);
-		fout << out.c_str();
+		YUICY_INFO("[AssetManager] Serializing asset registry with {0} entries", existingAssets.Count());
+		AssetRegistrySerializer::Serialize(existingAssets, m_specification.RegistryPath);
 	}
 
 }

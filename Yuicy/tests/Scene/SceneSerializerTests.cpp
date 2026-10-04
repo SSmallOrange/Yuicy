@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Asset/RuntimeAssetManager.h"
 #include "Yuicy/Project/BuiltinAssetLoaders.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
@@ -211,11 +211,13 @@ TEST_SUITE("Scene")
 	TEST_CASE_FIXTURE(Test::SceneFixture, "SceneSerializer round-trip does not load registered animation textures")
 	{
 		const std::filesystem::path assetDirectory = m_TempDirectory.GetPath() / "Assets";
-		const std::filesystem::path texturePath = m_TempDirectory.WriteFile("Assets/Textures/Hero.png", "not a real image");
+		const std::filesystem::path registryPath = assetDirectory / "AssetRegistry.yregistry";
+		m_TempDirectory.WriteFile("Assets/Textures/Hero.png", "not a real image");
+		const AssetHandle textureHandle;
+		Test::WriteAssetRegistry(registryPath, { Test::MakeAssetMetadata(textureHandle, AssetType::Texture, "Textures/Hero.png") });
 		// 必须用内置 Loader：空注册表下纹理本来就加载不了，IsAssetLoaded 的检查会失去意义
-		const Ref<EditorAssetManager> assetManager = CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
-			assetDirectory, assetDirectory / "AssetRegistry.yregistry", CreateBuiltinAssetLoaders() });
-		const AssetHandle textureHandle = assetManager->ImportAsset(texturePath);
+		const Ref<RuntimeAssetManager> assetManager = CreateRef<RuntimeAssetManager>(RuntimeAssetManagerSpecification{
+			assetDirectory, registryPath, CreateBuiltinAssetLoaders() });
 		REQUIRE(assetManager->GetAssetType(textureHandle) == AssetType::Texture);
 
 		SceneContext context;

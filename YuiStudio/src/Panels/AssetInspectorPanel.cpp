@@ -4,8 +4,8 @@
 
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorAssetWorkflow.h"
+#include "../Editor/Asset/EditorAssetManager.h"
 
-#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Asset/AssetTypes.h"
 #include "Yuicy/Renderer/Texture.h"
 

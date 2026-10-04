@@ -50,7 +50,7 @@ Yuicy/
 │   │   │   ├── Events/         # 事件系统
 │   │   │   ├── Renderer/       # Renderer2D / Shader / Texture / Framebuffer / Camera
 │   │   │   ├── Scene/          # Scene / Entity / Components / SceneSerializer
-│   │   │   ├── Asset/          # 资源句柄、注册表、导入器、EditorAssetManager
+│   │   │   ├── Asset/          # 资源句柄、注册表与序列化、Loader、RuntimeAssetManager
 │   │   │   ├── Project/        # 项目配置与序列化
 │   │   │   ├── Physics/        # Box2D 封装、碰撞层
 │   │   │   ├── Scripting/      # Lua 引擎与绑定
@@ -64,7 +64,7 @@ Yuicy/
 ├── YuiStudio/                  # 场景编辑器（默认启动项目；除入口外编译为静态库 YuiStudioCore）
 │   ├── src/
 │   │   ├── EditorLayer.*       # 编辑器主 Layer
-│   │   ├── Editor/             # 编辑器服务：上下文、命令/撤销、场景控制、资源工作流、渲染管线
+│   │   ├── Editor/             # 编辑器服务：上下文、命令/撤销、场景控制、资源工作流与 EditorAssetManager、渲染管线
 │   │   └── Panels/             # ImGui 面板与组件编辑器
 │   ├── tests/                  # 编辑器单元测试 YuiStudioTests
 │   └── assets/                 # 编辑器资源（shaders / textures / fonts）

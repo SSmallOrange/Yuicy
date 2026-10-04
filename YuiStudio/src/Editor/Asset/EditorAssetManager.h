@@ -23,6 +23,7 @@ namespace Yuicy {
 	{
 	public:
 		// 读取注册表并扫描 AssetDirectory，AssetDirectory 必须已存在；析构时把注册表写回 RegistryPath
+		// 注册表无法解析时按空注册表处理，扫描到的文件都会分配新的 Handle
 		explicit EditorAssetManager(EditorAssetManagerSpecification specification);
 		~EditorAssetManager() override;
 

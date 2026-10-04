@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "Yuicy/Asset/AssetLoader.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Asset/RuntimeAssetManager.h"
 
 using namespace Yuicy;
 using Yuicy::Test::ApproxVec;
@@ -66,10 +66,8 @@ TEST_SUITE("Scene")
 	// Play / Simulate 只拿到副本，副本丢失上下文会导致纹理、排序层与 Lua 脚本全部失效
 	TEST_CASE_FIXTURE(Test::SceneFixture, "Scene::Copy keeps the scene context")
 	{
-		const std::filesystem::path assetDirectory = m_TempDirectory.GetPath() / "Assets";
-		std::filesystem::create_directories(assetDirectory);
-		const Ref<AssetManagerBase> assetManager = CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
-			assetDirectory, assetDirectory / "AssetRegistry.yregistry", CreateRef<AssetLoaderRegistry>() });
+		const Ref<AssetManagerBase> assetManager =
+			CreateRef<RuntimeAssetManager>(RuntimeAssetManagerSpecification{ {}, {}, CreateRef<AssetLoaderRegistry>() });
 
 		SceneContext context;
 		context.AssetManager = assetManager;

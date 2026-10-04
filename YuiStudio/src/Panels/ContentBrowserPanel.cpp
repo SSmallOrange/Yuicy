@@ -4,11 +4,11 @@
 
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorAssetWorkflow.h"
+#include "../Editor/Asset/EditorAssetManager.h"
 
 #include "../Utils/ContentBrowserDragDrop.h"
 
 #include "Yuicy/Asset/AssetExtensions.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Renderer/Texture.h"
 

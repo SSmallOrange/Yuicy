@@ -5,7 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Platform/OpenGL/OpenGLShader.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Asset/RuntimeAssetManager.h"
 #include "Yuicy/Debug/Instrumentor.h"
 #include "Yuicy/Project/BuiltinAssetLoaders.h"
 
@@ -18,9 +18,10 @@ Sandbox2D::Sandbox2D()
 
 void Sandbox2D::OnAttach()
 {
-	const std::filesystem::path assetDirectory = "assets";
-	m_AssetManager = Yuicy::CreateRef<Yuicy::EditorAssetManager>(Yuicy::EditorAssetManagerSpecification{
-		assetDirectory, assetDirectory / "AssetRegistry.yregistry", Yuicy::CreateBuiltinAssetLoaders() });
+	m_AssetManager = Yuicy::CreateRef<Yuicy::RuntimeAssetManager>(Yuicy::RuntimeAssetManagerSpecification{
+		"assets", /*RegistryPath=*/{}, Yuicy::CreateBuiltinAssetLoaders() });
+	const Yuicy::AssetHandle checkerboardHandle =
+		m_AssetManager->AddMemoryOnlyAsset(Yuicy::Texture2D::Create("assets/textures/Checkerboard.png"));
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
 	Yuicy::SceneContext sceneContext;
@@ -40,7 +41,7 @@ void Sandbox2D::OnAttach()
 	groundTransform.Scale = { 20.0f, 0.5f, 1.0f };
 
 	auto& groundSprite = groundEntity.AddComponent<Yuicy::SpriteRendererComponent>();
-	groundSprite.TextureHandle = m_AssetManager->GetAssetHandleFromFilePath(assetDirectory / "textures/Checkerboard.png");
+	groundSprite.TextureHandle = checkerboardHandle;
 	groundSprite.TilingFactor = 10.0f;
 	groundSprite.Color = { 0.4f, 0.4f, 0.4f, 1.0f };
 

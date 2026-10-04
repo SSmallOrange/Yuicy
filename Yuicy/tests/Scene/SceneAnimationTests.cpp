@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "Yuicy/Asset/AssetLoader.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Asset/RuntimeAssetManager.h"
 #include "Yuicy/Renderer/Texture.h"
 
 using namespace Yuicy;
@@ -26,10 +26,7 @@ namespace {
 	{
 		AnimatedSceneFixture()
 		{
-			const std::filesystem::path assetDirectory = TempDirectory.GetPath() / "Assets";
-			std::filesystem::create_directories(assetDirectory);
-			AssetManager = CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
-				assetDirectory, assetDirectory / "AssetRegistry.yregistry", CreateRef<AssetLoaderRegistry>() });
+			AssetManager = CreateRef<RuntimeAssetManager>(RuntimeAssetManagerSpecification{ {}, {}, CreateRef<AssetLoaderRegistry>() });
 
 			Texture = CreateRef<FakeTexture2D>();
 			TextureHandle = AssetManager->AddMemoryOnlyAsset(Texture);
@@ -50,8 +47,7 @@ namespace {
 
 		static AnimationClip& GetWalkClip(Entity entity) { return entity.GetComponent<AnimationComponent>().Clips.at("Walk"); }
 
-		Test::ScopedTempDirectory TempDirectory;
-		Ref<EditorAssetManager> AssetManager;
+		Ref<RuntimeAssetManager> AssetManager;
 		Ref<FakeTexture2D> Texture;
 		AssetHandle TextureHandle = 0;
 		Ref<Scene> EditorScene = CreateRef<Scene>();

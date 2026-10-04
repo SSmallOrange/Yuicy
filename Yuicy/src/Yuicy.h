@@ -38,7 +38,7 @@
 #include "Yuicy/Asset/Asset.h"
 #include "Yuicy/Asset/AssetManagerBase.h"
 #include "Yuicy/Asset/AssetTypes.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Asset/RuntimeAssetManager.h"
 
 // Project
 #include "Yuicy/Project/Project.h"

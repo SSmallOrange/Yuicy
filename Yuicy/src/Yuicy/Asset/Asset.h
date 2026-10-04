@@ -29,8 +29,6 @@ namespace Yuicy {
 		}
 
 	private:
-		friend class EditorAssetManager;
-
 		bool IsValid() const { return ((Flags & (uint16_t)AssetFlag::Missing) | (Flags & (uint16_t)AssetFlag::Invalid)) == 0; }
 
 		bool IsFlagSet(AssetFlag flag) const { return (uint16_t)flag & Flags; }

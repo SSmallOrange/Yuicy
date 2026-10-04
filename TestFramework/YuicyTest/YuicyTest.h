@@ -4,6 +4,7 @@
 #include <doctest/doctest.h>
 
 #include "YuicyTest/AssertCapture.h"
+#include "YuicyTest/AssetTestUtils.h"
 #include "YuicyTest/GlmSupport.h"
 #include "YuicyTest/SceneFixture.h"
 #include "YuicyTest/TempDirectory.h"

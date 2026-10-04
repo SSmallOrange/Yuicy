@@ -21,8 +21,6 @@ YuiStudio/assert/
 *.log
 *.filters
 /assets
-# Sandbox 内存项目运行时生成的资产注册表
-Sandbox/assets/AssetRegistry.yregistry
 # 运行时生成：ImGui 窗口布局（默认布局见 imgui.default.ini）、Instrumentor 输出的 Chrome Tracing 文件
 imgui.ini
 Profiles-*.json

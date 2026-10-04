@@ -4,8 +4,8 @@
 #include "EditorContext.h"
 #include "EditorDirtyTracker.h"
 #include "EditorProjectSession.h"
+#include "Asset/EditorAssetManager.h"
 
-#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Project/ProjectSerializer.h"

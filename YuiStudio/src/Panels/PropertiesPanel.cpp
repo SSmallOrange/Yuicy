@@ -3,12 +3,12 @@
 #include "PropertiesPanel.h"
 
 #include "Yuicy/Scene/Components.h"
-#include "Yuicy/Asset/EditorAssetManager.h"
 
 #include "../Editor/EditorCommandHistory.h"
 #include "../Editor/EditorContext.h"
 #include "../Editor/EditorDirtyTracker.h"
 #include "../Editor/EditorSelectionContext.h"
+#include "../Editor/Asset/EditorAssetManager.h"
 #include "../Editor/Commands/AddComponentCommand.h"
 #include "../Editor/Commands/RemoveComponentCommand.h"
 

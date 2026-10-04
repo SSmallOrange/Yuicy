@@ -1,8 +1,8 @@
 #include "pch.h"
 
 #include "EditorProjectSession.h"
+#include "Asset/EditorAssetManager.h"
 
-#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Project/BuiltinAssetLoaders.h"
 #include "Yuicy/Project/ProjectSceneContext.h"

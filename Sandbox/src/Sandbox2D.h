@@ -21,7 +21,7 @@ private:
 	Yuicy::ParticleProps m_ParticleProps;
 
 	// SceneContext 只持有弱引用，资源管理器的生命周期由这里保证
-	Yuicy::Ref<Yuicy::EditorAssetManager> m_AssetManager;
+	Yuicy::Ref<Yuicy::RuntimeAssetManager> m_AssetManager;
 	Yuicy::Ref<Yuicy::Scene> m_ActiveScene;
 
 	glm::vec2 m_ViewportSize = { 1280.0f, 720.0f };
