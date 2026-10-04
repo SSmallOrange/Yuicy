@@ -264,7 +264,7 @@ YuiStudio/tests/           # YuiStudioTests：编辑器单元测试（Command、
 YuiStudio/assets/          # 编辑器资源（shaders、textures、fonts）
 YuiStudio/imgui.default.ini  # 默认窗口布局（Sandbox/ 下同样有一份）；运行时读写的 imgui.ini 被 git 忽略
 
-TestFramework/YuicyTest/   # YuicyTestFramework：各测试工程共用的测试 main（日志初始化、断言转用例失败）、夹具（临时目录 / 活动项目 / 场景 / 断言捕获）、glm 向量的近似比较与打印
+TestFramework/YuicyTest/   # YuicyTestFramework：各测试工程共用的测试 main（日志初始化、断言转用例失败）、夹具（临时目录 / 场景 / 断言捕获）、glm 向量的近似比较与打印
 
 scripts/check.py               # 一键自检（格式 / 配置 / 构建 / 测试），仓库脚本统一用 Python 编写以兼容各平台
 CMakeLists.txt                 # 根构建脚本：全局设置（C++20、静态 CRT、输出目录）、YUICY_BUILD_TESTS / YUICY_WARNINGS_AS_ERRORS 选项，并引入子目录
@@ -338,14 +338,14 @@ Yuicy/CMakeLists.txt、YuiStudio/CMakeLists.txt、Sandbox/CMakeLists.txt、TestF
 - [ ] 新文件放进对应目录即可，无需改 CMake（`CONFIGURE_DEPENDS` 通配）；首行 `#include "pch.h"`，测试工程的 `pch.h` 已包含 `YuicyTest/YuicyTest.h`。
 - [ ] 用例放进 `TEST_SUITE("<模块>")`，现有：`Scene` / `Asset` / `Project` / `Editor`。`TEST_SUITE` 名会成为 CTest 标签（`ctest -L Scene`）。
 - [ ] 用例名用英文短句描述被验证的行为，它同时是 CTest 测试名与 `--test-case=` 的过滤参数；不要含逗号（`--test-case=` 用逗号分隔多个过滤条件）。
-- [ ] 需要场景时用 `TEST_CASE_FIXTURE(Test::SceneFixture, ...)`；只需要活动项目或临时文件时用 `Test::ScopedActiveProject` / `Test::ScopedTempDirectory`。
+- [ ] 需要场景时用 `TEST_CASE_FIXTURE(Test::SceneFixture, ...)`（场景使用默认上下文，不加载资源）；只需要临时文件时用 `Test::ScopedTempDirectory`。
+      需要资源时在临时目录上直接构造 `EditorAssetManager`，需要场景上下文时调用 `Scene::SetContext`。
       **不要**把文件写进源码树或工作目录，也不要依赖工作目录下的资源。
 - [ ] 浮点向量比较用 `CHECK(v == Test::ApproxVec(expected))`，标量用 `doctest::Approx`，失败时会打印两侧的值。
 - [ ] 只读测试数据放 `Yuicy/tests/data/`，路径以 `YUICY_TEST_DATA_DIR` 开头拼接。
 - [ ] **不能创建窗口与 GL 上下文**：不调用 `Renderer2D` / `Texture2D::Create` / `Shader::Create`。
       组件里的 `AssetHandle` 只填未在资产注册表中登记的值，这样反序列化 `AnimationComponent` 时不会加载纹理，`Frames` 中对应元素为 `nullptr`。
       需要 GPU 时等 Headless 后端（`AI_INFRA_ROADMAP.md` 2.3）。
-- [ ] 活动项目是 `Project` 的静态成员，用例之间会互相影响：只通过 `SceneFixture` / `ScopedActiveProject` 设置，不要直接调用 `Project::SetActive`；两者都不能嵌套使用。
 - [ ] 发现被测代码有 Bug 但不在本次任务内修复时，写一个复现用例并加 `* doctest::should_fail()`，上方一行注释说明问题，
       再加 `// TODO: 删除 should_fail（<修复条件>）`。修复后用例中的断言全部通过，doctest 会把它判为失败，提醒删除 `should_fail`。
 - [ ] 新增一个模块的测试工程：在 `<Module>/tests/CMakeLists.txt` 调用 `yuicy_add_test(<Module>Tests SOURCE_DIR ... LINK <被测库>)`，

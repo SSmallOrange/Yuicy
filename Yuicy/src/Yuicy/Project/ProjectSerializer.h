@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Yuicy/Core/Base.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Core/FileDialogs.h"
 
@@ -14,7 +15,8 @@ namespace Yuicy {
 	public:
 		ProjectSerializer(const Ref<Project>& project);
 
-		void Serialize(const std::filesystem::path& filepath);
+		// 写入失败时记录错误并返回 false
+		bool Serialize(const std::filesystem::path& filepath);
 		bool Deserialize(const std::filesystem::path& filepath);
 
 	public:

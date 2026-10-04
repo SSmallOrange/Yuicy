@@ -5,6 +5,7 @@
 #include "Yuicy/Scene/Scene.h"
 #include "Yuicy/Scene/Entity.h"
 
+#include "EditorProjectSession.h"
 #include "EditorSelectionContext.h"
 #include "EditorViewportSettings.h"
 #include "EditorSettings.h"
@@ -37,7 +38,6 @@ namespace Yuicy {
 	struct EditorDocumentState
 	{
 		std::filesystem::path currentScenePath;
-		std::filesystem::path currentProjectPath;
 
 		bool sceneDirty   = false;	// 是否脏数据
 		bool projectDirty = false;
@@ -68,6 +68,9 @@ namespace Yuicy {
 	// 编辑器全局共享上下文，所有面板和服务从此处读写状态
  	struct EditorContext
 	{
+		// nullptr 表示没有打开项目
+		Scope<EditorProjectSession> project;
+
 		// 场景
 		Ref<Scene> editorScene;
 		Ref<Scene> runtimeScene;
@@ -83,6 +86,12 @@ namespace Yuicy {
 
 		// 实体编辑器元数据
 		std::unordered_map<UUID, EditorEntityMetadata> entityMetadata;
+
+		// 没有打开项目时返回 nullptr；切换项目后指针失效，不要跨帧保存
+		EditorAssetManager* GetAssetManager() const
+		{
+			return project ? project->GetAssetManager().get() : nullptr;
+		}
 
 		bool IsEntityLocked(UUID uuid) const
 		{

@@ -16,6 +16,8 @@ namespace Yuicy {
 		void PushOverlay(Layer* overlay);	// 覆盖层
 		void PopLayer(Layer* layer);
 		void PopOverlay(Layer* overlay);
+		// 按遍历顺序（普通 Layer 在前，Overlay 在后）对每个 Layer 调用 OnDetach 后 delete
+		void Clear();
 
 		std::vector<Layer*>::iterator begin() { return _Layers.begin(); }
 		std::vector<Layer*>::iterator end() { return _Layers.end(); }

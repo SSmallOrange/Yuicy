@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "ColliderEditor.h"
+#include "../../Editor/EditorContext.h"
 
 #include "Yuicy/Project/Project.h"
 
@@ -65,10 +66,10 @@ namespace Yuicy {
 
 	void ColliderEditor::DrawCollisionFilter(uint16_t& categoryBits, uint16_t& maskBits, EditorDirtyTracker* dt)
 	{
-		auto project = Project::GetActive();
+		const EditorProjectSession* project = m_editorContext ? m_editorContext->project.get() : nullptr;
 		if (!project) return;
 
-		const auto& layerConfig = project->GetConfig().CollisionLayers;
+		const auto& layerConfig = project->GetProject().GetConfig().CollisionLayers;
 
 		// Category：单选下拉框
 		int currentLayer = GetLowestBitIndex(categoryBits);

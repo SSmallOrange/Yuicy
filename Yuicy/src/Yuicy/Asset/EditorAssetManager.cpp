@@ -2,6 +2,7 @@
 #include "EditorAssetManager.h"
 
 #include "Yuicy/Asset/AssetExtensions.h"
+#include "Yuicy/Asset/AssetLoader.h"
 
 #include <map>
 #include <ranges>

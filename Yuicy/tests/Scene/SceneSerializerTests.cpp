@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"
-#include "Yuicy/Project/Project.h"
+#include "Yuicy/Project/BuiltinAssetLoaders.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
 using namespace Yuicy;
@@ -210,11 +210,17 @@ TEST_SUITE("Scene")
 
 	TEST_CASE_FIXTURE(Test::SceneFixture, "SceneSerializer round-trip does not load registered animation textures")
 	{
-		const Ref<EditorAssetManager> assetManager = Project::GetEditorAssetManager();
-		REQUIRE(assetManager);
+		const std::filesystem::path assetDirectory = m_TempDirectory.GetPath() / "Assets";
 		const std::filesystem::path texturePath = m_TempDirectory.WriteFile("Assets/Textures/Hero.png", "not a real image");
+		// 必须用内置 Loader：空注册表下纹理本来就加载不了，IsAssetLoaded 的检查会失去意义
+		const Ref<EditorAssetManager> assetManager = CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
+			assetDirectory, assetDirectory / "AssetRegistry.yregistry", CreateBuiltinAssetLoaders() });
 		const AssetHandle textureHandle = assetManager->ImportAsset(texturePath);
 		REQUIRE(assetManager->GetAssetType(textureHandle) == AssetType::Texture);
+
+		SceneContext context;
+		context.AssetManager = assetManager;
+		m_Scene->SetContext(context);
 
 		Entity source = m_Scene->CreateEntity("Hero");
 		AnimationClip walk("Walk");

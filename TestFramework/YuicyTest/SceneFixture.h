@@ -1,6 +1,5 @@
 #pragma once
 
-#include "YuicyTest/ScopedProject.h"
 #include "YuicyTest/TempDirectory.h"
 
 #include "Yuicy/Core/Base.h"
@@ -8,8 +7,7 @@
 
 namespace Yuicy::Test {
 
-	// 场景类用例的公共夹具：临时目录 + 活动项目 + 一个空场景，配合 TEST_CASE_FIXTURE 使用。
-	// 成员按声明的逆序析构：先释放场景，再关闭项目（写回资产注册表），最后删除临时目录，不要调换顺序。
+	// 场景类用例的公共夹具：临时目录 + 一个使用默认上下文（不加载资源）的空场景，配合 TEST_CASE_FIXTURE 使用
 	class SceneFixture
 	{
 	protected:
@@ -20,7 +18,6 @@ namespace Yuicy::Test {
 
 	protected:
 		ScopedTempDirectory m_TempDirectory;
-		ScopedActiveProject m_Project;
 		Ref<Scene> m_Scene;
 	};
 

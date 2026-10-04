@@ -42,6 +42,8 @@
 
 // Project
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Project/BuiltinAssetLoaders.h"
+#include "Yuicy/Project/ProjectSceneContext.h"
 #include "Yuicy/Project/ProjectSerializer.h"
 
 // Scripting

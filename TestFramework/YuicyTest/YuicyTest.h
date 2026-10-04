@@ -6,5 +6,4 @@
 #include "YuicyTest/AssertCapture.h"
 #include "YuicyTest/GlmSupport.h"
 #include "YuicyTest/SceneFixture.h"
-#include "YuicyTest/ScopedProject.h"
 #include "YuicyTest/TempDirectory.h"

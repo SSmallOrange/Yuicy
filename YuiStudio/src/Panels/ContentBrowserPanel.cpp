@@ -97,8 +97,7 @@ namespace Yuicy {
 	{
 		ImGui::Begin("Content Browser");
 
-		Ref<Project> activeProject = Project::GetActive();
-		if (!activeProject)
+		if (!m_context || !m_context->project)
 		{
 			ImGui::TextDisabled("No active project.");
 			ImGui::TextWrapped("Open or create a project to browse the asset directory.");
@@ -106,7 +105,7 @@ namespace Yuicy {
 			return;
 		}
 
-		const std::filesystem::path activeAssetDirectory = activeProject->GetAssetDirectory().lexically_normal();
+		const std::filesystem::path activeAssetDirectory = m_context->project->GetProject().GetAssetDirectory().lexically_normal();
 		if (m_baseDirectory.empty() || m_baseDirectory != activeAssetDirectory)
 		{
 			m_baseDirectory = activeAssetDirectory;
@@ -240,8 +239,7 @@ namespace Yuicy {
 
 				if (!isDirectory && m_context)
 				{
-					auto assetManager = Project::GetEditorAssetManager();
-					if (assetManager)
+					if (EditorAssetManager* assetManager = m_context->GetAssetManager())
 					{
 						AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
 						m_context->selection.selectedAsset = handle;
@@ -301,8 +299,7 @@ namespace Yuicy {
 
 					if (ImGui::MenuItem("Reimport"))
 					{
-						auto assetManager = Project::GetEditorAssetManager();
-						if (assetManager)
+						if (EditorAssetManager* assetManager = m_context->GetAssetManager())
 						{
 							AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
 							if (handle != 0)
@@ -334,8 +331,7 @@ namespace Yuicy {
 
 				if (!isDirectory && m_context)
 				{
-					auto assetManager = Project::GetEditorAssetManager();
-					if (assetManager)
+					if (EditorAssetManager* assetManager = m_context->GetAssetManager())
 					{
 						AssetHandle handle = assetManager->GetAssetHandleFromFilePath(entryPath);
 						m_context->selection.selectedAsset = handle;
@@ -500,8 +496,7 @@ namespace Yuicy {
 
 	void ContentBrowserPanel::DrawNavigationBar()
 	{
-		Ref<Project> activeProject = Project::GetActive();
-		if (!activeProject)
+		if (!m_context || !m_context->project)
 			return;
 
 		// Row 1: Breadcrumbs
@@ -567,8 +562,7 @@ namespace Yuicy {
 
 	void ContentBrowserPanel::DrawBreadcrumbs()
 	{
-		Ref<Project> activeProject = Project::GetActive();
-		if (!activeProject)
+		if (!m_context || !m_context->project)
 			return;
 
 		const std::filesystem::path normalizedBase = m_baseDirectory.lexically_normal();
@@ -579,7 +573,7 @@ namespace Yuicy {
 		std::vector<std::pair<std::string, std::filesystem::path>> segments;
 
 		// 根段（资源目录名）
-		const std::string rootLabel = activeProject->GetConfig().AssetDirectory;
+		const std::string rootLabel = m_context->project->GetProject().GetConfig().AssetDirectory;
 		segments.emplace_back(rootLabel, normalizedBase);
 
 		// Sub-segments

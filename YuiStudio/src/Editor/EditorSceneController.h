@@ -31,6 +31,7 @@ namespace Yuicy {
 		// 项目操作
 		void NewProject();
 		void OpenProjectDialog();
+		// 不检查场景脏标记，调用方负责先完成未保存确认；打开失败时保持当前项目与场景不变
 		void OpenProject(const std::filesystem::path& filepath);
 		void SaveProject();
 
@@ -54,6 +55,14 @@ namespace Yuicy {
 
 		// 新场景交给 EditorContext 之前、以及切换项目之后都必须调用，否则场景拿不到资源与排序层配置
 		void AttachSceneContext(const Ref<Scene>& scene) const;
+
+		// 返回已设置当前项目上下文的新场景，内含默认相机与示例 Sprite
+		Ref<Scene> CreateDefaultScene() const;
+		// 设为编辑场景并清空实体选择、悬停实体与场景脏标记；scenePath 为空表示未保存过的场景
+		void SetEditorScene(const Ref<Scene>& scene, const std::filesystem::path& scenePath);
+
+		// 须在构造新会话前调用：新会话从磁盘读取注册表，重新打开同一项目时才能拿到当前会话导入的资源
+		void WriteCurrentAssetRegistry() const;
 
 		// 未保存提示：检查 dirty 并触发对话框
 		enum class PendingAction { None, NewScene, OpenScene, OpenProject, NewProject };

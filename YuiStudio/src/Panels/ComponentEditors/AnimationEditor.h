@@ -8,6 +8,7 @@
 namespace Yuicy {
 
 	struct AnimationComponent;
+	struct EditorContext;
 	class EditorDirtyTracker;
 	class Texture2D;
 
@@ -16,10 +17,15 @@ namespace Yuicy {
 	public:
 		AnimationEditor() = default;
 
+		void SetEditorContext(const EditorContext* context) { m_editorContext = context; }
+
+		// 没有打开项目时不能添加帧，预览不显示纹理
 		void Draw(AnimationComponent& component, EditorDirtyTracker* dirtyTracker);
 
 	private:
 		void EnsureIconsLoaded();
+
+		const EditorContext* m_editorContext = nullptr;
 
 		// Animation preview
 		bool m_previewPlaying = false;

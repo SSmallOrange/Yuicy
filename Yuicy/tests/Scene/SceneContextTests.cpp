@@ -1,12 +1,25 @@
 #include "pch.h"
 
+#include "Yuicy/Asset/AssetLoader.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/BuiltinAssetLoaders.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Project/ProjectSceneContext.h"
 #include "Yuicy/Scripting/LuaScriptAsset.h"
 #include "Yuicy/Scripting/LuaScriptEngine.h"
 
 using namespace Yuicy;
+
+namespace {
+
+	// assetDirectory 必须已存在
+	Ref<EditorAssetManager> CreateAssetManager(const std::filesystem::path& assetDirectory, Ref<const AssetLoaderRegistry> loaders)
+	{
+		return CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
+			assetDirectory, assetDirectory / "AssetRegistry.yregistry", std::move(loaders) });
+	}
+
+}
 
 TEST_SUITE("Scene")
 {
@@ -17,13 +30,12 @@ TEST_SUITE("Scene")
 		const std::filesystem::path scriptFile = tempDirectory.WriteFile("Assets/Scripts/Player.lua",
 			"return { Created = false, OnCreate = function(self) self.Created = true end }");
 
-		Test::ScopedActiveProject project(tempDirectory.GetPath());
-		const Ref<EditorAssetManager> assetManager = Project::GetEditorAssetManager();
+		const Ref<EditorAssetManager> assetManager = CreateAssetManager(tempDirectory.GetPath() / "Assets", CreateBuiltinAssetLoaders());
 		const AssetHandle scriptHandle = assetManager->GetAssetHandleFromFilePath(scriptFile);
 		REQUIRE((uint64_t)scriptHandle != 0);
 
 		Ref<Scene> scene = CreateRef<Scene>();
-		scene->SetContext(MakeSceneContext(project.GetProject()->GetConfig(), assetManager));
+		scene->SetContext(MakeSceneContext(ProjectConfig{}, assetManager));
 		Entity entity = scene->CreateEntity("Player");
 		entity.AddComponent<LuaScriptComponent>().ScriptHandle = scriptHandle;
 
@@ -60,10 +72,13 @@ TEST_SUITE("Scene")
 	TEST_CASE("Scene context does not keep the asset manager alive")
 	{
 		Test::ScopedTempDirectory tempDirectory;
+		const std::filesystem::path assetDirectory = tempDirectory.GetPath() / "Assets";
+		std::filesystem::create_directories(assetDirectory);
+
 		Ref<Scene> scene = CreateRef<Scene>();
 		{
-			Test::ScopedActiveProject project(tempDirectory.GetPath());
-			scene->SetContext(MakeSceneContext(project.GetProject()->GetConfig(), Project::GetEditorAssetManager()));
+			const Ref<EditorAssetManager> assetManager = CreateAssetManager(assetDirectory, CreateRef<AssetLoaderRegistry>());
+			scene->SetContext(MakeSceneContext(ProjectConfig{}, assetManager));
 			CHECK_FALSE(scene->GetContext().AssetManager.expired());
 		}
 

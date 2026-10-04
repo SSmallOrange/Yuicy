@@ -60,6 +60,7 @@ namespace Yuicy {
 		m_sceneHierarchyPanel.Init();
 		
 		m_propertiesPanel.SetSelectionContext(&m_editorContext.selection);
+		m_propertiesPanel.SetEditorContext(&m_editorContext);
 		m_propertiesPanel.SetDirtyTracker(&m_dirtyTracker);
 		m_propertiesPanel.SetCommandHistory(&m_commandHistory);
 
@@ -326,9 +327,9 @@ namespace Yuicy {
 		// 居中标题文字（包含未保存标记）
 		{
 			std::string title = "YuiStudio";
-			if (auto activeProject = Project::GetActive())
+			if (m_editorContext.project)
 			{
-				const std::string& projectName = activeProject->GetConfig().Name;
+				const std::string& projectName = m_editorContext.project->GetProject().GetConfig().Name;
 				if (!projectName.empty())
 					title += " - " + projectName;
 			}

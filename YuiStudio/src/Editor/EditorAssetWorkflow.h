@@ -6,6 +6,7 @@
 namespace Yuicy {
 
 	struct EditorContext;
+	class EditorAssetManager;
 	class EditorSceneController;
 
 	// 编辑器资源工作流服务
@@ -34,6 +35,10 @@ namespace Yuicy {
 		// 系统集成
 		void RevealInExplorer(const std::filesystem::path& path);
 		void OpenFileExternal(const std::filesystem::path& filepath);
+
+	private:
+		// 没有打开项目时返回 nullptr
+		EditorAssetManager* GetAssetManager() const;
 
 	private:
 		EditorContext* m_context = nullptr;

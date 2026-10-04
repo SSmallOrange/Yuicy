@@ -5,7 +5,6 @@
 #include "EditorSceneController.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"
-#include "Yuicy/Project/Project.h"
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/PlatformUtils.h"
 
@@ -15,12 +14,17 @@
 
 namespace Yuicy {
 
+	EditorAssetManager* EditorAssetWorkflow::GetAssetManager() const
+	{
+		return m_context ? m_context->GetAssetManager() : nullptr;
+	}
+
 	void EditorAssetWorkflow::OpenAsset(const std::filesystem::path& filepath)
 	{
 		if (filepath.empty())
 			return;
 
-		auto assetManager = Project::GetEditorAssetManager();
+		EditorAssetManager* assetManager = GetAssetManager();
 		if (!assetManager)
 			return;
 
@@ -88,8 +92,7 @@ namespace Yuicy {
 		file << "Entities:\n";
 		file.close();
 
-		auto assetManager = Project::GetEditorAssetManager();
-		if (assetManager)
+		if (EditorAssetManager* assetManager = GetAssetManager())
 			assetManager->ImportAsset(filepath);
 
 		YUICY_CORE_INFO("[AssetWorkflow] Created scene: {}", filepath.string());
@@ -124,8 +127,7 @@ namespace Yuicy {
 		file << "return " << filename << "\n";
 		file.close();
 
-		auto assetManager = Project::GetEditorAssetManager();
-		if (assetManager)
+		if (EditorAssetManager* assetManager = GetAssetManager())
 			assetManager->ImportAsset(filepath);
 
 		YUICY_CORE_INFO("[AssetWorkflow] Created Lua script: {}", filepath.string());
@@ -146,8 +148,7 @@ namespace Yuicy {
 
 		if (std::filesystem::is_regular_file(path, ec))
 		{
-			auto assetManager = Project::GetEditorAssetManager();
-			if (assetManager)
+			if (EditorAssetManager* assetManager = GetAssetManager())
 			{
 				AssetHandle handle = assetManager->GetAssetHandleFromFilePath(path);
 				if (handle != 0)
@@ -189,8 +190,7 @@ namespace Yuicy {
 
 		if (std::filesystem::is_regular_file(newPath, ec))
 		{
-			auto assetManager = Project::GetEditorAssetManager();
-			if (assetManager)
+			if (EditorAssetManager* assetManager = GetAssetManager())
 			{
 				AssetHandle oldHandle = assetManager->GetAssetHandleFromFilePath(oldPath);
 				if (oldHandle != 0)

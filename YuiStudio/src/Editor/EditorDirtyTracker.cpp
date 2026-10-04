@@ -51,13 +51,16 @@ namespace Yuicy {
 		if (!IsSceneDirty())
 			return;
 
-		auto project = Project::GetActive();
-		if (!project || !project->GetConfig().EnableAutoSave)
+		if (!m_context->project)
+			return;
+
+		const ProjectConfig& config = m_context->project->GetProject().GetConfig();
+		if (!config.EnableAutoSave)
 			return;
 
 		m_autoSaveTimer += deltaTime;
 
-		float interval = static_cast<float>(project->GetConfig().AutoSaveIntervalSeconds);
+		float interval = static_cast<float>(config.AutoSaveIntervalSeconds);
 		if (m_autoSaveTimer < interval)
 			return;
 

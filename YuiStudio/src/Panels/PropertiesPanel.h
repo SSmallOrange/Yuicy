@@ -13,6 +13,8 @@ namespace Yuicy {
 
 	class Scene;
 	class Entity;
+	struct EditorContext;
+	struct LuaScriptComponent;
 	struct EditorSelectionContext;
 	class EditorDirtyTracker;
 	class EditorCommandHistory;
@@ -26,6 +28,8 @@ namespace Yuicy {
 
 		void SetContext(const Ref<Scene>& scene) { m_context = scene; }
 		void SetSelectionContext(EditorSelectionContext* selectionContext) { m_editorSelection = selectionContext; }
+		// 一并设置给各 ComponentEditor
+		void SetEditorContext(EditorContext* context);
 		void SetDirtyTracker(EditorDirtyTracker* tracker) { m_dirtyTracker = tracker; }
 		void SetCommandHistory(EditorCommandHistory* history) { m_commandHistory = history; }
 
@@ -35,6 +39,7 @@ namespace Yuicy {
 		Entity GetSelectedEntity() const;
 
 		void DrawComponents(Entity entity);
+		void DrawLuaScriptComponent(LuaScriptComponent& component);
 
 		void DrawVec3Control(const std::string& label, glm::vec3& values,
 			float resetValue = 0.0f, float columnWidth = 100.0f);
@@ -44,6 +49,7 @@ namespace Yuicy {
 
 	private:
 		Ref<Scene> m_context;
+		EditorContext* m_editorContext = nullptr;
 		EditorSelectionContext* m_editorSelection = nullptr;
 		EditorDirtyTracker* m_dirtyTracker = nullptr;
 		EditorCommandHistory* m_commandHistory = nullptr;

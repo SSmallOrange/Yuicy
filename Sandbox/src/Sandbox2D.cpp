@@ -5,8 +5,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Platform/OpenGL/OpenGLShader.h"
+#include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Debug/Instrumentor.h"
-#include "Yuicy/Project/ProjectSceneContext.h"
+#include "Yuicy/Project/BuiltinAssetLoaders.h"
 
 Sandbox2D::Sandbox2D()
 	: Layer("Sandbox2D"), m_CameraController(1280.0f / 720.0f, true), m_ParticleSystem(2000)
@@ -17,14 +18,14 @@ Sandbox2D::Sandbox2D()
 
 void Sandbox2D::OnAttach()
 {
-	auto project = Yuicy::CreateRef<Yuicy::Project>();
-	project->GetConfig().Name = "Sandbox";
-	project->GetConfig().ProjectDirectory = ".";
-	project->GetConfig().AssetDirectory = "assets";
-	Yuicy::Project::SetActive(project);
+	const std::filesystem::path assetDirectory = "assets";
+	m_AssetManager = Yuicy::CreateRef<Yuicy::EditorAssetManager>(Yuicy::EditorAssetManagerSpecification{
+		assetDirectory, assetDirectory / "AssetRegistry.yregistry", Yuicy::CreateBuiltinAssetLoaders() });
 
 	m_ActiveScene = Yuicy::CreateRef<Yuicy::Scene>();
-	m_ActiveScene->SetContext(Yuicy::MakeSceneContext(project->GetConfig(), Yuicy::Project::GetEditorAssetManager()));
+	Yuicy::SceneContext sceneContext;
+	sceneContext.AssetManager = m_AssetManager;
+	m_ActiveScene->SetContext(sceneContext);
 
 	// ==================== 创建基本测试实体 ====================
 
@@ -39,7 +40,7 @@ void Sandbox2D::OnAttach()
 	groundTransform.Scale = { 20.0f, 0.5f, 1.0f };
 
 	auto& groundSprite = groundEntity.AddComponent<Yuicy::SpriteRendererComponent>();
-	groundSprite.TextureHandle = Yuicy::Project::GetEditorAssetManager()->GetAssetHandleFromFilePath("assets/textures/Checkerboard.png");
+	groundSprite.TextureHandle = m_AssetManager->GetAssetHandleFromFilePath(assetDirectory / "textures/Checkerboard.png");
 	groundSprite.TilingFactor = 10.0f;
 	groundSprite.Color = { 0.4f, 0.4f, 0.4f, 1.0f };
 

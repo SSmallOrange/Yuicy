@@ -1,12 +1,12 @@
 #include "pch.h"
 
 #include "AnimationEditor.h"
+#include "../../Editor/EditorContext.h"
 #include "../../Editor/EditorDirtyTracker.h"
 #include "../../Utils/ContentBrowserDragDrop.h"
 #include "../../Utils/EditorIconUtils.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"
-#include "Yuicy/Project/Project.h"
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Renderer/Texture.h"
 
@@ -15,10 +15,9 @@
 
 namespace Yuicy {
 
-	// 未打开项目或纹理加载失败时返回 nullptr
-	static Ref<Texture2D> GetTextureAsset(AssetHandle handle)
+	// assetManager 为 nullptr 或纹理加载失败时返回 nullptr
+	static Ref<Texture2D> GetTextureAsset(EditorAssetManager* assetManager, AssetHandle handle)
 	{
-		auto assetManager = Project::GetEditorAssetManager();
 		if (handle == 0 || !assetManager)
 			return nullptr;
 		return assetManager->GetAssetAs<Texture2D>(handle);
@@ -30,10 +29,9 @@ namespace Yuicy {
 	}
 
 	// 获取纹理显示名称
-	static std::string GetTextureName(AssetHandle handle)
+	static std::string GetTextureName(EditorAssetManager* assetManager, AssetHandle handle)
 	{
 		if (handle == 0) return "(empty)";
-		auto assetManager = Project::GetEditorAssetManager();
 		if (!assetManager) return "(unknown)";
 		const auto& metadata = assetManager->GetMetadata(handle);
 		return metadata.IsValid() ? metadata.filePath.filename().string() : "(missing)";
@@ -54,6 +52,8 @@ namespace Yuicy {
 	void AnimationEditor::Draw(AnimationComponent& component, EditorDirtyTracker* dt)
 	{
 		EnsureIconsLoaded();
+
+		EditorAssetManager* assetManager = m_editorContext ? m_editorContext->GetAssetManager() : nullptr;
 
 		const float smallIconSize = 14.0f;
 
@@ -165,7 +165,7 @@ namespace Yuicy {
 					ImGui::PushID(i);
 					auto& frameDef = clip.FrameDefinitions[i];
 
-					std::string texName = GetTextureName(frameDef.TextureHandle);
+					std::string texName = GetTextureName(assetManager, frameDef.TextureHandle);
 					std::string frameHeader = "Frame " + std::to_string(i) + ": " + texName;
 
 					bool frameOpen = ImGui::TreeNode("##frame", "%s", frameHeader.c_str());
@@ -237,7 +237,6 @@ namespace Yuicy {
 					{
 						std::filesystem::path filepath = *droppedPath;
 
-						auto assetManager = Project::GetEditorAssetManager();
 						if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::Texture)
 						{
 							AssetHandle handle = assetManager->ImportAsset(filepath);
@@ -285,7 +284,7 @@ namespace Yuicy {
 				ImGui::Separator();
 
 				// Spritesheet texture slot
-				std::string sheetName = GetTextureName(m_sheetTextureHandle);
+				std::string sheetName = GetTextureName(assetManager, m_sheetTextureHandle);
 				ImGui::Text("Texture: %s", sheetName.c_str());
 
 				ImGui::Button("Drop Spritesheet Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
@@ -295,7 +294,6 @@ namespace Yuicy {
 					{
 						std::filesystem::path filepath = *droppedPath;
 
-						auto assetManager = Project::GetEditorAssetManager();
 						if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::Texture)
 						{
 							AssetHandle handle = assetManager->ImportAsset(filepath);
@@ -333,7 +331,7 @@ namespace Yuicy {
 				// Sheet info
 				if (m_sheetTextureHandle != 0)
 				{
-					Ref<Texture2D> sheetTex = GetTextureAsset(m_sheetTextureHandle);
+					Ref<Texture2D> sheetTex = GetTextureAsset(assetManager, m_sheetTextureHandle);
 					if (sheetTex)
 					{
 						ImGui::Separator();
@@ -354,7 +352,7 @@ namespace Yuicy {
 				if (ImGui::Button("Generate", ImVec2(120, 0)))
 				{
 					auto& targetClip = component.Clips[m_sheetTargetClip];
-					Ref<Texture2D> sheetTex = GetTextureAsset(m_sheetTextureHandle);
+					Ref<Texture2D> sheetTex = GetTextureAsset(assetManager, m_sheetTextureHandle);
 					if (sheetTex)
 					{
 						float texW = (float)sheetTex->GetWidth();
@@ -462,7 +460,7 @@ namespace Yuicy {
 					m_previewFrame = 0;
 
 				const auto& frameDef = previewClip.FrameDefinitions[m_previewFrame];
-				Ref<Texture2D> frameTexture = GetTextureAsset(frameDef.TextureHandle);
+				Ref<Texture2D> frameTexture = GetTextureAsset(assetManager, frameDef.TextureHandle);
 
 				if (frameTexture)
 				{

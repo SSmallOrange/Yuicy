@@ -7,8 +7,7 @@
 namespace Yuicy::Test {
 
 	SceneFixture::SceneFixture()
-		: m_Project(m_TempDirectory.GetPath()),
-		  m_Scene(CreateRef<Scene>())
+		: m_Scene(CreateRef<Scene>())
 	{
 	}
 

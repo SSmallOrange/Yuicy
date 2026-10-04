@@ -8,7 +8,6 @@
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Asset/AssetTypes.h"
 #include "Yuicy/Renderer/Texture.h"
-#include "Yuicy/Project/Project.h"
 
 #include <chrono>
 #include <ctime>
@@ -55,7 +54,7 @@ namespace Yuicy {
 		}
 
 		AssetHandle selectedHandle = m_context->selection.selectedAsset;
-		auto assetManager = Project::GetEditorAssetManager();
+		EditorAssetManager* assetManager = m_context->GetAssetManager();
 		if (!assetManager || !assetManager->IsAssetHandleValid(selectedHandle))
 		{
 			ImGui::TextDisabled("Invalid asset handle.");

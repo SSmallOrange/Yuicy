@@ -3,11 +3,11 @@
 #include "EditorSceneController.h"
 #include "EditorContext.h"
 #include "EditorDirtyTracker.h"
+#include "EditorProjectSession.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 #include "Yuicy/Project/Project.h"
-#include "Yuicy/Project/ProjectSceneContext.h"
 #include "Yuicy/Project/ProjectSerializer.h"
 #include "Yuicy/Core/Log.h"
 #include "Yuicy/Core/FileDialogs.h"
@@ -53,10 +53,9 @@ namespace Yuicy {
 		testEntity.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.2f, 0.6f, 0.9f, 1.0f });
 	}
 
-	static std::filesystem::path GetDefaultProjectScenePath(const Ref<Project>& project)
+	static std::filesystem::path GetDefaultProjectScenePath(const Project& project)
 	{
-		YUICY_CORE_ASSERT(project);
-		return project->GetAssetDirectory() / "Scenes" / ("StartScene" + std::string(SceneSerializer::GetSceneSerializerDefaultExtension()));
+		return project.GetAssetDirectory() / "Scenes" / ("StartScene" + std::string(SceneSerializer::GetSceneSerializerDefaultExtension()));
 	}
 
 	static bool TryGetPathRelativeToDirectory(const std::filesystem::path& filepath, const std::filesystem::path& directory,
@@ -85,11 +84,41 @@ namespace Yuicy {
 
 	void EditorSceneController::AttachSceneContext(const Ref<Scene>& scene) const
 	{
-		if (!scene)
+		if (!scene || !m_context)
 			return;
 
-		const Ref<Project> project = Project::GetActive();
-		scene->SetContext(project ? MakeSceneContext(project->GetConfig(), Project::GetEditorAssetManager()) : SceneContext{});
+		scene->SetContext(m_context->project ? m_context->project->MakeSceneContext() : SceneContext{});
+	}
+
+	Ref<Scene> EditorSceneController::CreateDefaultScene() const
+	{
+		Ref<Scene> scene = CreateRef<Scene>();
+		AttachSceneContext(scene);
+		CreateDefaultSceneContent(scene);
+		return scene;
+	}
+
+	void EditorSceneController::SetEditorScene(const Ref<Scene>& scene, const std::filesystem::path& scenePath)
+	{
+		auto& viewportState = m_context->viewport;
+		scene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
+
+		m_context->editorScene = scene;
+		m_context->activeScene = m_context->editorScene;
+		m_context->document.currentScenePath = scenePath;
+		m_context->viewport.hoveredEntity = {};
+		m_context->selection.ClearEntitySelection();
+
+		if (m_dirtyTracker)
+			m_dirtyTracker->ClearSceneDirty();
+
+		NotifySceneChanged();
+	}
+
+	void EditorSceneController::WriteCurrentAssetRegistry() const
+	{
+		if (EditorAssetManager* assetManager = m_context->GetAssetManager())
+			assetManager->WriteRegistryToFile();
 	}
 
 	// Dirty 检查与确认流程
@@ -178,21 +207,7 @@ namespace Yuicy {
 		if (m_pendingAction == PendingAction::None && !CheckDirtyAndConfirm(PendingAction::NewScene))
 			return;
 
-		m_context->editorScene = CreateRef<Scene>();
-		AttachSceneContext(m_context->editorScene);
-		CreateDefaultSceneContent(m_context->editorScene);
-
-		auto& viewportState = m_context->viewport;
-		m_context->editorScene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
-		m_context->activeScene = m_context->editorScene;
-		m_context->document.currentScenePath = std::filesystem::path{};
-		m_context->viewport.hoveredEntity = {};
-		m_context->selection.ClearEntitySelection();
-
-		if (m_dirtyTracker)
-			m_dirtyTracker->ClearSceneDirty();
-
-		NotifySceneChanged();
+		SetEditorScene(CreateDefaultScene(), {});
 	}
 
 	void EditorSceneController::OpenSceneDialog()
@@ -231,20 +246,7 @@ namespace Yuicy {
 			return false;
 
 		AttachSceneContext(scene);
-
-		auto& viewportState = m_context->viewport;
-		scene->OnViewportResize((uint32_t)viewportState.size.x, (uint32_t)viewportState.size.y);
-
-		m_context->editorScene = scene;
-		m_context->activeScene = m_context->editorScene;
-		m_context->document.currentScenePath = filepath.lexically_normal();
-		m_context->viewport.hoveredEntity = {};
-		m_context->selection.ClearEntitySelection();
-
-		if (m_dirtyTracker)
-			m_dirtyTracker->ClearSceneDirty();
-
-		NotifySceneChanged();
+		SetEditorScene(scene, filepath.lexically_normal());
 		return true;
 	}
 
@@ -264,7 +266,7 @@ namespace Yuicy {
 				m_dirtyTracker->ClearProjectDirty();
 			}
 
-			if (Project::GetActive())
+			if (m_context->project)
 				SaveProject();
 		}
 		else
@@ -295,7 +297,7 @@ namespace Yuicy {
 				m_dirtyTracker->ClearProjectDirty();
 			}
 
-			if (Project::GetActive())
+			if (m_context->project)
 				SaveProject();
 		}
 	}
@@ -317,31 +319,14 @@ namespace Yuicy {
 		if (projectPath.extension() != ProjectSerializer::GetProjectSerializerDefaultExtension())
 			projectPath += ProjectSerializer::GetProjectSerializerDefaultExtension();
 
-		auto project = CreateRef<Project>();
-		project->GetConfig().Name = projectPath.stem().string();
-		project->GetConfig().ProjectDirectory = projectPath.parent_path().string();
-		project->GetConfig().ProjectFileName = projectPath.filename().string();
-
-		std::error_code ec;
-		std::filesystem::create_directories(project->GetAssetDirectory(), ec);
-		if (ec)
-		{
-			YUICY_CORE_ERROR("[Project] Failed to create asset directory '{}': {}", project->GetAssetDirectory().string(), ec.message());
+		WriteCurrentAssetRegistry();
+		Scope<EditorProjectSession> session = EditorProjectSession::Create(projectPath);
+		if (!session)
 			return;
-		}
 
-		ec.clear();
-		std::filesystem::path scriptDirectory = std::filesystem::path(project->GetConfig().ProjectDirectory) / project->GetConfig().ScriptDirectory;
-		std::filesystem::create_directories(scriptDirectory, ec);
-		if (ec)
-		{
-			YUICY_CORE_ERROR("[Project] Failed to create script directory '{}': {}", scriptDirectory.string(), ec.message());
-			return;
-		}
-
-		Project::SetActive(project);
+		m_context->project = std::move(session);
+		m_context->selection.ClearAssetSelection();
 		AttachSceneContext(m_context->editorScene);
-		m_context->document.currentProjectPath = projectPath.lexically_normal();
 
 		if (!m_context->editorScene)
 			NewScene();
@@ -371,32 +356,42 @@ namespace Yuicy {
 		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		auto project = CreateRef<Project>();
-		ProjectSerializer serializer(project);
-		if (!serializer.Deserialize(filepath))
+		WriteCurrentAssetRegistry();
+		Scope<EditorProjectSession> session = EditorProjectSession::Open(filepath);
+		if (!session)
 			return;
 
-		Project::SetActive(project);
-		// 加载起始场景可能被未保存确认推迟，期间仍会渲染当前场景，需要先换成新项目的上下文
-		AttachSceneContext(m_context->editorScene);
-		m_context->document.currentProjectPath = filepath;
+		m_context->project = std::move(session);
+		m_context->selection.ClearAssetSelection();
 
-		bool sceneLoaded = false;
-		if (!project->GetConfig().StartScene.empty())
+		// 不调用 OpenScene：它会再做一次未保存检查，而调用方在切换项目前已经确认过
+		Ref<Scene> startScene;
+		std::filesystem::path startScenePath;
+		const Project& project = m_context->project->GetProject();
+		if (!project.GetConfig().StartScene.empty())
 		{
-			std::filesystem::path scenePath = Project::GetActiveAssetDirectory() / project->GetConfig().StartScene;
-			if (std::filesystem::exists(scenePath))
+			startScenePath = (project.GetAssetDirectory() / project.GetConfig().StartScene).lexically_normal();
+			if (std::filesystem::exists(startScenePath))
 			{
-				sceneLoaded = OpenScene(scenePath);
+				startScene = CreateRef<Scene>();
+				if (!SceneSerializer(startScene).Deserialize(startScenePath))
+					startScene = nullptr;
 			}
 			else
 			{
-				YUICY_CORE_WARN("[Project] Start scene not found: {}", scenePath.string());
+				YUICY_CORE_WARN("[Project] Start scene not found: {}", startScenePath.string());
 			}
 		}
 
-		if (!sceneLoaded)
-			NewScene();
+		if (startScene)
+		{
+			AttachSceneContext(startScene);
+			SetEditorScene(startScene, startScenePath);
+		}
+		else
+		{
+			SetEditorScene(CreateDefaultScene(), {});
+		}
 	}
 
 	void EditorSceneController::SaveProject()
@@ -404,14 +399,15 @@ namespace Yuicy {
 		if (!m_context || !m_context->runtime.IsEditing())
 			return;
 
-		Ref<Project> activeProject = Project::GetActive();
-		if (!activeProject || m_context->document.currentProjectPath.empty())
+		EditorProjectSession* session = m_context->project.get();
+		if (!session)
 		{
 			NewProject();
 			return;
 		}
 
-		auto& config = activeProject->GetConfig();
+		Project& project = session->GetProject();
+		auto& config = project.GetConfig();
 		if (!m_context->editorScene)
 		{
 			config.StartScene.clear();
@@ -422,9 +418,9 @@ namespace Yuicy {
 			std::filesystem::path relativeScenePath;
 
 			if (sceneSavePath.empty()
-				|| !TryGetPathRelativeToDirectory(sceneSavePath, activeProject->GetAssetDirectory(), relativeScenePath))
+				|| !TryGetPathRelativeToDirectory(sceneSavePath, project.GetAssetDirectory(), relativeScenePath))
 			{
-				sceneSavePath = GetDefaultProjectScenePath(activeProject);
+				sceneSavePath = GetDefaultProjectScenePath(project);
 			}
 
 			std::error_code ec;
@@ -439,7 +435,7 @@ namespace Yuicy {
 			sceneSerializer.Serialize(sceneSavePath);
 			m_context->document.currentScenePath = sceneSavePath.lexically_normal();
 
-			if (TryGetPathRelativeToDirectory(m_context->document.currentScenePath, activeProject->GetAssetDirectory(), relativeScenePath))
+			if (TryGetPathRelativeToDirectory(m_context->document.currentScenePath, project.GetAssetDirectory(), relativeScenePath))
 			{
 				config.StartScene = relativeScenePath.generic_string();
 			}
@@ -448,13 +444,13 @@ namespace Yuicy {
 				YUICY_CORE_ERROR(
 					"[Project] Failed to compute StartScene relative path for '{}' in asset directory '{}'.",
 					m_context->document.currentScenePath.string(),
-					activeProject->GetAssetDirectory().string());
+					project.GetAssetDirectory().string());
 				return;
 			}
 		}
 
-		ProjectSerializer projectSerializer(activeProject);
-		projectSerializer.Serialize(m_context->document.currentProjectPath);
+		if (!session->Save())
+			return;
 
 		if (m_dirtyTracker)
 			m_dirtyTracker->ClearProjectDirty();

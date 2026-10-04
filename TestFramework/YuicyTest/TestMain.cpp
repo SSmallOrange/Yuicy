@@ -3,7 +3,6 @@
 
 #include "Yuicy/Core/Assert.h"
 #include "Yuicy/Core/Log.h"
-#include "Yuicy/Project/Project.h"
 
 #include <cstdlib>
 
@@ -46,10 +45,5 @@ int main(int argc, char** argv)
 	InitTestLogging();
 	Yuicy::SetAssertFailureHandler(ReportAssertFailureToDoctest);
 
-	const int result = context.run();
-
-	// 兜底关闭用例直接设置、未自行关闭的活动项目：留到静态析构阶段，EditorAssetManager 写注册表时可能用到已销毁的 logger
-	Yuicy::Project::SetActive(nullptr);
-
-	return result;
+	return context.run();
 }

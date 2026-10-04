@@ -1,4 +1,4 @@
-# 各测试工程共用的测试库（对应 O3DE 的 AzTest）：提供 main、日志初始化、临时目录 / 活动项目 / 场景夹具，以及 glm 向量的近似比较与打印。
+# 各测试工程共用的测试库（对应 O3DE 的 AzTest）：提供 main、日志初始化、临时目录 / 场景夹具，以及 glm 向量的近似比较与打印。
 # 只依赖引擎与 doctest，不创建窗口与 GL 上下文。
 yuicy_collect_sources(YUICY_TEST_FRAMEWORK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/YuicyTest")
 

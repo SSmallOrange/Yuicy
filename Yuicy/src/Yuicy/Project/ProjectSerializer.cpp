@@ -13,7 +13,7 @@ namespace Yuicy {
 	{
 	}
 
-	void ProjectSerializer::Serialize(const std::filesystem::path& filepath)
+	bool ProjectSerializer::Serialize(const std::filesystem::path& filepath)
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -55,11 +55,18 @@ namespace Yuicy {
 		if (!fout.is_open())
 		{
 			YUICY_CORE_ERROR("[Project] Failed to save project file: {}", filepath.string());
-			return;
+			return false;
 		}
 
 		fout << out.c_str();
+		if (!fout)
+		{
+			YUICY_CORE_ERROR("[Project] Failed to write project file: {}", filepath.string());
+			return false;
+		}
+
 		YUICY_CORE_INFO("[Project] Saved project: {}", filepath.string());
+		return true;
 	}
 
 	bool ProjectSerializer::Deserialize(const std::filesystem::path& filepath)

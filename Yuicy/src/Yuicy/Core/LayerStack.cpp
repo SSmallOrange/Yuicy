@@ -5,11 +5,19 @@ namespace Yuicy {
 
 	LayerStack::~LayerStack()  // 图层在栈中长期存在，结束时销毁
 	{
+		Clear();
+	}
+
+	void LayerStack::Clear()
+	{
 		for (Layer* layer : _Layers)
 		{
 			layer->OnDetach();
 			delete layer;
 		}
+
+		_Layers.clear();
+		_LayerInsertIndex = 0;
 	}
 
 	void LayerStack::PushLayer(Layer* layer)

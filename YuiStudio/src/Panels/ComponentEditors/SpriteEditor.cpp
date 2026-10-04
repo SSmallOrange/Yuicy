@@ -1,11 +1,13 @@
 #include "pch.h"
 
 #include "SpriteEditor.h"
+#include "../../Editor/EditorContext.h"
 #include "../../Editor/EditorDirtyTracker.h"
 #include "../../Utils/ContentBrowserDragDrop.h"
 
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
+#include "Yuicy/Renderer/SortingLayerConfig.h"
 #include "Yuicy/Scene/Components.h"
 
 #include <filesystem>
@@ -15,13 +17,15 @@ namespace Yuicy {
 
 	void SpriteEditor::Draw(SpriteRendererComponent& component, EditorDirtyTracker* dt)
 	{
+		const EditorProjectSession* project = m_editorContext ? m_editorContext->project.get() : nullptr;
+
 		if (ImGui::ColorEdit4("Color", glm::value_ptr(component.Color)))
 			if (dt) dt->MarkSceneDirty();
 
 		// 纹理预览与拖拽
 		std::string textureName = "None";
 		std::string texturePath;
-		auto assetManager = Project::GetEditorAssetManager();
+		EditorAssetManager* assetManager = project ? project->GetAssetManager().get() : nullptr;
 		bool hasTexture = component.TextureHandle != 0
 			&& assetManager && assetManager->IsAssetHandleValid(component.TextureHandle);
 
@@ -113,8 +117,8 @@ namespace Yuicy {
 
 		// Sorting Layer
 		{
-			auto project = Project::GetActive();
-			const auto& sortingLayers = project->GetConfig().SortingLayers;
+			static const SortingLayerConfig kDefaultSortingLayers;
+			const SortingLayerConfig& sortingLayers = project ? project->GetProject().GetConfig().SortingLayers : kDefaultSortingLayers;
 			if (ImGui::BeginCombo("Sorting Layer", component.SortingLayer.c_str()))
 			{
 				for (const auto& layer : sortingLayers.Layers)

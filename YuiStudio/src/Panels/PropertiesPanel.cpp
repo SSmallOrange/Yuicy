@@ -4,9 +4,9 @@
 
 #include "Yuicy/Scene/Components.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
-#include "Yuicy/Project/Project.h"
 
 #include "../Editor/EditorCommandHistory.h"
+#include "../Editor/EditorContext.h"
 #include "../Editor/EditorDirtyTracker.h"
 #include "../Editor/EditorSelectionContext.h"
 #include "../Editor/Commands/AddComponentCommand.h"
@@ -30,6 +30,14 @@ namespace Yuicy {
 			return {};
 
 		return m_context->FindEntityByUUID(selectedUUID);
+	}
+
+	void PropertiesPanel::SetEditorContext(EditorContext* context)
+	{
+		m_editorContext = context;
+		m_animationEditor.SetEditorContext(context);
+		m_spriteEditor.SetEditorContext(context);
+		m_colliderEditor.SetEditorContext(context);
 	}
 
 	void PropertiesPanel::OnImGuiRender()
@@ -206,6 +214,86 @@ namespace Yuicy {
 		}
 	}
 
+	void PropertiesPanel::DrawLuaScriptComponent(LuaScriptComponent& component)
+	{
+		EditorDirtyTracker* dt = m_dirtyTracker;
+		EditorAssetManager* assetManager = m_editorContext ? m_editorContext->GetAssetManager() : nullptr;
+
+		// 脚本名称显示
+		std::string scriptLabel = "None";
+		bool hasScript = false;
+		bool scriptMissing = false;
+
+		if (component.ScriptHandle != 0 && assetManager)
+		{
+			const auto& metadata = assetManager->GetMetadata(component.ScriptHandle);
+			if (metadata.IsValid())
+			{
+				scriptLabel = metadata.filePath.filename().string();
+				hasScript = true;
+
+				// 检查文件是否存在
+				std::filesystem::path fullPath = assetManager->GetFileSystemPath(metadata);
+				std::error_code ec;
+				if (!std::filesystem::exists(fullPath, ec))
+					scriptMissing = true;
+			}
+			else
+			{
+				scriptLabel = "Missing (invalid handle)";
+				scriptMissing = true;
+			}
+		}
+
+		// 丢失脚本红色高亮
+		if (scriptMissing)
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+
+		ImGui::Text("Script: %s", scriptLabel.c_str());
+
+		if (scriptMissing)
+			ImGui::PopStyleColor();
+
+		// 拖拽接收区域
+		ImGui::Button(hasScript ? scriptLabel.c_str() : "Drop Script Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
+			{
+				std::filesystem::path filepath = *droppedPath;
+
+				if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::LuaScript)
+				{
+					AssetHandle handle = assetManager->ImportAsset(filepath);
+					if (handle != 0)
+					{
+						component.ScriptHandle = handle;
+						if (dt) dt->MarkSceneDirty();
+					}
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		// 清除按钮
+		if (hasScript)
+		{
+			ImGui::SameLine();
+			if (ImGui::SmallButton("X##ClearScript"))
+			{
+				component.ScriptHandle = 0;
+				component.IsLoaded = false;
+				if (dt) dt->MarkSceneDirty();
+			}
+		}
+
+		// 加载状态
+		ImGui::Text("Loaded: %s", component.IsLoaded ? "Yes" : "No");
+
+		if (scriptMissing)
+			ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Script file is missing!");
+	}
+
 	// DrawComponents
 	void PropertiesPanel::DrawComponents(Entity entity)
 	{
@@ -275,84 +363,7 @@ namespace Yuicy {
 		}, dt, ch);
 
 		// LuaScriptComponent
-		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [dt](auto& component)
-		{
-			auto assetManager = Project::GetEditorAssetManager();
-
-			// 脚本名称显示
-			std::string scriptLabel = "None";
-			bool hasScript = false;
-			bool scriptMissing = false;
-
-			if (component.ScriptHandle != 0 && assetManager)
-			{
-				const auto& metadata = assetManager->GetMetadata(component.ScriptHandle);
-				if (metadata.IsValid())
-				{
-					scriptLabel = metadata.filePath.filename().string();
-					hasScript = true;
-
-					// 检查文件是否存在
-					std::filesystem::path fullPath = assetManager->GetFileSystemPath(metadata);
-					std::error_code ec;
-					if (!std::filesystem::exists(fullPath, ec))
-						scriptMissing = true;
-				}
-			else
-			{
-				scriptLabel = "Missing (invalid handle)";
-				scriptMissing = true;
-			}
-			}
-
-			// 丢失脚本红色高亮
-			if (scriptMissing)
-				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-
-			ImGui::Text("Script: %s", scriptLabel.c_str());
-
-			if (scriptMissing)
-				ImGui::PopStyleColor();
-
-			// 拖拽接收区域
-			ImGui::Button(hasScript ? scriptLabel.c_str() : "Drop Script Here", ImVec2(ImGui::GetContentRegionAvail().x, 0));
-			if (ImGui::BeginDragDropTarget())
-			{
-				if (std::optional<std::filesystem::path> droppedPath = ContentBrowserDragDrop::AcceptPayload())
-				{
-					std::filesystem::path filepath = *droppedPath;
-
-					if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::LuaScript)
-					{
-						AssetHandle handle = assetManager->ImportAsset(filepath);
-						if (handle != 0)
-						{
-							component.ScriptHandle = handle;
-							if (dt) dt->MarkSceneDirty();
-						}
-					}
-				}
-				ImGui::EndDragDropTarget();
-			}
-
-			// 清除按钮
-			if (hasScript)
-			{
-				ImGui::SameLine();
-				if (ImGui::SmallButton("X##ClearScript"))
-				{
-					component.ScriptHandle = 0;
-					component.IsLoaded = false;
-					if (dt) dt->MarkSceneDirty();
-				}
-			}
-
-			// 加载状态
-			ImGui::Text("Loaded: %s", component.IsLoaded ? "Yes" : "No");
-
-			if (scriptMissing)
-				ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Script file is missing!");
-		}, dt, ch);
+		DrawComponentUI<LuaScriptComponent>("Lua Script", entity, [this](auto& component) { DrawLuaScriptComponent(component); }, dt, ch);
 
 		// Rigidbody2DComponent
 		DrawComponentUI<Rigidbody2DComponent>("Rigidbody 2D", entity, [dt](auto& component)

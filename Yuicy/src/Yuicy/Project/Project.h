@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Yuicy/Core/Base.h"
-#include "Yuicy/Core/Assert.h"
 #include "Yuicy/Renderer/SortingLayerConfig.h"
 #include "Yuicy/Physics/CollisionLayerConfig.h"
 
@@ -9,8 +7,6 @@
 #include <string>
 
 namespace Yuicy {
-
-	class EditorAssetManager;
 
 	struct ProjectConfig
 	{
@@ -48,49 +44,9 @@ namespace Yuicy {
 		const ProjectConfig& GetConfig() const { return m_config; }
 		ProjectConfig& GetConfig() { return m_config; }
 
-		// 活动项目管理
-		static Ref<Project> GetActive() { return s_activeProject; }
-		// 每次调用都会新建 EditorAssetManager；传入 nullptr 表示关闭项目，并释放已加载的资源
-		static void SetActive(const Ref<Project>& project);
-
-		// 资源管理
-		static Ref<EditorAssetManager> GetEditorAssetManager() { return s_assetManager; }
-
-		// 路径工具方法
-		static const std::string& GetProjectName()
-		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return s_activeProject->GetConfig().Name;
-		}
-
-		static std::filesystem::path GetProjectDirectory()
-		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return s_activeProject->GetConfig().ProjectDirectory;
-		}
-
 		std::filesystem::path GetAssetDirectory() const
 		{
 			return std::filesystem::path(m_config.ProjectDirectory) / m_config.AssetDirectory;
-		}
-
-		static std::filesystem::path GetActiveAssetDirectory()
-		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return s_activeProject->GetAssetDirectory();
-		}
-
-		static std::filesystem::path GetScriptDirectory()
-		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return std::filesystem::path(s_activeProject->GetConfig().ProjectDirectory)
-				/ s_activeProject->GetConfig().ScriptDirectory;
-		}
-
-		static std::filesystem::path GetCacheDirectory()
-		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return std::filesystem::path(s_activeProject->GetConfig().ProjectDirectory) / "Cache";
 		}
 
 		std::filesystem::path GetAssetRegistryPath() const
@@ -100,9 +56,6 @@ namespace Yuicy {
 
 	private:
 		ProjectConfig m_config;
-
-		inline static Ref<Project> s_activeProject;
-		inline static Ref<EditorAssetManager> s_assetManager;
 
 		friend class ProjectSerializer;
 	};
