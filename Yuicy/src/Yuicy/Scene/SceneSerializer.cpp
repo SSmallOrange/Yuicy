@@ -3,7 +3,6 @@
 
 #include "Yuicy/Scene/Entity.h"
 #include "Yuicy/Scene/Components.h"
-#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Utilities/YAMLSerializationHelpers.h"
 
 #include "yaml-cpp/yaml.h"
@@ -360,21 +359,6 @@ namespace Yuicy {
 								frameDef.UVMax = frameNode["UVMax"].as<glm::vec2>(glm::vec2(1.0f));
 								clip.FrameDefinitions.push_back(frameDef);
 							}
-						}
-
-						// 解析帧定义到运行时 SubTexture2D
-						for (const auto& def : clip.FrameDefinitions)
-						{
-							if (def.TextureHandle != 0)
-							{
-								Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(def.TextureHandle);
-								if (texture)
-								{
-									clip.Frames.push_back(CreateRef<SubTexture2D>(texture, def.UVMin, def.UVMax));
-									continue;
-								}
-							}
-							clip.Frames.push_back(nullptr);
 						}
 
 						anim.Clips[clip.Name] = clip;

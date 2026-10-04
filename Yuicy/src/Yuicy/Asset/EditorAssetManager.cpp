@@ -2,7 +2,6 @@
 #include "EditorAssetManager.h"
 
 #include "Yuicy/Asset/AssetExtensions.h"
-#include "Yuicy/Project/Project.h"
 
 #include <map>
 #include <ranges>
@@ -13,9 +12,10 @@ namespace Yuicy {
 
 	static AssetMetadata s_nullMetadata;
 
-	EditorAssetManager::EditorAssetManager()
+	EditorAssetManager::EditorAssetManager(EditorAssetManagerSpecification specification)
+		: m_specification(std::move(specification))
 	{
-		AssetImporter::Init();
+		YUICY_CORE_ASSERT(m_specification.Loaders, "EditorAssetManager requires an AssetLoaderRegistry");
 		LoadAssetRegistry();
 		ReloadAssets();
 	}
@@ -56,8 +56,8 @@ namespace Yuicy {
 		}
 
 		// 未加载
-		Ref<Asset> asset = nullptr;
-		if (AssetImporter::TryLoadData(metadata, asset))
+		Ref<Asset> asset = LoadAssetData(metadata);
+		if (asset)
 		{
 			AssetMetadata updatedMetadata = metadata;
 			updatedMetadata.isDataLoaded = true;
@@ -125,9 +125,9 @@ namespace Yuicy {
 			return false;
 		}
 
-		Ref<Asset> asset = nullptr;
+		Ref<Asset> asset = LoadAssetData(metadata);
 		AssetMetadata updatedMetadata = metadata;
-		updatedMetadata.isDataLoaded = AssetImporter::TryLoadData(updatedMetadata, asset);
+		updatedMetadata.isDataLoaded = asset != nullptr;
 
 		if (updatedMetadata.isDataLoaded)
 		{
@@ -181,20 +181,20 @@ namespace Yuicy {
 		return GetAssetTypeFromExtension(path.extension().string());
 	}
 
-	std::filesystem::path EditorAssetManager::GetFileSystemPath(AssetHandle assetHandle)
+	std::filesystem::path EditorAssetManager::GetFileSystemPath(AssetHandle assetHandle) const
 	{
 		return GetFileSystemPath(GetMetadata(assetHandle));
 	}
 
-	std::filesystem::path EditorAssetManager::GetFileSystemPath(const AssetMetadata& metadata)
+	std::filesystem::path EditorAssetManager::GetFileSystemPath(const AssetMetadata& metadata) const
 	{
-		return Project::GetActiveAssetDirectory() / metadata.filePath;
+		return m_specification.AssetDirectory / metadata.filePath;
 	}
 
-	std::filesystem::path EditorAssetManager::GetRelativePath(const std::filesystem::path& filepath)
+	std::filesystem::path EditorAssetManager::GetRelativePath(const std::filesystem::path& filepath) const
 	{
 		const auto normalizedFile = filepath.lexically_normal();
-		const auto normalizedAssetDir = Project::GetActiveAssetDirectory().lexically_normal();
+		const auto normalizedAssetDir = m_specification.AssetDirectory.lexically_normal();
 
 		// 判断：filepath 是否位于 assetDir 下
 		auto fileIt = normalizedFile.begin();
@@ -261,12 +261,20 @@ namespace Yuicy {
 		return result;
 	}
 
+	Ref<Asset> EditorAssetManager::LoadAssetData(const AssetMetadata& metadata) const
+	{
+		if (!m_specification.Loaders)
+			return nullptr;
+
+		return m_specification.Loaders->Load(metadata, GetFileSystemPath(metadata));
+	}
+
 	// 注册表持久化
 	void EditorAssetManager::LoadAssetRegistry()
 	{
 		YUICY_CORE_INFO("[AssetManager] Loading Asset Registry");
 
-		auto assetRegistryPath = Project::GetAssetRegistryPath();
+		const auto& assetRegistryPath = m_specification.RegistryPath;
 		if (!std::filesystem::exists(assetRegistryPath))
 			return;
 
@@ -334,7 +342,7 @@ namespace Yuicy {
 
 	void EditorAssetManager::ReloadAssets()
 	{
-		ProcessDirectory(Project::GetActiveAssetDirectory().string());
+		ProcessDirectory(m_specification.AssetDirectory);
 		WriteRegistryToFile();
 	}
 
@@ -375,8 +383,7 @@ namespace Yuicy {
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
-		auto assetRegistryPath = Project::GetAssetRegistryPath();
-		std::ofstream fout(assetRegistryPath);
+		std::ofstream fout(m_specification.RegistryPath);
 		fout << out.c_str();
 	}
 

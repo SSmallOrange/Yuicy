@@ -5,6 +5,7 @@
 namespace Yuicy {
 
 	struct EditorContext;
+	class EditorAssetManager;
 	class EditorAssetWorkflow;
 
 	// 资源检查面板
@@ -21,12 +22,12 @@ namespace Yuicy {
 
 	private:
 		void DrawNoSelection();
-		void DrawAssetHeader(const AssetMetadata& metadata);
-		void DrawTextureInspector(const AssetMetadata& metadata);
-		void DrawSceneInspector(const AssetMetadata& metadata);
-		void DrawScriptInspector(const AssetMetadata& metadata);
-		void DrawShaderInspector(const AssetMetadata& metadata);
-		void DrawFontInspector(const AssetMetadata& metadata);
+		void DrawAssetHeader(EditorAssetManager& assetManager, const AssetMetadata& metadata);
+		void DrawTextureInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata);
+		void DrawSceneInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata);
+		void DrawScriptInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata);
+		void DrawShaderInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata);
+		void DrawFontInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata);
 
 	private:
 		EditorContext* m_context = nullptr;

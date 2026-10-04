@@ -1,17 +1,20 @@
 #include "pch.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/BuiltinAssetLoaders.h"
 
 namespace Yuicy {
 
 	void Project::SetActive(const Ref<Project>& project)
 	{
-		// 旧 EditorAssetManager 析构时会把注册表写回活动项目的资产目录，必须先于切换 s_activeProject 释放：
-		// 否则关闭项目时访问空指针，切换项目时把旧注册表写进新项目
+		// 旧资源管理器在析构时才写回注册表，必须先释放，新的资源管理器才能读到写回后的内容
 		s_assetManager = nullptr;
 		s_activeProject = project;
 		if (project)
-			s_assetManager = CreateRef<EditorAssetManager>();
+		{
+			s_assetManager = CreateRef<EditorAssetManager>(EditorAssetManagerSpecification{
+				project->GetAssetDirectory(), project->GetAssetRegistryPath(), CreateBuiltinAssetLoaders() });
+		}
 	}
 
 }

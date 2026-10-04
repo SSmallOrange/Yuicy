@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
 #include "Yuicy/Scene/SceneSerializer.h"
 
 using namespace Yuicy;
@@ -41,7 +43,6 @@ namespace {
 		AnimationClip idle("Idle", 0.2f, /*loop=*/false);
 		idle.FrameDefinitions.push_back({ 0, { 0.0f, 0.0f }, { 0.5f, 0.5f } });
 		AnimationClip run("Run", 0.05f, /*loop=*/true);
-		// 非 0 的 TextureHandle 未在资产注册表中登记，反序列化时对应的运行时帧应为 nullptr，且不需要 GL 上下文
 		run.FrameDefinitions.push_back({ 777, { 0.0f, 0.5f }, { 0.25f, 1.0f } });
 		run.FrameDefinitions.push_back({ 777, { 0.25f, 0.5f }, { 0.5f, 1.0f } });
 		animation.AddClip(idle);
@@ -162,9 +163,7 @@ TEST_SUITE("Scene")
 			CHECK(run.FrameDefinitions[1].UVMin == ApproxVec(glm::vec2{ 0.25f, 0.5f }));
 			CHECK(run.FrameDefinitions[1].UVMax == ApproxVec(glm::vec2{ 0.5f, 1.0f }));
 
-			// 运行时帧与帧定义一一对应，否则按帧索引取 SubTexture 会越界
-			REQUIRE(run.Frames.size() == run.FrameDefinitions.size());
-			CHECK(run.Frames[0] == nullptr);
+			CHECK(run.Frames.empty());
 		}
 
 		SUBCASE("Rigidbody2DComponent")
@@ -207,6 +206,33 @@ TEST_SUITE("Scene")
 			CHECK(circle.IsTrigger);
 			CHECK(circle.RuntimeFixture == nullptr);
 		}
+	}
+
+	TEST_CASE_FIXTURE(Test::SceneFixture, "SceneSerializer round-trip does not load registered animation textures")
+	{
+		const Ref<EditorAssetManager> assetManager = Project::GetEditorAssetManager();
+		REQUIRE(assetManager);
+		const std::filesystem::path texturePath = m_TempDirectory.WriteFile("Assets/Textures/Hero.png", "not a real image");
+		const AssetHandle textureHandle = assetManager->ImportAsset(texturePath);
+		REQUIRE(assetManager->GetAssetType(textureHandle) == AssetType::Texture);
+
+		Entity source = m_Scene->CreateEntity("Hero");
+		AnimationClip walk("Walk");
+		walk.FrameDefinitions.push_back({ textureHandle, { 0.0f, 0.0f }, { 0.5f, 1.0f } });
+		source.AddComponent<AnimationComponent>().AddClip(walk);
+
+		Ref<Scene> loaded = SerializeRoundTrip(m_Scene);
+		Entity entity = loaded->FindEntityByUUID(source.GetUUID());
+		REQUIRE(entity);
+		const auto& clips = entity.GetComponent<AnimationComponent>().Clips;
+		REQUIRE(clips.count("Walk") == 1);
+
+		const AnimationClip& loadedWalk = clips.at("Walk");
+		REQUIRE(loadedWalk.FrameDefinitions.size() == 1);
+		CHECK((uint64_t)loadedWalk.FrameDefinitions[0].TextureHandle == (uint64_t)textureHandle);
+		CHECK(loadedWalk.FrameDefinitions[0].UVMax == ApproxVec(glm::vec2{ 0.5f, 1.0f }));
+		CHECK(loadedWalk.Frames.empty());
+		CHECK_FALSE(assetManager->IsAssetLoaded(textureHandle));
 	}
 
 	TEST_CASE_FIXTURE(Test::SceneFixture, "SceneSerializer round-trip preserves hierarchy and child order")

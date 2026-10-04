@@ -5,26 +5,28 @@
 #include "../../Utils/ContentBrowserDragDrop.h"
 #include "../../Utils/EditorIconUtils.h"
 
-#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Scene/Components.h"
-#include "Yuicy/Renderer/SubTexture.h"
+#include "Yuicy/Renderer/Texture.h"
 
 #include <filesystem>
 #include <algorithm>
 
 namespace Yuicy {
 
-	// 将单个 FrameDefinition 解析为运行时 SubTexture2D
-	static Ref<SubTexture2D> ResolveFrame(const AnimationFrameDefinition& def)
+	// 未打开项目或纹理加载失败时返回 nullptr
+	static Ref<Texture2D> GetTextureAsset(AssetHandle handle)
 	{
-		if (def.TextureHandle == 0)
+		auto assetManager = Project::GetEditorAssetManager();
+		if (handle == 0 || !assetManager)
 			return nullptr;
-		Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(def.TextureHandle);
-		if (!texture)
-			return nullptr;
-		return CreateRef<SubTexture2D>(texture, def.UVMin, def.UVMax);
+		return assetManager->GetAssetAs<Texture2D>(handle);
+	}
+
+	static void InvalidateRuntimeFrames(AnimationClip& clip)
+	{
+		clip.Frames.clear();
 	}
 
 	// 获取纹理显示名称
@@ -201,8 +203,7 @@ namespace Yuicy {
 
 						if (uvChanged)
 						{
-							if (i < (int)clip.Frames.size())
-								clip.Frames[i] = ResolveFrame(frameDef);
+							InvalidateRuntimeFrames(clip);
 							if (dt) dt->MarkSceneDirty();
 						}
 
@@ -216,8 +217,7 @@ namespace Yuicy {
 				if (frameMoveFrom >= 0 && frameMoveTo >= 0)
 				{
 					std::swap(clip.FrameDefinitions[frameMoveFrom], clip.FrameDefinitions[frameMoveTo]);
-					if (frameMoveFrom < (int)clip.Frames.size() && frameMoveTo < (int)clip.Frames.size())
-						std::swap(clip.Frames[frameMoveFrom], clip.Frames[frameMoveTo]);
+					InvalidateRuntimeFrames(clip);
 					if (dt) dt->MarkSceneDirty();
 				}
 
@@ -225,8 +225,7 @@ namespace Yuicy {
 				if (frameToRemove >= 0)
 				{
 					clip.FrameDefinitions.erase(clip.FrameDefinitions.begin() + frameToRemove);
-					if (frameToRemove < (int)clip.Frames.size())
-						clip.Frames.erase(clip.Frames.begin() + frameToRemove);
+					InvalidateRuntimeFrames(clip);
 					if (dt) dt->MarkSceneDirty();
 				}
 
@@ -247,7 +246,7 @@ namespace Yuicy {
 								AnimationFrameDefinition frameDef;
 								frameDef.TextureHandle = handle;
 								clip.FrameDefinitions.push_back(frameDef);
-								clip.Frames.push_back(ResolveFrame(frameDef));
+								InvalidateRuntimeFrames(clip);
 								if (dt) dt->MarkSceneDirty();
 							}
 						}
@@ -334,7 +333,7 @@ namespace Yuicy {
 				// Sheet info
 				if (m_sheetTextureHandle != 0)
 				{
-					Ref<Texture2D> sheetTex = AssetManager::GetAsset<Texture2D>(m_sheetTextureHandle);
+					Ref<Texture2D> sheetTex = GetTextureAsset(m_sheetTextureHandle);
 					if (sheetTex)
 					{
 						ImGui::Separator();
@@ -355,7 +354,7 @@ namespace Yuicy {
 				if (ImGui::Button("Generate", ImVec2(120, 0)))
 				{
 					auto& targetClip = component.Clips[m_sheetTargetClip];
-					Ref<Texture2D> sheetTex = AssetManager::GetAsset<Texture2D>(m_sheetTextureHandle);
+					Ref<Texture2D> sheetTex = GetTextureAsset(m_sheetTextureHandle);
 					if (sheetTex)
 					{
 						float texW = (float)sheetTex->GetWidth();
@@ -378,9 +377,9 @@ namespace Yuicy {
 							frameDef.UVMax = { ((gridX + 1.0f) * cellW) / texW, ((gridY + 1.0f) * cellH) / texH };
 
 							targetClip.FrameDefinitions.push_back(frameDef);
-							targetClip.Frames.push_back(ResolveFrame(frameDef));
 						}
 
+						InvalidateRuntimeFrames(targetClip);
 						if (dt) dt->MarkSceneDirty();
 					}
 					m_openSheetPopup = false;
@@ -442,9 +441,9 @@ namespace Yuicy {
 
 			auto& previewClip = component.Clips[previewClipName];
 
-			if (!previewClip.Frames.empty())
+			if (!previewClip.FrameDefinitions.empty())
 			{
-				int frameCount = (int)previewClip.Frames.size();
+				int frameCount = (int)previewClip.FrameDefinitions.size();
 
 				// Advance preview
 				if (m_previewPlaying)
@@ -462,12 +461,12 @@ namespace Yuicy {
 				if (m_previewFrame >= frameCount)
 					m_previewFrame = 0;
 
-				Ref<SubTexture2D> currentFrame = previewClip.Frames[m_previewFrame];
+				const auto& frameDef = previewClip.FrameDefinitions[m_previewFrame];
+				Ref<Texture2D> frameTexture = GetTextureAsset(frameDef.TextureHandle);
 
-				if (currentFrame && currentFrame->GetTexture())
+				if (frameTexture)
 				{
-					auto& frameDef = previewClip.FrameDefinitions[m_previewFrame];
-					ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)currentFrame->GetTexture()->GetRendererID());
+					ImTextureID texID = reinterpret_cast<ImTextureID>((uintptr_t)frameTexture->GetRendererID());
 					ImGui::Image(texID, ImVec2(64, 64),
 						ImVec2(frameDef.UVMin.x, frameDef.UVMax.y),
 						ImVec2(frameDef.UVMax.x, frameDef.UVMin.y));

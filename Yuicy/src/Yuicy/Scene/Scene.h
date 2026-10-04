@@ -101,6 +101,7 @@ namespace Yuicy {
 		// 碰撞回调
 		void ProcessCollisionCallbacks();
 		// 动画
+		void ResolveAnimationFrames();
 		void UpdateAnimations(Timestep ts);
 
 		void RenderScene();

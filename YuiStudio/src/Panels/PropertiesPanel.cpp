@@ -3,8 +3,8 @@
 #include "PropertiesPanel.h"
 
 #include "Yuicy/Scene/Components.h"
-#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
+#include "Yuicy/Project/Project.h"
 
 #include "../Editor/EditorCommandHistory.h"
 #include "../Editor/EditorDirtyTracker.h"
@@ -293,7 +293,7 @@ namespace Yuicy {
 					hasScript = true;
 
 					// 检查文件是否存在
-					std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+					std::filesystem::path fullPath = assetManager->GetFileSystemPath(metadata);
 					std::error_code ec;
 					if (!std::filesystem::exists(fullPath, ec))
 						scriptMissing = true;

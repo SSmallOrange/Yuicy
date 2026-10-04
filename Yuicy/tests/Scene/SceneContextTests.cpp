@@ -34,7 +34,7 @@ TEST_SUITE("Scene")
 		CHECK(script.ScriptInstance["Created"].get<bool>());
 
 		// 热重载按文件路径找缓存：脚本只应以真实文件的 key 编译一次
-		const Ref<LuaScriptAsset> asset = assetManager->GetAsset<LuaScriptAsset>(scriptHandle);
+		const Ref<LuaScriptAsset> asset = assetManager->GetAssetAs<LuaScriptAsset>(scriptHandle);
 		REQUIRE(asset);
 		CHECK(LuaScriptEngine::NormalizePath(asset->GetFilePath()) == LuaScriptEngine::NormalizePath(scriptFile));
 		CHECK(LuaScriptEngine::GetScriptVersion(LuaScriptEngine::NormalizePath(scriptFile)) == 1);

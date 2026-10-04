@@ -9,7 +9,6 @@
 namespace Yuicy::Test {
 
 	// 以 projectDirectory 为项目目录创建内存 Project 并设为活动项目，析构时关闭项目（不恢复之前的活动项目，不支持嵌套）。
-	// Scene、SceneSerializer、AssetManager 都假定存在活动项目。
 	// projectDirectory 必须比本对象活得久：关闭项目时 EditorAssetManager 会把资产注册表写回 <projectDirectory>/Assets/。
 	class ScopedActiveProject
 	{

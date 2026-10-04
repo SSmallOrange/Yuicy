@@ -71,7 +71,7 @@ namespace Yuicy {
 			return;
 		}
 
-		DrawAssetHeader(metadata);
+		DrawAssetHeader(*assetManager, metadata);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -79,11 +79,11 @@ namespace Yuicy {
 
 		switch (metadata.type)
 		{
-		case AssetType::Texture:  DrawTextureInspector(metadata); break;
-		case AssetType::Scene:    DrawSceneInspector(metadata);   break;
-		case AssetType::LuaScript: DrawScriptInspector(metadata); break;
-		case AssetType::Shader:   DrawShaderInspector(metadata);  break;
-		case AssetType::Font:     DrawFontInspector(metadata);    break;
+		case AssetType::Texture:   DrawTextureInspector(*assetManager, metadata); break;
+		case AssetType::Scene:     DrawSceneInspector(*assetManager, metadata); break;
+		case AssetType::LuaScript: DrawScriptInspector(*assetManager, metadata); break;
+		case AssetType::Shader:    DrawShaderInspector(*assetManager, metadata); break;
+		case AssetType::Font:      DrawFontInspector(*assetManager, metadata); break;
 		default:
 			ImGui::TextDisabled("No inspector available for this asset type.");
 			break;
@@ -105,7 +105,7 @@ namespace Yuicy {
 		ImGui::TextDisabled("%s", hint);
 	}
 
-	void AssetInspectorPanel::DrawAssetHeader(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawAssetHeader(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		// 文件名
 		std::string filename = metadata.filePath.filename().string();
@@ -129,11 +129,7 @@ namespace Yuicy {
 		ImGui::Spacing();
 
 		if (ImGui::Button("Reload"))
-		{
-			auto assetManager = Project::GetEditorAssetManager();
-			if (assetManager)
-				assetManager->ReloadData(metadata.handle);
-		}
+			assetManager.ReloadData(metadata.handle);
 
 		ImGui::SameLine();
 
@@ -141,7 +137,7 @@ namespace Yuicy {
 		{
 			if (m_assetWorkflow)
 			{
-				std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+				std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 				m_assetWorkflow->OpenAsset(fullPath);
 			}
 		}
@@ -152,22 +148,18 @@ namespace Yuicy {
 		{
 			if (m_assetWorkflow)
 			{
-				std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+				std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 				m_assetWorkflow->RevealInExplorer(fullPath.parent_path());
 			}
 		}
 	}
 
-	void AssetInspectorPanel::DrawTextureInspector(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawTextureInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		ImGui::Text("Texture Properties");
 		ImGui::Spacing();
 
-		auto assetManager = Project::GetEditorAssetManager();
-		if (!assetManager)
-			return;
-
-		Ref<Texture2D> texture = assetManager->GetAsset<Texture2D>(metadata.handle);
+		Ref<Texture2D> texture = assetManager.GetAssetAs<Texture2D>(metadata.handle);
 		if (!texture)
 		{
 			ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Failed to load texture data.");
@@ -181,7 +173,7 @@ namespace Yuicy {
 		ImGui::Text("Height: %u px", height);
 
 		// 文件大小
-		std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+		std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 		std::error_code ec;
 		auto fileSize = std::filesystem::file_size(fullPath, ec);
 		if (!ec)
@@ -217,12 +209,12 @@ namespace Yuicy {
 		ImGui::Image(texID, ImVec2{ previewWidth, previewHeight }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 	}
 
-	void AssetInspectorPanel::DrawSceneInspector(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawSceneInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		ImGui::Text("Scene Properties");
 		ImGui::Spacing();
 
-		std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+		std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 
 		// 文件大小
 		std::error_code ec;
@@ -249,12 +241,12 @@ namespace Yuicy {
 		}
 	}
 
-	void AssetInspectorPanel::DrawScriptInspector(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawScriptInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		ImGui::Text("Lua Script Properties");
 		ImGui::Spacing();
 
-		std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+		std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 
 		// 文件大小
 		std::error_code ec;
@@ -283,19 +275,15 @@ namespace Yuicy {
 		ImGui::SameLine();
 
 		if (ImGui::Button("Reload Script"))
-		{
-			auto assetManager = Project::GetEditorAssetManager();
-			if (assetManager)
-				assetManager->ReloadData(metadata.handle);
-		}
+			assetManager.ReloadData(metadata.handle);
 	}
 
-	void AssetInspectorPanel::DrawShaderInspector(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawShaderInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		ImGui::Text("Shader Properties");
 		ImGui::Spacing();
 
-		std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+		std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 
 		// 文件大小
 		std::error_code ec;
@@ -317,12 +305,12 @@ namespace Yuicy {
 		}
 	}
 
-	void AssetInspectorPanel::DrawFontInspector(const AssetMetadata& metadata)
+	void AssetInspectorPanel::DrawFontInspector(EditorAssetManager& assetManager, const AssetMetadata& metadata)
 	{
 		ImGui::Text("Font Properties");
 		ImGui::Spacing();
 
-		std::filesystem::path fullPath = EditorAssetManager::GetFileSystemPath(metadata);
+		std::filesystem::path fullPath = assetManager.GetFileSystemPath(metadata);
 
 		// 文件大小
 		std::error_code ec;

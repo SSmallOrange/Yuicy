@@ -4,7 +4,6 @@
 #include "../../Editor/EditorDirtyTracker.h"
 #include "../../Utils/ContentBrowserDragDrop.h"
 
-#include "Yuicy/Asset/AssetManager.h"
 #include "Yuicy/Asset/EditorAssetManager.h"
 #include "Yuicy/Project/Project.h"
 #include "Yuicy/Scene/Components.h"
@@ -22,19 +21,20 @@ namespace Yuicy {
 		// 纹理预览与拖拽
 		std::string textureName = "None";
 		std::string texturePath;
+		auto assetManager = Project::GetEditorAssetManager();
 		bool hasTexture = component.TextureHandle != 0
-			&& AssetManager::IsAssetHandleValid(component.TextureHandle);
+			&& assetManager && assetManager->IsAssetHandleValid(component.TextureHandle);
 
 		Ref<Texture2D> texture = nullptr;
 		if (hasTexture)
 		{
-			const auto& metadata = Project::GetEditorAssetManager()->GetMetadata(component.TextureHandle);
+			const auto& metadata = assetManager->GetMetadata(component.TextureHandle);
 			if (metadata.IsValid())
 			{
 				textureName = metadata.filePath.filename().string();
 				texturePath = metadata.filePath.string();
 			}
-			texture = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
+			texture = assetManager->GetAssetAs<Texture2D>(component.TextureHandle);
 		}
 
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
@@ -57,9 +57,7 @@ namespace Yuicy {
 			{
 				std::filesystem::path filepath = *droppedPath;
 
-				auto assetManager = Project::GetEditorAssetManager();
-				AssetType type = assetManager->GetAssetTypeFromPath(filepath);
-				if (type == AssetType::Texture)
+				if (assetManager && assetManager->GetAssetTypeFromPath(filepath) == AssetType::Texture)
 				{
 					AssetHandle handle = assetManager->ImportAsset(filepath);
 					if (handle != 0)

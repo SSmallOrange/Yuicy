@@ -108,7 +108,7 @@ namespace Yuicy {
 				}
 				else if (sprite.TextureHandle != 0 && assetManager)
 				{
-					Ref<Texture2D> texture = assetManager->GetAsset<Texture2D>(sprite.TextureHandle);
+					Ref<Texture2D> texture = assetManager->GetAssetAs<Texture2D>(sprite.TextureHandle);
 					if (texture)
 						Renderer2D::DrawSprite(item.Transform,
 							texture, sprite.TilingFactor, sprite.Color, sprite.FlipX, sprite.FlipY, item.EntityID);
@@ -122,6 +122,23 @@ namespace Yuicy {
 			}
 		}
 
+		// Frames 与帧定义一一对应，纹理不可用的帧为 nullptr
+		void ResolveClipFrames(AnimationClip& clip, AssetManagerBase* assetManager)
+		{
+			// AddFramesFromSheet 只填充 Frames，不生成帧定义
+			if (clip.FrameDefinitions.empty())
+				return;
+
+			clip.Frames.clear();
+			clip.Frames.reserve(clip.FrameDefinitions.size());
+			for (const auto& def : clip.FrameDefinitions)
+			{
+				Ref<Texture2D> texture = (def.TextureHandle != 0 && assetManager)
+					? assetManager->GetAssetAs<Texture2D>(def.TextureHandle)
+					: nullptr;
+				clip.Frames.push_back(texture ? CreateRef<SubTexture2D>(texture, def.UVMin, def.UVMax) : nullptr);
+			}
+		}
 	}
 
 	Scene::Scene()
@@ -439,6 +456,18 @@ namespace Yuicy {
 		}
 	}
 
+	void Scene::ResolveAnimationFrames()
+	{
+		const Ref<AssetManagerBase> assetManager = m_Context.AssetManager.lock();
+
+		auto view = m_Registry.view<AnimationComponent>();
+		for (auto entity : view)
+		{
+			for (auto& [name, clip] : view.get<AnimationComponent>(entity).Clips)
+				ResolveClipFrames(clip, assetManager.get());
+		}
+	}
+
 	void Scene::UpdateAnimations(Timestep ts)
 	{
 		auto view = m_Registry.view<AnimationComponent, SpriteRendererComponent>();
@@ -450,6 +479,9 @@ namespace Yuicy {
 
 			// 获取当前动画剪辑
 			AnimationClip* clip = anim.GetCurrentClip();
+			if (clip && clip->Frames.size() != clip->FrameDefinitions.size())
+				ResolveClipFrames(*clip, m_Context.AssetManager.lock().get());
+
 			if (!clip || clip->Frames.empty())
 				continue;
 
@@ -652,6 +684,7 @@ namespace Yuicy {
 
 	void Scene::OnRuntimeStart()
 	{
+		ResolveAnimationFrames();
 		InitializePhysicsWorld();
 		InitializeScripts();
 		InitializeLuaScripts();
@@ -666,6 +699,7 @@ namespace Yuicy {
 
 	void Scene::OnSimulationStart()
 	{
+		ResolveAnimationFrames();
 		InitializePhysicsWorld();
 	}
 
@@ -865,7 +899,7 @@ namespace Yuicy {
 			// 运行时初始化：处理新添加的脚本组件
 			if (lsc.ScriptHandle != 0 && !lsc.IsLoaded)
 			{
-				const Ref<LuaScriptAsset> script = assetManager ? assetManager->GetAsset<LuaScriptAsset>(lsc.ScriptHandle) : nullptr;
+				const Ref<LuaScriptAsset> script = assetManager ? assetManager->GetAssetAs<LuaScriptAsset>(lsc.ScriptHandle) : nullptr;
 				if (script)
 				{
 					const std::filesystem::path& scriptPath = script->GetFilePath();

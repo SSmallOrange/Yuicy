@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Yuicy/Asset/AssetImporter.h"
 #include "Yuicy/Asset/AssetManagerBase.h"
+#include "Yuicy/Asset/AssetMetadata.h"
 #include "Yuicy/Asset/AssetRegistry.h"
 
 #include <filesystem>
@@ -9,10 +9,21 @@
 
 namespace Yuicy {
 
+	class AssetLoaderRegistry;
+
+	// 路径只做词法比较，不访问文件系统解析：调用方传入的文件路径要与 AssetDirectory 同为绝对路径或同为相对路径
+	struct EditorAssetManagerSpecification
+	{
+		std::filesystem::path AssetDirectory;
+		std::filesystem::path RegistryPath;
+		Ref<const AssetLoaderRegistry> Loaders;
+	};
+
 	class EditorAssetManager : public AssetManagerBase
 	{
 	public:
-		EditorAssetManager();
+		// 读取注册表并扫描 AssetDirectory，AssetDirectory 必须已存在；析构时把注册表写回 RegistryPath
+		explicit EditorAssetManager(EditorAssetManagerSpecification specification);
 		~EditorAssetManager() override;
 
 		// 资源查询
@@ -33,9 +44,11 @@ namespace Yuicy {
 		AssetHandle GetAssetHandleFromFilePath(const std::filesystem::path& filepath);
 		AssetType GetAssetTypeFromExtension(const std::string& extension);
 		AssetType GetAssetTypeFromPath(const std::filesystem::path& path);
-		std::filesystem::path GetFileSystemPath(AssetHandle assetHandle);
-		static std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata);
-		static std::filesystem::path GetRelativePath(const std::filesystem::path& filepath);
+		const std::filesystem::path& GetAssetDirectory() const { return m_specification.AssetDirectory; }
+		std::filesystem::path GetFileSystemPath(AssetHandle assetHandle) const;
+		std::filesystem::path GetFileSystemPath(const AssetMetadata& metadata) const;
+		// 位于资产目录内时返回相对资产目录的路径，否则返回词法规范化后的原路径
+		std::filesystem::path GetRelativePath(const std::filesystem::path& filepath) const;
 
 		// 注册表
 		const AssetRegistry& GetAssetRegistry() const { return m_assetRegistry; }
@@ -46,11 +59,13 @@ namespace Yuicy {
 		void WriteRegistryToFile();
 
 	private:
+		Ref<Asset> LoadAssetData(const AssetMetadata& metadata) const;
 		void LoadAssetRegistry();
 		void ProcessDirectory(const std::filesystem::path& directoryPath);
 		void ReloadAssets();
 
 	private:
+		EditorAssetManagerSpecification m_specification;
 		std::unordered_map<AssetHandle, Ref<Asset>> m_loadedAssets;  // 有实体文件的资源
 		std::unordered_map<AssetHandle, Ref<Asset>> m_memoryAssets;  // 无实体文件的资源
 		AssetRegistry m_assetRegistry;

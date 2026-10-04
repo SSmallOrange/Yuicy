@@ -20,7 +20,6 @@ namespace Yuicy {
 		// 为 asset 生成新的 Handle 并返回；资源只存在于内存中，不写入注册表
 		virtual AssetHandle AddMemoryOnlyAsset(const Ref<Asset>& asset) = 0;
 
-		// 派生类覆盖 GetAsset(AssetHandle) 后会隐藏本模板，需要在派生类中写 using AssetManagerBase::GetAsset
 		template<typename T>
 		Ref<T> GetAssetAs(AssetHandle assetHandle)
 		{

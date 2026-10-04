@@ -93,10 +93,9 @@ namespace Yuicy {
 			return std::filesystem::path(s_activeProject->GetConfig().ProjectDirectory) / "Cache";
 		}
 
-		static std::filesystem::path GetAssetRegistryPath()
+		std::filesystem::path GetAssetRegistryPath() const
 		{
-			YUICY_CORE_ASSERT(s_activeProject);
-			return s_activeProject->GetAssetDirectory() / "AssetRegistry.yregistry";
+			return GetAssetDirectory() / "AssetRegistry.yregistry";
 		}
 
 	private:
